@@ -1,0 +1,43 @@
+v3.0
+14-Jan-2012
+Added support for users to select which browser to sync should multiple profiles be install.  Very useful if one rarely uses a particular browser and does not want to actively page it out to tmpfs.  Thanks to hasufell for this suggestion and patch!
+
+v2.9
+14-Jan-2012
+Added support for google-chrome and a psd.service for systemd.  Thanks for crabman for the suggestions.
+
+v2.8
+13-Jan-2012
+Corrected a typeo in /etc/rc.d/psd
+
+v2.7
+12-Jan-2012
+Fixed to work with asymmetrical user/homedirs.  In other words, if user foo has assigned to it /home/bar as its homedir, psd is now smart enough to know this.  Previous version acted under the assumption that the user name and corresponding home directory were symmetrical in that they were the same, e.g. user foo has /home/foo as its homedir.  This caused breakage.  Thanks to masteryod for reporting this to me in the discussion thread: https://bbs.archlinux.org/viewtopic.php?id=131321&p=2
+
+v2.6
+09-Jan-2012
+Wrote a manpage and removed the "restart" function since it really has no place in this package.
+
+v2.5
+12-Dec-2011
+Added support for midori and migrated source from github to repo-ck.com.
+
+v2.4
+11-Dec-2011
+Switched source tarball from gz to xz and removed some spaces in the package function.
+
+v2.3
+09-Dec-2011
+Now auto-recovers stale files/links due to a system crashes or other ungraceful states. Thanks to therico for this suggestion.  Also added a script to run hourly via cron rather than forcing the user to write an entry in root's crontab.
+
+v2.2
+03-Dec-2011
+Minor cosmetic changes.
+
+v2.1
+03-Dec-2011
+Minor cosmetic changes.
+
+v2.0
+03-Dec-2011
+Initial public release of the 2.x series

@@ -1,0 +1,66 @@
+#!/bin/bash
+. /etc/rc.conf
+. /etc/rc.d/functions
+. /etc/psd.conf
+
+case "$1" in
+	start)
+		stat_busy 'Starting Profile-Sync-Daemon'
+		if [[ -z $USERS ]]; then
+			printf "\n${C_FAIL}Error:${C_CLEAR} Define at least one user in /etc/psd.conf"
+			stat_fail && exit 1
+		fi
+
+		for user in $USERS; do
+			homedir=$(su -c 'echo $HOME' $user)
+			if [[ ! -d $homedir ]]; then
+				printf "\n${C_FAIL}Error:${C_CLEAR} Invalid user defined in /etc/psd.conf"
+				stat_fail && exit 1
+			fi
+		done
+
+		if [[ -f /run/daemons/psd ]]; then
+			printf "\n${C_FAIL}Error:${C_CLEAR} Profile-Sync-Daemon is already running!"
+			stat_fail && exit 1
+		fi
+		/usr/bin/profile-sync-daemon check
+		add_daemon psd
+		/usr/bin/profile-sync-daemon sync
+		stat_done
+		;;
+	stop)
+		stat_busy 'Stopping Profile-Sync-Daemon'
+		if [[ ! -f /run/daemons/psd ]]; then
+			printf "\n${C_FAIL}Error:${C_CLEAR} Profile-Sync-Daemon is not running, nothing to stop!"
+			stat_fail
+		else
+			/usr/bin/profile-sync-daemon sync && /usr/bin/profile-sync-daemon unsync
+			rm_daemon psd
+			stat_done
+		fi
+		;;
+	sync)
+		stat_busy 'Syncing browser profiles in tmpfs to physical disc'
+		if [[ ! -f /run/daemons/psd ]]; then
+			printf "\n${C_FAIL}Error:${C_CLEAR} Profile-Sync-Daemon is not running... cannot sync!"
+			stat_fail
+		else
+			/usr/bin/profile-sync-daemon sync
+			stat_done
+		fi
+		;;	
+	restart)
+		# restart really has no meaning in the traditional sense
+		stat_busy 'Syncing browser profiles in tmpfs to physical disc'
+		if [[ ! -f /run/daemons/psd ]]; then
+			printf "\n${C_FAIL}Error:${C_CLEAR} Profile-Sync-Daemon is not running... cannot sync!"
+			stat_fail
+		else
+			/usr/bin/profile-sync-daemon sync
+			stat_done
+		fi
+		;;
+	*)
+		echo "usage $0 {start|stop|sync}"
+esac
+exit 0

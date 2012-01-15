@@ -1,0 +1,48 @@
+NAME
+	profile-sync-daemon - Symlinks and syncs browser profile dirs to RAM thus reducing HDD/SDD calls and speeding-up browsers.
+
+SYNOPSIS
+	rc.d [options] psd
+
+DESCRIPTION
+	Profile-sync-daemon (psd) is a tiny shell script designed to manage your browser's profile in tmpfs and to periodically sync it back to your physical disc (HDD/SSD). This is accomplished via a symlinking step and an innovative use of rsync to maintain back-up and synchronization between the two. One of the major design goals of psd is completely transparent user experience.
+
+	Running this daemon is beneficial for two reasons:
+	1. Reduced wear to physical discs
+	2. Speed
+
+	Since the profile(s), browser cache, etc. are relocated into tmpfs, the corresponding onslaught of I/O associated with using the browser is also redirected from the physical disc to RAM, thus reducing wear to the physical disc and also greatly improving browser speed and responsiveness. The access time of RAM is on the order of nanoseconds while the access time of physical discs is on the order of milliseconds. This is a difference of six orders of magnitude or 1,000,000 times faster.
+
+SUPPORTED BROWSERS AND CAVEATS
+	Currently, the following browsers are auto-detected and managed: Chromium, Firefox, Google-chrome, Midori, and Opera.
+
+	Note that some browsers such as Chromium, Google-chrome, and Midori, actually keeps their cache directories separately from their browser profile directory. It is not within the scope of profile-sync-daemon to modify this behavior; users are encouraged to modify this behavir. For example, refer to the following url for several work-arounds for the Chrome-based browsers: https://wiki.archlinux.org/index.php/Chromium_Tips_and_Tweaks#Cache_in_tmpfs
+
+OPTIONS
+	Users should not call /usr/bin/profile-sync-daemon directly. Instead use the distro provided /usr/bin/rc.d to interact with psd via the daemon script.
+
+	start		Turn on psd. Make symlinks and sync the profile(s) from disc to tmpfs.
+	stop		Turn off psd. Sync the profiles(s) from tmpfs back to disc and remove the symlinks.
+	sync		Sync data between locations. The profile(s) in tmpfs are sync'ed back to the disc and the symlinks are left in place.
+
+	Note that as of version 2.9, a template for systemd is provided for profile-sync-daemon.
+	
+SETUP AND USAGE
+	Edit the included /etc/psd.conf defining which user(s) will have their profiles managed by psd and note that at least one user must be defined.
+
+	Example: 
+	USERS="bar foo"
+
+	The initial synchronization will occur when the daemon starts. Additionally, cron (if running on your system) will call it to sync or update once per hour. Finally, psd will sync back a final time when it is called to stop. Users can call the daemon to start, stop, or sync like any standard Arch daemon.
+	
+	It is highly recommended to start/stop the daemon at boot/shutdown. This is accomplished by adding psd to the DAEMONS array in /etc/rc.conf like so: 
+	
+	DAEMONS=(... @psd ...)
+
+	For more, see: https://wiki.archlinux.org/index.php/Profile-sync-daemon
+
+BUGS
+	No known bugs.
+
+AUTHOR
+	graysky (graysky AT archlinux DOT us)

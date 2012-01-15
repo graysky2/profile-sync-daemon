@@ -1,0 +1,2 @@
+#!/bin/sh
+/usr/sbin/rc.d sync psd &> /dev/null
