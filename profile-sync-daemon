@@ -26,7 +26,7 @@ set_which() {
 			[[ "$i" = "opera" ]] && STATIC="$homedir/.$i-backup" && LINK="$homedir/.$i"
 			;;
 		opera-next)
-			[[ "$i" = "opera" ]] && STATIC="$homedir/.$i-backup" && LINK="$homedir/.$i"
+			[[ "$i" = "opera-next" ]] && STATIC="$homedir/.$i-backup" && LINK="$homedir/.$i"
 			;;
 		*)
 			# this should never happen
