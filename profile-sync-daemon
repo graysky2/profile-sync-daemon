@@ -4,7 +4,7 @@
 # By graysky <graysky AT archlinux DOT us>
 # Inspired by some code originally  written by Colin Verot
 
-BROWSERS="chromium google-chrome midori mozilla opera" # all supported browsers
+BROWSERS="chromium google-chrome midori mozilla opera opera-next" # all supported browsers
 . /etc/psd.conf
 
 set_which() {
@@ -23,6 +23,9 @@ set_which() {
 			[[ "$i" = "mozilla" ]] && STATIC="$homedir/.$i-backup" && LINK="$homedir/.$i"
 			;;
 		opera)
+			[[ "$i" = "opera" ]] && STATIC="$homedir/.$i-backup" && LINK="$homedir/.$i"
+			;;
+		opera-next)
 			[[ "$i" = "opera" ]] && STATIC="$homedir/.$i-backup" && LINK="$homedir/.$i"
 			;;
 		*)

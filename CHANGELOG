@@ -1,10 +1,14 @@
+v3.1
+02-Apr-2012
+Added support for opera-next.  Thanks to FarStar07 for the suggestion.
+
 v3.0
 14-Jan-2012
 Added support for users to select which browser to sync should multiple profiles be install.  Very useful if one rarely uses a particular browser and does not want to actively page it out to tmpfs.  Thanks to hasufell for this suggestion and patch!
 
 v2.9
 14-Jan-2012
-Added support for google-chrome and a psd.service for systemd.  Thanks for crabman for the suggestions.
+Added support for google-chrome and a psd.service for systemd.  Thanks to crabman for the suggestions.
 
 v2.8
 13-Jan-2012
