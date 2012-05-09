@@ -8,25 +8,34 @@ BROWSERS="chromium google-chrome midori mozilla opera opera-next" # all supporte
 . /etc/psd.conf
 
 set_which() {
-	homedir="$(su -c 'echo $HOME' $user)"
-	case "$i" in
+	local user=$1
+	local browser=$2
+	local homedir="$(su -c 'echo $HOME' $user)"
+
+	case "$browser" in
 		chromium)
-			[[ "$i" = "chromium" ]] && STATIC="$homedir/.config/$i-backup" && LINK="$homedir/.config/$i"
+			STATIC="$homedir/.config/$browser-backup"
+			LINK="$homedir/.config/$browser"
 			;;
 		google-chrome)
-			[[ "$i" = "google-chrome" ]] && STATIC="$homedir/.config/$i-backup" && LINK="$homedir/.config/$i"
-			;;		
+			STATIC="$homedir/.config/$browser-backup"
+			LINK="$homedir/.config/$browser"
+			;;
 		midori)
-			[[ "$i" = "midori" ]] && STATIC="$homedir/.config/$i-backup" && LINK="$homedir/.config/$i"
+			STATIC="$homedir/.config/$browser-backup"
+			LINK="$homedir/.config/$browser"
 			;;
 		mozilla)
-			[[ "$i" = "mozilla" ]] && STATIC="$homedir/.$i-backup" && LINK="$homedir/.$i"
+			STATIC="$homedir/.$browser-backup"
+			LINK="$homedir/.$browser"
 			;;
 		opera)
-			[[ "$i" = "opera" ]] && STATIC="$homedir/.$i-backup" && LINK="$homedir/.$i"
+			STATIC="$homedir/.$browser-backup"
+			LINK="$homedir/.$browser"
 			;;
 		opera-next)
-			[[ "$i" = "opera-next" ]] && STATIC="$homedir/.$i-backup" && LINK="$homedir/.$i"
+			STATIC="$homedir/.$browser-backup"
+			LINK="$homedir/.$browser"
 			;;
 		*)
 			# this should never happen
@@ -36,17 +45,18 @@ set_which() {
 
 sync() {
 	# sync profiles to tmpfs and back again
+	local browser user
 	for user in $USERS; do
-		for i in $BROWSERS; do
-			set_which			
+		for browser in $BROWSERS; do
+			set_which "$user" "$browser"
 			# check if user has browser profile
 			if [[ -d $LINK ]]; then
-				[[ -r "$VOLATILE/$user-$i" ]] || su -c "install -dm755 '$VOLATILE/$user-$i'" $user
+				[[ -r "$VOLATILE/$user-$browser" ]] || su -c "install -dm755 '$VOLATILE/$user-$browser'" $user
 
 				# backup profile and link to tmpfs
-				if [[ $(readlink "$LINK") != "$VOLATILE/$user-$i" ]]; then
+				if [[ $(readlink "$LINK") != "$VOLATILE/$user-$browser" ]]; then
 					mv "$LINK" "$STATIC"
-					ln -s "$VOLATILE/$user-$i" "$LINK"
+					ln -s "$VOLATILE/$user-$browser" "$LINK"
 				fi
 
 				# sync the RAM profile to the disc
@@ -65,10 +75,11 @@ sync() {
 
 debug() {
 	# sync profiles to tmpfs and back again
+	local browser user
 	for user in $USERS; do
-		for i in $BROWSERS; do
-			set_which
-			echo $user:$homedir:$i
+		for browser in $BROWSERS; do
+			set_which "$user" "$browser"
+			echo $user:$homedir:$browser
 		done
 	done
 }
@@ -76,9 +87,10 @@ debug() {
 
 check() {
 	# crash recovery
+	local browser user
 	for user in $USERS; do
-		for i in $BROWSERS; do
-			set_which
+		for browser in $BROWSERS; do
+			set_which "$user" "$browser"
 			[[ -h $LINK ]] && rm -f -- "$LINK"
 			[[ -d $STATIC ]] && mv "$STATIC" "$LINK"
 		done
@@ -87,16 +99,15 @@ check() {
 
 unsync() {
 	# restore virgin state of profiles on physical discs
+	local browser user
 	for user in $USERS; do
-		for i in $BROWSERS; do
-			set_which
+		for browser in $BROWSERS; do
+			set_which "$user" "$browser"
 			# check if user has browser profile
 			if [[ -h $LINK ]]; then
 				rm -f -- "$LINK"
 				[[ -d $STATIC ]] && mv "$STATIC" "$LINK"
-				[[ -d "$VOLATILE/$user-$i" ]] && rm -rf -- "$VOLATILE/$user-$i"
-			else
-				/bin/true
+				[[ -d "$VOLATILE/$user-$browser" ]] && rm -rf -- "$VOLATILE/$user-$browser"
 			fi
 		done
 	done
