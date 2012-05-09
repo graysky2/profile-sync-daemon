@@ -41,20 +41,20 @@ sync() {
 			set_which			
 			# check if user has browser profile
 			if [[ -d $LINK ]]; then
-				[[ -r "$VOLATILE/$user-$i" ]] || su -c "install -dm755 $VOLATILE/$user-$i" $user
+				[[ -r "$VOLATILE/$user-$i" ]] || su -c "install -dm755 '$VOLATILE/$user-$i'" $user
 
 				# backup profile and link to tmpfs
 				if [[ $(readlink "$LINK") != "$VOLATILE/$user-$i" ]]; then
-					mv $LINK $STATIC
-					ln -s $VOLATILE/$user-$i $LINK
+					mv "$LINK" "$STATIC"
+					ln -s "$VOLATILE/$user-$i" "$LINK"
 				fi
 
 				# sync the RAM profile to the disc
 				if [[ -e $LINK/.flagged ]]; then
-					su -c "rsync -a --delete --exclude .flagged $LINK/ $STATIC/" $user
+					su -c "rsync -a --delete --exclude .flagged '$LINK/' '$STATIC/'" $user
 				else
-					su -c "rsync -a $STATIC/ $LINK/" $user
-					su -c "touch $LINK/.flagged" $user
+					su -c "rsync -a '$STATIC/' '$LINK/'" $user
+					su -c "touch '$LINK/.flagged'" $user
 				fi
 			else
 				/bin/true
@@ -79,8 +79,8 @@ check() {
 	for user in $USERS; do
 		for i in $BROWSERS; do
 			set_which
-			[[ -h $LINK ]] && rm -f $LINK
-			[[ -d $STATIC ]] && mv $STATIC $LINK
+			[[ -h $LINK ]] && rm -f -- "$LINK"
+			[[ -d $STATIC ]] && mv "$STATIC" "$LINK"
 		done
 	done
 }
@@ -92,9 +92,9 @@ unsync() {
 			set_which
 			# check if user has browser profile
 			if [[ -h $LINK ]]; then
-				rm -f $LINK
-				[[ -d $STATIC ]] && mv $STATIC $LINK
-				[[ -d "$VOLATILE/$user-$i" ]] && rm -rf $VOLATILE/$user-$i
+				rm -f -- "$LINK"
+				[[ -d $STATIC ]] && mv "$STATIC" "$LINK"
+				[[ -d "$VOLATILE/$user-$i" ]] && rm -rf -- "$VOLATILE/$user-$i"
 			else
 				/bin/true
 			fi
