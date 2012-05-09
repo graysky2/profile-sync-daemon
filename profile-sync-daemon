@@ -12,6 +12,15 @@ set_which() {
 	local browser=$2
 	local homedir="$(su -c 'echo $HOME' $user)"
 
+	# reset global variables
+	STATIC=
+	LINK=
+
+	# skip homeless users
+	if [[ -z $homedir ]]; then
+		return
+	fi
+
 	case "$browser" in
 		chromium)
 			STATIC="$homedir/.config/$browser-backup"
