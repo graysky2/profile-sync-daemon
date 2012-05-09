@@ -29,33 +29,17 @@ set_which() {
 	fi
 
 	case "$browser" in
-		chromium)
+		chromium|google-chome|midori)
 			STATIC="$homedir/.config/$browser-backup"
 			LINK="$homedir/.config/$browser"
 			;;
-		google-chrome)
-			STATIC="$homedir/.config/$browser-backup"
-			LINK="$homedir/.config/$browser"
-			;;
-		midori)
-			STATIC="$homedir/.config/$browser-backup"
-			LINK="$homedir/.config/$browser"
-			;;
-		mozilla)
-			STATIC="$homedir/.$browser-backup"
-			LINK="$homedir/.$browser"
-			;;
-		opera)
-			STATIC="$homedir/.$browser-backup"
-			LINK="$homedir/.$browser"
-			;;
-		opera-next)
+		mozilla|opera|opera-next)
 			STATIC="$homedir/.$browser-backup"
 			LINK="$homedir/.$browser"
 			;;
 		*)
-			# this should never happen
-			exit 1
+			# skip invalid browser entries
+			return
 	esac
 }
 
