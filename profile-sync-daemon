@@ -4,8 +4,12 @@
 # By graysky <graysky AT archlinux DOT us>
 # Inspired by some code originally  written by Colin Verot
 
-BROWSERS="chromium google-chrome midori mozilla opera opera-next" # all supported browsers
 . /etc/psd.conf
+
+# nothing to do if there are no users
+[[ -z $USERS ]] && exit 0
+
+BROWSERS=${BROWSERS:-"chromium google-chrome midori mozilla opera opera-next"} # all supported browsers
 
 set_which() {
 	local user=$1
