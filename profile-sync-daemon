@@ -11,6 +11,9 @@
 
 BROWSERS=${BROWSERS:-"chromium google-chrome midori mozilla opera opera-next"} # all supported browsers
 
+# make it overrideable from the commandline / config
+DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}
+
 set_which() {
 	local user=$1
 	local browser=$2
@@ -57,6 +60,9 @@ set_which() {
 }
 
 sync() {
+	# used to check if psd is active
+	touch "$DAEMON_FILE"
+
 	# sync profiles to tmpfs and back again
 	local browser user
 	for user in $USERS; do
@@ -79,8 +85,6 @@ sync() {
 					su -c "rsync -a '$STATIC/' '$LINK/'" $user
 					su -c "touch '$LINK/.flagged'" $user
 				fi
-			else
-				/bin/true
 			fi
 		done
 	done
@@ -111,6 +115,9 @@ check() {
 }
 
 unsync() {
+	# remove daemon state indicator file
+	rm -f -- "$DAEMON_FILE"
+
 	# restore virgin state of profiles on physical discs
 	local browser user
 	for user in $USERS; do
@@ -132,17 +139,15 @@ case "$1" in
 		;;
 	check)
 		# do not run if the daemon is running
-		[[ ! -f /run/daemons/psd ]] && check
+		[[ ! -f $DAEMON_FILE ]] && check
 		;;
 	sync)
 		sync
 		;;
 	unsync)
 		# make sure the daemon is running
-		[[ -f /run/daemons/psd ]] && unsync
+		[[ -f $DAEMON_FILE ]] && sync && unsync
 		;;
-	*)
-		# keep user from messing with this directly
-		[[ -f /run/daemons/psd ]] && echo "You should not call this script directly, let the /etc/rc.d/psd do it for you!" && exit 1
+	*) ;;
 esac
 exit 0
