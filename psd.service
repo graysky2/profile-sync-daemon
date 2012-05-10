@@ -5,8 +5,8 @@ Wants=local-fs.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/etc/rc.d/psd start
-ExecStop=/etc/rc.d/psd stop
+ExecStart=/usr/bin/profile-sync-daemon sync
+ExecStop=/usr/bin/profile-sync-daemon unsync
 
 [Install]
 WantedBy=multi-user.target
