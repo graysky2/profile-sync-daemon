@@ -6,8 +6,19 @@
 
 . /etc/psd.conf
 
+# nothing to do if there is no conf file
+if [ ! -f /etc/psd.conf ]; then
+	echo "Cannnot find /etc/psd.conf so bailing.  Reinstall package to use profile-sync-daemon."
+	exit 0
+else
+	. /etc/psd.conf
+fi
+
 # nothing to do if there are no users
-[[ -z $USERS ]] && exit 0
+if [ -z $USERS ]; then
+	echo "Must define at least one user in /etc/psd.conf"
+	exit 0
+fi
 
 BROWSERS=${BROWSERS:-"chromium google-chrome midori mozilla opera opera-next"} # all supported browsers
 
