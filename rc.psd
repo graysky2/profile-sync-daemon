@@ -3,6 +3,8 @@
 . /etc/rc.d/functions
 . /etc/psd.conf
 
+export DAEMON_FILE=/run/daemons/psd
+
 case "$1" in
 	start)
 		stat_busy 'Starting Profile-Sync-Daemon'
@@ -19,7 +21,7 @@ case "$1" in
 			fi
 		done
 
-		if [[ -f /run/daemons/psd ]]; then
+		if [[ -f $DAEMON_FILE ]]; then
 			printf "\n${C_FAIL}Error:${C_CLEAR} Profile-Sync-Daemon is already running!"
 			stat_fail && exit 1
 		fi
@@ -30,7 +32,7 @@ case "$1" in
 		;;
 	stop)
 		stat_busy 'Stopping Profile-Sync-Daemon'
-		if [[ ! -f /run/daemons/psd ]]; then
+		if [[ ! -f $DAEMON_FILE ]]; then
 			printf "\n${C_FAIL}Error:${C_CLEAR} Profile-Sync-Daemon is not running, nothing to stop!"
 			stat_fail
 		else
@@ -41,7 +43,7 @@ case "$1" in
 		;;
 	sync)
 		stat_busy 'Syncing browser profiles in tmpfs to physical disc'
-		if [[ ! -f /run/daemons/psd ]]; then
+		if [[ ! -f $DAEMON_FILE ]]; then
 			printf "\n${C_FAIL}Error:${C_CLEAR} Profile-Sync-Daemon is not running... cannot sync!"
 			stat_fail
 		else
@@ -52,7 +54,7 @@ case "$1" in
 	restart)
 		# restart really has no meaning in the traditional sense
 		stat_busy 'Syncing browser profiles in tmpfs to physical disc'
-		if [[ ! -f /run/daemons/psd ]]; then
+		if [[ ! -f $DAEMON_FILE ]]; then
 			printf "\n${C_FAIL}Error:${C_CLEAR} Profile-Sync-Daemon is not running... cannot sync!"
 			stat_fail
 		else
