@@ -40,7 +40,7 @@ set_which() {
 	fi
 
 	case "$browser" in
-		chromium|google-chome|midori)
+		chromium|google-chrome|midori)
 			STATIC="$homedir/.config/$browser-backup"
 			LINK="$homedir/.config/$browser"
 			;;
