@@ -4,6 +4,10 @@ NAME
 SYNOPSIS
 	rc.d [options] psd
 
+	or
+
+	systemctl [options] psd.service
+
 DESCRIPTION
 	Profile-sync-daemon (psd) is a tiny shell script designed to manage your browser's profile in tmpfs and to periodically sync it back to your physical disc (HDD/SSD). This is accomplished via a symlinking step and an innovative use of rsync to maintain back-up and synchronization between the two. One of the major design goals of psd is completely transparent user experience.
 
@@ -21,26 +25,27 @@ SETUP
 	Example: 
 	USERS="bar foo"
 
-	Optionally uncomment and define which browers are to be managed in the BROWSERS array. Note that the default is all browsers unless otherwise defined.
+	Optionally uncomment and define which browsers are to be managed in the BROWSERS array. Note that the default is all browsers unless otherwise defined.
 
 	Optionally redefine the location of your distro's tmpfs. Do this in the VOLATILE variable. Note that for Arch Linux, the default value of "/tmp" should work just fine.
 
-USAGE
+GENERAL USAGE
+	The initial synchronization will occur when the daemon starts. Additionally, cron (if running on your system) will call it to sync or update once per hour. Finally, psd will sync back a final time when it is called to stop. Users can call the daemon to start, stop, or sync like any standard Arch daemon.
+
+	For more, see: https://wiki.archlinux.org/index.php/Profile-sync-daemon
+
+USAGE FOR SYSV USERS
 	Do not call /usr/bin/profile-sync-daemon directly. Instead use the distro provided /usr/bin/rc.d to interact with psd via the daemon script.
 
 	start		Turn on psd. Make symlinks and sync the profile(s) from disc to tmpfs.
 	stop		Turn off psd. Sync the profiles(s) from tmpfs back to disc and remove the symlinks.
 	sync		Sync data between locations. The profile(s) in tmpfs are sync'ed back to the disc and the symlinks are left in place.
-
-	Note that as of version 2.9, a template for systemd is provided for profile-sync-daemon.
-
-	The initial synchronization will occur when the daemon starts. Additionally, cron (if running on your system) will call it to sync or update once per hour. Finally, psd will sync back a final time when it is called to stop. Users can call the daemon to start, stop, or sync like any standard Arch daemon.
 	
 	It is highly recommended to start/stop the daemon at boot/shutdown. This is accomplished by adding psd to the DAEMONS array in /etc/rc.conf like so: 
-	
 	DAEMONS=(... @psd ...)
 
-	For more, see: https://wiki.archlinux.org/index.php/Profile-sync-daemon
+USAGE FOR SYSTEMD USERS
+	For users of systemd, /usr/lib/systemd/system/psd.service is provided and should be used to manage psd.
 
 SUPPORTED BROWSERS AND CAVEATS
 	Currently, the following browsers are auto-detected and managed: Chromium, Firefox, Google-chrome, Midori, and Opera, and Opera-Next.

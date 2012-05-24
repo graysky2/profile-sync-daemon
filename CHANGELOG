@@ -1,3 +1,16 @@
+v3.5
+24-May-2012
+Added a little more verbose message when wishing to call psd to sync manually.
+Updated manpage with systemd info.
+
+v3.4
+11-May-2012
+Corrected small typo which caused a problem with google-chrome-dev.
+
+v3.3
+10-May-2012
+Merged xduugu's commit which improves reliability with systemd and also added a few trivial config checks.
+
 v3.2
 02-Apr-2012
 Corrected typeo for opera-next.  Thanks to FarStar07.

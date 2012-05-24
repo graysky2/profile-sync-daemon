@@ -141,6 +141,11 @@ case "$1" in
 		# make sure the daemon is running
 		[[ -f $DAEMON_FILE ]] && sync && unsync
 		;;
-	*) ;;
+	*) 
+		echo -en "\E[31musage: $0 {sync}"
+		tput sgr0 # reset colors to normal
+		echo
+		echo "sync) force a manual sync"
+		;;
 esac
 exit 0
