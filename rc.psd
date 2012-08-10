@@ -7,20 +7,6 @@ export DAEMON_FILE=/run/daemons/psd
 
 case "$1" in
 	start)
-		stat_busy 'Starting Profile-Sync-Daemon'
-		if [[ -z $USERS ]]; then
-			printf "\n${C_FAIL}Error:${C_CLEAR} Define at least one user in /etc/psd.conf"
-			stat_fail && exit 1
-		fi
-
-		for user in $USERS; do
-			homedir=$(su -c 'echo $HOME' $user)
-			if [[ ! -d $homedir ]]; then
-				printf "\n${C_FAIL}Error:${C_CLEAR} Invalid user defined in /etc/psd.conf"
-				stat_fail && exit 1
-			fi
-		done
-
 		if [[ -f $DAEMON_FILE ]]; then
 			printf "\n${C_FAIL}Error:${C_CLEAR} Profile-Sync-Daemon is already running!"
 			stat_fail && exit 1
@@ -36,7 +22,7 @@ case "$1" in
 			printf "\n${C_FAIL}Error:${C_CLEAR} Profile-Sync-Daemon is not running, nothing to stop!"
 			stat_fail
 		else
-			/usr/bin/profile-sync-daemon sync && /usr/bin/profile-sync-daemon unsync
+			/usr/bin/profile-sync-daemon unsync
 			rm_daemon psd
 			stat_done
 		fi
