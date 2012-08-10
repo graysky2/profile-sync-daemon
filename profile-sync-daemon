@@ -1,12 +1,12 @@
 #!/bin/bash
 # By graysky <graysky AT archlinux DOT us>
-# Inspired by some code originally  written by Colin Verot
+# Inspired by some code originally written by Colin Verot
 
 . /etc/psd.conf
 
 # nothing to do if there is no conf file
 if [ ! -f /etc/psd.conf ]; then
-	echo "Cannnot find /etc/psd.conf so bailing.  Reinstall package to use profile-sync-daemon."
+	echo "Cannnot find /etc/psd.conf so bailing. Reinstall package to use profile-sync-daemon."
 	exit 0
 else
 	. /etc/psd.conf
@@ -31,6 +31,7 @@ set_which() {
 	# reset global variables
 	STATIC=
 	LINK=
+	CRUFT=
 
 	# skip homeless users
 	if [[ -z $homedir ]]; then
@@ -42,9 +43,14 @@ set_which() {
 			STATIC="$homedir/.config/$browser-backup"
 			LINK="$homedir/.config/$browser"
 			;;
-		mozilla|opera|opera-next)
+		opera|opera-next)
 			STATIC="$homedir/.$browser-backup"
 			LINK="$homedir/.$browser"
+			;;
+		mozilla)
+			STATIC="$homedir/.$browser-backup"
+			LINK="$homedir/.$browser"
+			CRUFT=$(find -L $LINK -name urlclassifier3.sqlite |sed "s|.*"$LINK"/||")
 			;;
 		*)
 			# skip invalid browser entries
@@ -73,10 +79,11 @@ sync() {
 
 				# sync the RAM profile to the disc
 				if [[ -e $LINK/.flagged ]]; then
-					su -c "rsync -a --delete --exclude .flagged '$LINK/' '$STATIC/'" $user
+				su -c "rsync -a --delete --exclude .flagged --exclude '$CRUFT' '$LINK/' '$STATIC/'" $user
 				else
-					su -c "rsync -a '$STATIC/' '$LINK/'" $user
+					su -c "rsync -a --exclude '$CRUFT' '$STATIC/' '$LINK/'" $user
 					su -c "touch '$LINK/.flagged'" $user
+					ln -s "$STATIC/$CRUFT" "$LINK/$CRUFT"
 				fi
 			fi
 		done
