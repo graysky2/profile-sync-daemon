@@ -47,10 +47,10 @@ set_which() {
 			STATIC="$homedir/.$browser-backup"
 			LINK="$homedir/.$browser"
 			;;
-        mozilla)
+		mozilla)
 			STATIC="$homedir/.$browser-backup"
 			LINK="$homedir/.$browser"
-            CRUFT=$(find -L $LINK -name urlclassifier3.sqlite |sed "s|.*"$LINK"/||")
+			CRUFT=$(find -L $LINK -name urlclassifier3.sqlite |sed "s|.*"$LINK"/||")
 			;;
 		*)
 			# skip invalid browser entries
