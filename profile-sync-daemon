@@ -5,7 +5,7 @@
 . /etc/psd.conf
 
 # nothing to do if there is no conf file
-if [ ! -f /etc/psd.conf ]; then
+if [[ ! -f /etc/psd.conf ]]; then
 	echo "Cannnot find /etc/psd.conf so bailing.  Reinstall package to use profile-sync-daemon."
 	exit 0
 else
@@ -13,7 +13,7 @@ else
 fi
 
 # nothing to do if there are no users
-if [ -z $USERS ]; then
+if [[ -z "$USERS" ]]; then
 	echo "Must define at least one user in /etc/psd.conf"
 	exit 0
 fi
