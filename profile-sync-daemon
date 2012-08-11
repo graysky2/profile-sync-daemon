@@ -20,6 +20,8 @@ fi
 
 BROWSERS=${BROWSERS:-"chromium google-chrome midori mozilla opera opera-next"} # all supported browsers
 
+[[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
+
 # make it overrideable from the commandline / config
 DAEMON_FILE=${DAEMON_FILE:-"/run/daemons/psd"}
 
@@ -29,8 +31,8 @@ set_which() {
 	local homedir="$(su -c 'echo $HOME' $user)"
 
 	# reset global variables
-	STATIC=
-	LINK=
+	BACKUP=
+	DIR=
 
 	# skip homeless users
 	if [[ -z $homedir ]]; then
@@ -39,12 +41,12 @@ set_which() {
 
 	case "$browser" in
 		chromium|google-chrome|midori)
-			STATIC="$homedir/.config/$browser-backup"
-			LINK="$homedir/.config/$browser"
+			BACKUP="$homedir/.config/$browser-backup"
+			DIR="$homedir/.config/$browser"
 			;;
 		mozilla|opera|opera-next)
-			STATIC="$homedir/.$browser-backup"
-			LINK="$homedir/.$browser"
+			BACKUP="$homedir/.$browser-backup"
+			DIR="$homedir/.$browser"
 			;;
 		*)
 			# skip invalid browser entries
@@ -61,22 +63,23 @@ sync() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			# check if user has browser profile
-			if [[ -d $LINK ]]; then
+
+			# make tmpfs container
+			if [[ -d $DIR ]]; then
 				[[ -r "$VOLATILE/$user-$browser" ]] || su -c "install -dm755 '$VOLATILE/$user-$browser'" $user
 
-				# backup profile and link to tmpfs
-				if [[ $(readlink "$LINK") != "$VOLATILE/$user-$browser" ]]; then
-					mv "$LINK" "$STATIC"
-					ln -s "$VOLATILE/$user-$browser" "$LINK"
+				# backup target and link to tmpfs container
+				if [[ $(readlink "$DIR") != "$VOLATILE/$user-$browser" ]]; then
+					mv "$DIR" "$BACKUP"
+					ln -s "$VOLATILE/$user-$browser" "$DIR"
 				fi
 
-				# sync the RAM profile to the disc
-				if [[ -e $LINK/.flagged ]]; then
-					su -c "rsync -a --delete --exclude .flagged '$LINK/' '$STATIC/'" $user
+				# sync the tmpfs targets to the disc
+				if [[ -e $DIR/.flagged ]]; then
+					su -c "rsync -a --delete --exclude .flagged '$DIR/' '$BACKUP/'" $user
 				else
-					su -c "rsync -a '$STATIC/' '$LINK/'" $user
-					su -c "touch '$LINK/.flagged'" $user
+					su -c "rsync -a '$BACKUP/' '$DIR/'" $user
+					su -c "touch '$DIR/.flagged'" $user
 				fi
 			fi
 		done
@@ -101,15 +104,15 @@ check() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			[[ -h $LINK ]] && rm -f -- "$LINK"
-			[[ -d $STATIC ]] && mv "$STATIC" "$LINK"
+			[[ -h $DIR ]] && unlink "$DIR"
+			[[ -d $BACKUP ]] && mv "$BACKUP" "$DIR"
 		done
 	done
 }
 
 unsync() {
 	# remove daemon state indicator file
-	rm -f -- "$DAEMON_FILE"
+	rm -f "$DAEMON_FILE"
 
 	# restore virgin state of profiles on physical discs
 	local browser user
@@ -117,10 +120,14 @@ unsync() {
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
 			# check if user has browser profile
-			if [[ -h $LINK ]]; then
-				rm -f -- "$LINK"
-				[[ -d $STATIC ]] && mv "$STATIC" "$LINK"
-				[[ -d "$VOLATILE/$user-$browser" ]] && rm -rf -- "$VOLATILE/$user-$browser"
+			if [[ -h "$DIR" ]]; then
+				unlink "$DIR"
+				# this assumes that the backup is always updated so be sure to invoke a sync
+				# before an unsync
+				#
+				# restore original dirtree
+				[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
+				[[ -d "$VOLATILE/$user-$browser" ]] && rm -rf "$VOLATILE/$user-$browser"
 			fi
 		done
 	done
