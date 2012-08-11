@@ -1,3 +1,7 @@
+v3.10
+11-Aug-2012
+Updated initscript to match pidfile in script.
+
 v3.9
 11-Aug-2012
 Fixed systemd compt. issue - thanks xduugu.
