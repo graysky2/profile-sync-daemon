@@ -30,7 +30,7 @@ SETUP
 	Optionally redefine the location of your distro's tmpfs. Do this in the VOLATILE variable. Note that for Arch Linux, the default value of "/tmp" should work just fine.
 
 GENERAL USAGE
-	The initial synchronization will occur when the daemon starts. Additionally, cron (if running on your system) will call it to sync or update once per hour. Finally, psd will sync back a final time when it is called to stop. Users can call the daemon to start, stop, or sync like any standard Arch daemon.
+	The initial synchronization will occur when the daemon starts. Additionally, cron (if running on your system) will call it to sync or update once per hour. Finally, psd will sync back a final time when it is called to stop. Users can call the daemon to start or stop like any standard Arch daemon.
 
 	For more, see: https://wiki.archlinux.org/index.php/Profile-sync-daemon
 
@@ -39,7 +39,6 @@ USAGE FOR SYSV USERS
 
 	start		Turn on psd. Make symlinks and sync the profile(s) from disc to tmpfs.
 	stop		Turn off psd. Sync the profiles(s) from tmpfs back to disc and remove the symlinks.
-	sync		Sync data between locations. The profile(s) in tmpfs are sync'ed back to the disc and the symlinks are left in place.
 	
 	It is highly recommended to start/stop the daemon at boot/shutdown. This is accomplished by adding psd to the DAEMONS array in /etc/rc.conf like so: 
 	DAEMONS=(... @psd ...)
