@@ -6,6 +6,10 @@ v3.7
 10-Aug-2012
 Minor updates to init files and manpage.
 
+v3.6
+27-Jul-2012 	
+Minor fixes.
+
 v3.5
 24-May-2012
 Added a little more verbose message when wishing to call psd to sync manually.
