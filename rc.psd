@@ -3,7 +3,7 @@
 . /etc/rc.d/functions
 . /etc/psd.conf
 
-export DAEMON_FILE=/run/daemons/psd
+export DAEMON_FILE=/run/psd
 
 case "$1" in
 	start)
