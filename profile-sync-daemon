@@ -135,6 +135,7 @@ case "$1" in
 		[[ ! -f $DAEMON_FILE ]] && check
 		;;
 	sync)
+		[[ ! -f $DAEMON_FILE ]] && check
 		sync
 		;;
 	unsync)
