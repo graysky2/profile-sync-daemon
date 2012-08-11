@@ -1,3 +1,7 @@
+v3.9
+11-Aug-2012
+Fixed systemd compt. issue - thanks xduugu.
+
 v3.8
 11-Aug-2012
 Minor modifications and bug fixes to crash recovery.
