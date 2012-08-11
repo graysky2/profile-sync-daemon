@@ -23,7 +23,7 @@ BROWSERS=${BROWSERS:-"chromium google-chrome midori mozilla opera opera-next"} #
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
 
 # make it overrideable from the commandline / config
-DAEMON_FILE=${DAEMON_FILE:-"/run/daemons/psd"}
+DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}
 
 set_which() {
 	local user=$1
