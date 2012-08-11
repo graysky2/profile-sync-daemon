@@ -130,10 +130,6 @@ case "$1" in
 	debug)
 		debug
 		;;
-	check)
-		# do not run if the daemon is running
-		[[ ! -f $DAEMON_FILE ]] && check
-		;;
 	sync)
 		[[ ! -f $DAEMON_FILE ]] && check
 		sync
