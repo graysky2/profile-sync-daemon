@@ -1,3 +1,7 @@
+v3.11
+25-Aug-2012
+Added support for qupzilla.
+
 v3.10
 11-Aug-2012
 Updated initscript to match pidfile in script.
