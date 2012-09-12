@@ -1,2 +1,2 @@
 #!/bin/sh
-/usr/bin/profile-sync-daemon sync &> /dev/null
+/usr/bin/profile-sync-daemon resync >/dev/null 2>&1
