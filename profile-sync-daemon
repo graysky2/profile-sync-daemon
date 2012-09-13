@@ -141,6 +141,9 @@ case "$1" in
 		[[ ! -f $DAEMON_FILE ]] && check
 		sync
 		;;
+	resync)
+		[[ -f $DAEMON_FILE ]] && sync
+		;;
 	unsync)
 		# make sure the daemon is running
 		[[ -f $DAEMON_FILE ]] && sync && unsync
