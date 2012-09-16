@@ -18,7 +18,7 @@ if [[ -z "$USERS" ]]; then
 	exit 0
 fi
 
-BROWSERS=${BROWSERS:-"chromium google-chrome midori mozilla opera opera-next qupzilla"} # all supported browsers
+BROWSERS=${BROWSERS:-"chromium google-chrome midori mozilla opera opera-next qupzilla conkeror.mozdev.org"} # all supported browsers
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
 
@@ -44,7 +44,7 @@ set_which() {
 			BACKUP="$homedir/.config/$browser-backup"
 			DIR="$homedir/.config/$browser"
 			;;
-		mozilla|opera|opera-next|qupzilla)
+		mozilla|opera|opera-next|qupzilla|conkeror.mozdev.org)
 			BACKUP="$homedir/.$browser-backup"
 			DIR="$homedir/.$browser"
 			;;
