@@ -1,3 +1,11 @@
+v3.13
+16-Sep-2012
+Added support for conkeror.
+
+v3.12
+13-Sep-2012
+Fixed cron starting if daemon is not running.
+
 v3.11
 25-Aug-2012
 Added support for qupzilla.
