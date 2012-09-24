@@ -1,6 +1,6 @@
 #!/bin/bash
 # By graysky <graysky AT archlinux DOT us>
-# Inspired by some code originally  written by Colin Verot
+# Inspired by some code originally written by Colin Verot
 
 . /etc/psd.conf
 
@@ -28,7 +28,8 @@ DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}
 set_which() {
 	local user=$1
 	local browser=$2
-	local homedir="$(su -c 'echo $HOME' $user)"
+	homedir="$(getent passwd $SUDO_USER | grep $user | cut -d: -f6)"
+	group="$(stat -c %G $homedir)"
 
 	# reset global variables
 	BACKUP=
@@ -66,20 +67,21 @@ sync() {
 
 			# make tmpfs container
 			if [[ -d $DIR ]]; then
-				[[ -r "$VOLATILE/$user-$browser" ]] || su -c "install -dm755 '$VOLATILE/$user-$browser'" $user
+				[[ -r "$VOLATILE/$user-$browser" ]] || install -dm755 --owner=$user --group=$group "$VOLATILE/$user-$browser"
 
 				# backup target and link to tmpfs container
 				if [[ $(readlink "$DIR") != "$VOLATILE/$user-$browser" ]]; then
 					mv "$DIR" "$BACKUP"
 					ln -s "$VOLATILE/$user-$browser" "$DIR"
+					chown -h $user:$group "$DIR"
 				fi
 
 				# sync the tmpfs targets to the disc
 				if [[ -e $DIR/.flagged ]]; then
-					su -c "rsync -a --delete --exclude .flagged '$DIR/' '$BACKUP/'" $user
+					rsync -aog --delete --exclude .flagged "$DIR/" "$BACKUP/"
 				else
-					su -c "rsync -a '$BACKUP/' '$DIR/'" $user
-					su -c "touch '$DIR/.flagged'" $user
+					rsync -aog "$BACKUP/" "$DIR/"
+					touch "$DIR/.flagged"
 				fi
 			fi
 		done
@@ -92,7 +94,7 @@ debug() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			echo $user:$homedir:$browser
+			echo $user:$group:$browser:$homedir
 		done
 	done
 }
@@ -149,10 +151,13 @@ case "$1" in
 		[[ -f $DAEMON_FILE ]] && sync && unsync
 		;;
 	*) 
-		echo -en "\E[31musage: $0 {sync}"
+		echo -en "\E[31musage: "
 		tput sgr0 # reset colors to normal
+		echo "$0 {sync|unsync|debug}"
 		echo
-		echo "sync) force a manual sync"
+		echo "sync) force a manual sync."
+		echo "unsync) force a manual unsync."
+		echo "debug) parge config file to make sure vars are correctly defined."
 		;;
 esac
 exit 0

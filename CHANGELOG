@@ -1,3 +1,8 @@
+v3.14
+24-Sep-2012
+Eliminated su command because of irritating pam_mount password monitor after every su $user.
+Issue reported by and fixed by gentoo user lyzkov.
+
 v3.13
 16-Sep-2012
 Added support for conkeror.
