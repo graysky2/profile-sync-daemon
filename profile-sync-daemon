@@ -89,16 +89,20 @@ sync() {
 }
 
 debug() {
-	# sync profiles to tmpfs and back again
+	echo "::DEBUG MODE::"
+	echo
 	local browser user
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			echo $user:$group:$browser:$homedir
+			echo user: $user
+			echo group: $group
+			echo homedir: $homedir
+			echo browser: $browser
+			echo
 		done
 	done
 }
-
 
 check() {
 	# crash recovery
