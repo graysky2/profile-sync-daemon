@@ -28,7 +28,7 @@ DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}
 set_which() {
 	local user=$1
 	local browser=$2
-	homedir="$(getent passwd $SUDO_USER | grep $user | cut -d: -f6)"
+	homedir="$(getent passwd $user | cut -d: -f6)"
 	group="$(stat -c %G $homedir)"
 
 	# reset global variables
