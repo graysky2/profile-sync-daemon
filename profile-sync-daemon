@@ -89,7 +89,9 @@ sync() {
 }
 
 debug() {
-	echo "::DEBUG MODE::"
+	echo -en "\E[31m::DEBUG MODE::"
+	tput sgr0 # reset colors to normal
+	echo
 	echo
 	local browser user
 	for user in $USERS; do
