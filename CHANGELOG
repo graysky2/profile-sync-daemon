@@ -1,3 +1,7 @@
+v3.16
+16-Oct-2012
+Rsync runs in a safer mode during syncs.
+
 v3.15
 24-Sep-2012
 Corrected homedir code.
