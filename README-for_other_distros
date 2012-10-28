@@ -47,7 +47,7 @@ USAGE FOR SYSTEMD USERS
 	For users of systemd, /usr/lib/systemd/system/psd.service is provided and should be used to manage psd.
 
 SUPPORTED BROWSERS AND CAVEATS
-	Currently, the following browsers are auto-detected and managed: Chromium, Conkeror, Firefox, Google-chrome, Midori, and Opera, Opera-Next, and QupZilla.
+	Currently, the following browsers are auto-detected and managed: Chromium, Conkeror, Firefox (stable,beta,aurora), Google-chrome, Heftig's version of Aurora, Midori, Opera, Opera-Next, and QupZilla.
 
 	Note that some browsers such as Chromium, Google-chrome, and Midori, actually keeps their cache directories separately from their browser profile directory. It is not within the scope of profile-sync-daemon to modify this behavior; users are encouraged to modify this behavir. For example, refer to the following url for several work-arounds for the Chrome-based browsers: https://wiki.archlinux.org/index.php/Chromium_Tips_and_Tweaks#Cache_in_tmpfs
 
