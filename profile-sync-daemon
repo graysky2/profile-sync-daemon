@@ -6,7 +6,7 @@
 
 # nothing to do if there is no conf file
 if [[ ! -f /etc/psd.conf ]]; then
-	echo "Cannnot find /etc/psd.conf so bailing.  Reinstall package to use profile-sync-daemon."
+	echo "Cannot find /etc/psd.conf so bailing.  Reinstall package to use profile-sync-daemon."
 	exit 0
 else
 	. /etc/psd.conf
@@ -24,6 +24,17 @@ BROWSERS=${BROWSERS:-"chromium firefox google-chrome heftig-aurora midori opera 
 
 # make it overrideable from the commandline / config
 DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}
+
+root_check() {
+	# we call this to ensure that only the root user is calling the function
+	# why care? both the sync and unsync functions require root access to /run/psd (the pseudo pid file)
+	# running as unprivileged user will fuck up the sync process resulting in unhappy users
+
+	if [[ $EUID -ne 0 ]]; then
+		echo "This function must be called as root!" 1>&2
+		exit 1
+	fi
+}
 
 set_which() {
 	local user=$1
@@ -64,6 +75,8 @@ set_which() {
 }
 
 sync() {
+	root_check
+
 	# used to check if psd is active
 	touch "$DAEMON_FILE"
 
@@ -119,6 +132,8 @@ debug() {
 }
 
 check() {
+	root_check
+
 	# crash recovery
 	local browser user
 	for user in $USERS; do
@@ -131,6 +146,8 @@ check() {
 }
 
 unsync() {
+	root_check
+
 	# remove daemon state indicator file
 	rm -f "$DAEMON_FILE"
 
@@ -172,10 +189,9 @@ case "$1" in
 		echo -en "\E[31musage: "
 		tput sgr0 # reset colors to normal
 		echo "$0 {sync|unsync|debug}"
-		echo
-		echo "sync) force a manual sync."
-		echo "unsync) force a manual unsync."
-		echo "debug) parge config file to make sure vars are correctly defined."
+		echo "  sync) Force a manual sync."
+		echo "unsync) Force a manual unsync."
+		echo " debug) Parse config file to make sure vars are correctly defined."
 		;;
 esac
 exit 0
