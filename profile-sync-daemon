@@ -101,15 +101,19 @@ debug() {
 	tput sgr0 # reset colors to normal
 	echo
 	echo
+	echo "Your settings in /etc/psd.conf will make profile-sync-daemon manage the following browers/user combos when invoked:"
+	echo
 	local browser user
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			echo user: $user
-			echo group: $group
-			echo homedir: $homedir
-			echo browser: $browser
-			echo
+			if [[ -d "$DIR" ]]; then
+				echo "owner/group:       $user:$group"
+				echo "browser to manage: $browser"
+				echo "homedir:           $homedir"
+				echo "backup target:     $BACKUP"
+				echo
+			fi
 		done
 	done
 }
