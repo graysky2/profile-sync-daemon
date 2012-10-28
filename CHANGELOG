@@ -1,6 +1,8 @@
-v3.17
+v4.00
 28-Oct-2012
 Added support for heftig's version of aurora.
+Added more verbose debug mode.
+Had to bump version number to 4.00 for upgrade logic checking.
 
 v3.16
 16-Oct-2012
