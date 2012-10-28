@@ -18,7 +18,7 @@ if [[ -z "$USERS" ]]; then
 	exit 0
 fi
 
-BROWSERS=${BROWSERS:-"chromium firefox google-chrome heftig-aurora midori opera opera-next qupzilla conkeror.mozdev.org"} # all supported browsers
+BROWSERS=${BROWSERS:-"chromium firefox google-chrome heftig-aurora midori mozilla opera opera-next qupzilla conkeror.mozdev.org"} # all supported browsers
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
 
@@ -41,7 +41,7 @@ set_which() {
 	fi
 
 	case "$browser" in
-		firefox)
+		firefox|mozilla)
 			BACKUP="$homedir/.mozilla/$browser-backup"
 			DIR="$homedir/.mozilla/$browser"
 			;;
