@@ -2,66 +2,77 @@ NAME
 	profile-sync-daemon - Symlinks and syncs browser profile dirs to RAM thus reducing HDD/SDD calls and speeding-up browsers.
 
 SYNOPSIS
+	systemctl [options] psd.service
+	
+	or
+	
 	rc.d [options] psd
 
-	or
-
-	systemctl [options] psd.service
-
 DESCRIPTION
-	Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browser's profile in tmpfs and to periodically sync it back to your physical disc (HDD/SSD). This is accomplished via a symlinking step and an innovative use of rsync to maintain back-up and synchronization between the two. One of the major design goals of psd is completely transparent user experience.
+	Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browser profile(s) in tmpfs and to periodically sync back to physical disc (HDD/SSD). This is accomplished via a symlinking step and an innovative use of rsync to maintain back-up and synchronization between the two. One of the major design goals of psd is a completely transparent user experience.
 
 	Running this daemon is beneficial for two reasons:
 	1. Reduced wear to physical discs
 	2. Speed
 
-	Since the profile(s), browser cache, etc. are relocated into tmpfs, the corresponding onslaught of I/O associated with using the browser is also redirected from the physical disc to RAM, thus reducing wear to the physical disc and also greatly improving browser speed and responsiveness. The access time of RAM is on the order of nanoseconds while the access time of physical discs is on the order of milliseconds. This is a difference of six orders of magnitude or 1,000,000 times faster.
+	Since the profile(s), browser cache, etc. are relocated into tmpfs (RAM disk), the corresponding onslaught of I/O associated with using the browser is also redirected from the physical disc to RAM, thus reducing wear to the physical disc and also greatly improving browser speed and responsiveness. For example, the access time of RAM is on the order of nanoseconds while the access time of physical discs is on the order of milliseconds. This is a difference of six orders of magnitude or 1,000,000 times faster.
 
 SETUP
-	All settings are defined in /etc/psd.conf which is included in the package.
-	
-	At a minimum, define which user(s) will have their profiles managed by psd and note that at least one user must be defined.
+	User managed settings are defined in /etc/psd.conf which is included in the package. At a minimum, define which user(s) will have their profiles managed by psd and note that at least one user must be defined.
 
 	Example: 
 	USERS="bar foo"
 
-	Optionally uncomment and define which browsers are to be managed in the BROWSERS array. Note that the default is all browsers unless otherwise defined.
-
-	Optionally redefine the location of your distro's tmpfs. Do this in the VOLATILE variable. Note that for Arch Linux, the default value of "/tmp" should work just fine.
+	o Optionally uncomment and define which browsers are to be managed in the BROWSERS array. Note that the default is all browsers unless otherwise defined.
+	o Optionally redefine the location of your distro's tmpfs. Do this in the VOLATILE variable. Note that for Arch Linux, the default value of "/tmp" should work just fine.
 
 GENERAL USAGE
 	The initial synchronization will occur when the daemon starts. Additionally, cron (if running on your system) will call it to sync or update once per hour. Finally, psd will sync back a final time when it is called to stop. Users can call the daemon to start or stop like any standard Arch daemon.
 
-	For more, see: https://wiki.archlinux.org/index.php/Profile-sync-daemon
+	Do not call /usr/bin/profile-sync-daemon directly. Instead use the provided daemon files to interact with psd.
+	
+USAGE FOR SYSTEMD USERS
+	/usr/lib/systemd/system/psd.service is provided and should be used to manage psd.
+	
+	# systemctl ACTION psd.service
+
+	start			Turn on psd. Make symlinks and sync the profile(s) from disc to tmpfs.
+	stop			Turn off psd. Sync the profiles(s) from tmpfs back to disc and remove the symlinks.
+	enable		Autostart psd (recommended).
+	disable		Remove psd from the list of autostart daemons.
 
 USAGE FOR SYSV USERS
-	Do not call /usr/bin/profile-sync-daemon directly. Instead use the distro provided /usr/bin/rc.d to interact with psd via the daemon script.
+	/etc/rc.d/psd is provided and should be used to manage psd.
 
-	start		Turn on psd. Make symlinks and sync the profile(s) from disc to tmpfs.
-	stop		Turn off psd. Sync the profiles(s) from tmpfs back to disc and remove the symlinks.
+	# /etc/rc.d/psd ACTION
+
+	start			Turn on psd. Make symlinks and sync the profile(s) from disc to tmpfs.
+	stop			Turn off psd. Sync the profiles(s) from tmpfs back to disc and remove the symlinks.
 	
 	It is highly recommended to start/stop the daemon at boot/shutdown. This is accomplished by adding psd to the DAEMONS array in /etc/rc.conf like so: 
-	DAEMONS=(... @psd ...)
-
-USAGE FOR SYSTEMD USERS
-	For users of systemd, /usr/lib/systemd/system/psd.service is provided and should be used to manage psd.
+	DAEMONS=(... psd ...)
 
 SUPPORTED BROWSERS AND CAVEATS
 	Currently, the following browsers are auto-detected and managed:
-	*Chromium
-	*Conkeror
-	*Firefox (stable,beta,aurora)
-	*Google-chrome
-	*Heftig's version of Aurora (https://bbs.archlinux.org/viewtopic.php?id=117157)
-	*Midori
-	*Opera
-	*Opera-Next
-	*QupZilla.
+	o Chromium
+	o Conkeror
+	o Firefox (stable,beta,aurora)
+	o Google-chrome
+	o Heftig's version of Aurora (https://bbs.archlinux.org/viewtopic.php?id=117157)
+	o Midori
+	o Opera
+	o Opera-Next
+	o QupZilla
 
 	Note that some browsers such as Chromium, Google-chrome, and Midori, actually keeps their cache directories separately from their browser profile directory. It is not within the scope of profile-sync-daemon to modify this behavior; users are encouraged to modify this behavir. For example, refer to the following url for several work-arounds for the Chrome-based browsers: https://wiki.archlinux.org/index.php/Chromium_Tips_and_Tweaks#Cache_in_tmpfs
 
+	For more, see: https://wiki.archlinux.org/index.php/Profile-sync-daemon
+
+CONTRIBUTE
+	Should you wish to contribute to this code, please fork and send a pull request. Source is freely available on github: https://github.com/graysky2/profile-sync-daemon
+
 BUGS
-	No known bugs.
+	It is known that on slow systems with large profiles, the sync'ing step sometimes take longer than the boot-up of the WM. Therefore, users can theoretically start their browser before the profile has been transitioned to tmpfs. This is particularly prevalent on systems with slow HDDs running systemd.
 
 AUTHOR
 	graysky (graysky AT archlinux DOT us)

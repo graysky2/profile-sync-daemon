@@ -2,8 +2,6 @@
 # By graysky <graysky AT archlinux DOT us>
 # Inspired by some code originally written by Colin Verot
 
-. /etc/psd.conf
-
 # nothing to do if there is no conf file
 if [[ ! -f /etc/psd.conf ]]; then
 	echo "Cannot find /etc/psd.conf so bailing.  Reinstall package to use profile-sync-daemon."
