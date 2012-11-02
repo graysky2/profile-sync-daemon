@@ -1,5 +1,5 @@
 [Unit]
-Description=Symlinks and syncs browser profile dirs to RAM thus reducing HDD/SDD calls and speeding-up browsers
+Description=Profile-sync-daemon
 Wants=local-fs.target
 
 [Service]
