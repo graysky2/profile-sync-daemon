@@ -50,10 +50,15 @@ set_which() {
 	fi
 
 	case "$browser" in
-		chromium|google-chrome|midori)
+		chromium|midori)
 			BACKUP="$homedir/.config/$browser-backup"
 			DIR="$homedir/.config/$browser"
 			ENAME="$browser"
+			;;
+		google-chrome)
+			BACKUP="$homedir/.config/$browser-backup"
+			DIR="$homedir/.config/$browser"
+			ENAME="chrome"
 			;;
 		firefox)
 			BACKUP="$homedir/.mozilla/firefox-backup"
