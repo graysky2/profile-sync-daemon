@@ -1,7 +1,7 @@
 v4.10
 04-Nov-2012
-Psd now kills browser if the user or init system is called to stop daemon while the browser is open.
-This is a _good_ thing for maintaining profile data integrity.
+Psd now kills open browsers if the user or init system is called to stop the daemon while the browser is open.
+This is a _good_ thing for maintaining profile data integrity!
 
 v4.03
 02-Nov-2012
