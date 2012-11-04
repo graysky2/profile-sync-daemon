@@ -53,18 +53,28 @@ set_which() {
 		chromium|google-chrome|midori)
 			BACKUP="$homedir/.config/$browser-backup"
 			DIR="$homedir/.config/$browser"
+			ENAME="$browser"
 			;;
 		firefox)
 			BACKUP="$homedir/.mozilla/firefox-backup"
 			DIR="$homedir/.mozilla/firefox"
+			ENAME="$browser"
 			;;
 		heftig-aurora)
+			# https://bbs.archlinux.org/viewtopic.php?id=117157
 			BACKUP="$homedir/.mozilla/aurora-backup"
 			DIR="$homedir/.mozilla/aurora"
+			ENAME="aurora"
 			;;
-		opera|opera-next|qupzilla|conkeror.mozdev.org)
+		opera|opera-next|qupzilla)
 			BACKUP="$homedir/.$browser-backup"
 			DIR="$homedir/.$browser"
+			ENAME="$browser"
+			;;
+		conkeror.mozdev.org)
+			BACKUP="$homedir/.$browser-backup"
+			DIR="$homedir/.$browser"
+			ENAME="xulrunner"
 			;;
 		*)
 			# skip invalid browser entries
@@ -154,6 +164,21 @@ unsync() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
+			
+			# kill browser if running to safely sync back to disk thus safeguarding browser profile
+			x=1
+			while [[ $x -le 5 ]]; do
+				if [[ -n $(pgrep -u $user $ENAME) ]]; then
+					pkill -SIGTERM -u $user $ENAME
+					sleep 1s
+				else
+					/bin/true
+				fi
+				x=$(( $x + 1 ))
+			done
+
+			### Do we need a secondary, more powerful method of killing if the first fails?
+
 			# check if user has browser profile
 			if [[ -h "$DIR" ]]; then
 				unlink "$DIR"
