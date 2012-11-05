@@ -1,3 +1,7 @@
+v4.11
+05-Nov-2012
+Debug mode now shows psd version and cosmetic tweak.
+
 v4.10
 04-Nov-2012
 Psd now kills open browsers if the user or init system is called to stop the daemon while the browser is open.
