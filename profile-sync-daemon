@@ -2,6 +2,8 @@
 # By graysky <graysky AT archlinux DOT us>
 # Inspired by some code originally written by Colin Verot
 
+PSD_VERS="4.11"
+
 # nothing to do if there is no conf file
 if [[ ! -f /etc/psd.conf ]]; then
 	echo "Cannot find /etc/psd.conf so bailing.  Reinstall package to use profile-sync-daemon."
@@ -126,16 +128,17 @@ debug() {
 	echo -en "\E[31m::DEBUG MODE::"
 	tput sgr0 # reset colors to normal
 	echo
+	echo "profile-sync-daemon version: $PSD_VERS"
 	echo
-	echo "Your settings in /etc/psd.conf will make profile-sync-daemon manage the following browers/user combos when invoked:"
+	echo "settings in /etc/psd.conf will make profile-sync-daemon manage the following browers/user combos when invoked:"
 	echo
 	local browser user
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
 			if [[ -d "$DIR" ]]; then
-				echo "owner/group:       $user:$group"
 				echo "browser to manage: $browser"
+				echo "owner/group:       $user:$group"
 				echo "homedir:           $homedir"
 				echo "backup target:     $BACKUP"
 				echo
