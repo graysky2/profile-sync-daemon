@@ -3,4 +3,5 @@ Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browse
 
 ##Links
 * AUR Package: https://aur.archlinux.org/packages/profile-sync-daemon
+* Ebuild: http://packages.gentoo.org/package/www-misc/profile-sync-daemon
 * Wiki: https://wiki.archlinux.org/index.php/Profile-sync-daemon
