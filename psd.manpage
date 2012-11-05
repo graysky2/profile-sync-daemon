@@ -74,6 +74,12 @@ Turn off \fIpsd\fP. Sync the \fBprofiles\fP(s) from tmpfs back to disc and remov
 .PP
 It is highly recommended to start/stop the daemon at boot/shutdown. This is accomplished by adding \fIpsd\fP to the DAEMONS array in /etc/rc.conf like so: 
 \fBDAEMONS=\fP(\.\.\. \fIpsd\fP \.\.\.)
+.SH DEBUG MODE
+The debug option can be called to show users exactly what \fIpsd\fP will do based on the /etc/psd.conf entered. Call it like so:
+.PP
+$ profile-sync-daemon debug
+.PP
+As stated above, if no specific browser \fBor\fP set of browsers are defined in the BROWSERS array, \fIpsd\fP will sync ALL profiles that it finds for the given user.
 .SH SUPPORTED BROWSERS AND CAVEATS
 Currently, the following browsers are auto-detected and managed:
 .IP \(bu 3

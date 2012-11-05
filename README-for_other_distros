@@ -52,6 +52,13 @@ USAGE FOR SYSV USERS
 	It is highly recommended to start/stop the daemon at boot/shutdown. This is accomplished by adding psd to the DAEMONS array in /etc/rc.conf like so: 
 	DAEMONS=(... psd ...)
 
+DEBUG MODE
+	The debug option can be called to show users exactly what psd will do based on the /etc/psd.conf entered. Call it like so:
+
+	$ profile-sync-daemon debug
+
+	As stated above, if no specific browser or set of browsers are defined in the BROWSERS array, psd will sync ALL profiles that it finds for the given user.
+
 SUPPORTED BROWSERS AND CAVEATS
 	Currently, the following browsers are auto-detected and managed:
 	o Chromium
