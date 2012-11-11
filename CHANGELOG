@@ -1,3 +1,7 @@
+v4.13
+11-Nov-2012
+Reworked check function.  Better crash recovery.
+
 v4.12
 10-Nov-2012
 Minor tweak to manpage.
