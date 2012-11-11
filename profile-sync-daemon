@@ -2,7 +2,7 @@
 # By graysky <graysky AT archlinux DOT us>
 # Inspired by some code originally written by Colin Verot
 
-PSD_VERS="4.12"
+PSD_VERS="4.13"
 
 # nothing to do if there is no conf file
 if [[ ! -f /etc/psd.conf ]]; then
