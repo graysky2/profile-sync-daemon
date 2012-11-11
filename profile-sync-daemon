@@ -2,7 +2,7 @@
 # By graysky <graysky AT archlinux DOT us>
 # Inspired by some code originally written by Colin Verot
 
-PSD_VERS="4.11"
+PSD_VERS="4.12"
 
 # nothing to do if there is no conf file
 if [[ ! -f /etc/psd.conf ]]; then
@@ -148,15 +148,21 @@ debug() {
 }
 
 check() {
-	root_check
+	# if the machine was ungracefully shutdown then the backup will be on the filesystem
+	# and the link to tmpfs will be on the filesystem but the contents will be empty
+	# we need to simply remove the link and rotate the backup into place
 
-	# crash recovery
+	root_check
 	local browser user
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			[[ -h $DIR ]] && unlink "$DIR"
-			[[ -d $BACKUP ]] && mv "$BACKUP" "$DIR"
+			if [[ -e "$DIR/.flagged" ]]; then # all is well so continue
+				/bin/true
+			else
+				[[ -h "$DIR" ]] && unlink "$DIR"
+				[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
+			fi
 		done
 	done
 }
@@ -172,7 +178,7 @@ unsync() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			
+
 			# kill browser if running to safely sync back to disk thus safeguarding browser profile
 			x=1
 			while [[ $x -le 5 ]]; do
