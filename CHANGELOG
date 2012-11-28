@@ -1,3 +1,9 @@
+v5.03
+27-Nov-2012
+Moved to array-based profiles for internal logic.
+Will parse through firefox/aurora ~/.mozilla/<BROWSER>/profiles.ini for syncs. This means that users may have profiles located outside of home dir.
+Will not start if managed browser(s) are running by a managed user.
+
 v4.13
 11-Nov-2012
 Reworked check function.  Better crash recovery.
