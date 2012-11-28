@@ -1,20 +1,20 @@
 #!/bin/bash
-# By graysky <graysky AT archlinux DOT us>
-# Inspired by some code originally written by Colin Verot
+PSD_VERS="5.03"
 
-PSD_VERS="4.13"
+### Arrays
+# ProfileArray is transient used to store profile paths parsed from firefox from and aurora
+# DIRArray is a full path corrected for both relative and absolute paths
 
-# nothing to do if there is no conf file
 if [[ ! -f /etc/psd.conf ]]; then
-	echo "Cannot find /etc/psd.conf so bailing.  Reinstall package to use profile-sync-daemon."
+	echo "Cannot find /etc/psd.conf so bailing.  Reinstall package to use profile-sync-daemon."	# nothing to do if there is no conf file
 	exit 1
 else
 	. /etc/psd.conf
 fi
 
-# nothing to do if there are no users
 if [[ -z "$USERS" ]]; then
-	echo "Must define at least one user in /etc/psd.conf"
+	echo "Must define at least one user in /etc/psd.conf"	# nothing to do if there are no users
+
 	exit 1
 fi
 
@@ -22,8 +22,7 @@ BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox google-chrome heftig-
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
 
-# make it overrideable from the commandline / config
-DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}
+DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}	# make it overrideable from the commandline / config
 
 root_check() {
 	# we call this to ensure that only the root user is calling the function
@@ -39,10 +38,13 @@ root_check() {
 set_which() {
 	local user=$1
 	local browser=$2
+
 	homedir="$(getent passwd $user | cut -d: -f6)"
 	group="$(stat -c %G $homedir)"
 
-	# reset global variables
+	# reset global variables and arrays
+	unset ProfileArray DIRArray
+	PSNAME=
 	BACKUP=
 	DIR=
 
@@ -53,35 +55,53 @@ set_which() {
 
 	case "$browser" in
 		chromium|midori)
-			BACKUP="$homedir/.config/$browser-backup"
-			DIR="$homedir/.config/$browser"
-			ENAME="$browser"
+			DIRArray[0]="$homedir/.config/$browser"
+			PSNAME="$browser"
 			;;
 		google-chrome)
-			BACKUP="$homedir/.config/$browser-backup"
-			DIR="$homedir/.config/$browser"
-			ENAME="chrome"
+			DIRArray[0]="$homedir/.config/$browser"
+			PSNAME="chrome"
 			;;
 		firefox)
-			BACKUP="$homedir/.mozilla/firefox-backup"
-			DIR="$homedir/.mozilla/firefox"
-			ENAME="$browser"
+			# build DIRArrayy
+			if [[ -d $homedir/.mozilla/firefox ]]; then
+				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox/profiles.ini|sed 's/[P,p]ath=//') )
+				index=0
+				PSNAME="$browser"
+				for profileItem in ${profileArr[@]}; do
+					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
+						DIRArray[index]="$profileItem"	# path is not relative
+					else
+						DIRArray[index]="$homedir/.mozilla/firefox/$profileItem"	# we need to append the default path to give a fully qualified path
+					fi
+					index=$index+1
+				done
+			fi
 			;;
 		heftig-aurora)
 			# https://bbs.archlinux.org/viewtopic.php?id=117157
-			BACKUP="$homedir/.mozilla/aurora-backup"
-			DIR="$homedir/.mozilla/aurora"
-			ENAME="aurora"
+			# build DIRArray
+			if [[ -d $homedir/.mozilla/aurora ]]; then
+				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/aurora/profiles.ini|sed 's/[P,p]ath=//') )
+				index=0
+				PSNAME="aurora"
+				for profileItem in ${profileArr[@]}; do
+					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
+						DIRArray[index]="$profileItem"	# path is not relative
+					else
+						DIRArray[index]="$homedir/.mozilla/aurora/$profileItem"	# we need to append the default path to give a fully qualified path
+					fi
+					index=$index+1
+				done
+			fi
 			;;
 		opera|opera-next|qupzilla)
-			BACKUP="$homedir/.$browser-backup"
-			DIR="$homedir/.$browser"
-			ENAME="$browser"
+			DIRArray[0]="$homedir/.$browser"
+			PSNAME="$browser"
 			;;
 		conkeror.mozdev.org)
-			BACKUP="$homedir/.$browser-backup"
-			DIR="$homedir/.$browser"
-			ENAME="xulrunner"
+			DIRArray[0]="$homedir/.$browser"
+			PSNAME="xulrunner"
 			;;
 		*)
 			# skip invalid browser entries
@@ -89,39 +109,45 @@ set_which() {
 	esac
 }
 
-sync() {
-	root_check
+refuse_to_start() {
+	# check for browsers running and kill them to safely sync
+	# without this cannot guarantee profile integrity
+	local browser user
+	for user in $USERS; do
+		for browser in $BROWSERS; do
+			set_which "$user" "$browser"
+			if [[ -n $(pgrep -u $user $PSNAME) ]]; then
+				echo "Refusing to start since $browser is running by $user"
+				echo "Exit this before starting the deamon to avoid data loss!"
+				exit 1
+			else
+				/bin/true
+			fi
+		done
+	done
+}
 
-	# used to check if psd is active
-	touch "$DAEMON_FILE"
-
-	# sync profiles to tmpfs and back again
+kill_browsers() {
+	# check for browsers running and kill them to safely sync
+	# without this cannot guarantee profile integrity
 	local browser user
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
 
-			# make tmpfs container
-			if [[ -d $DIR ]]; then
-				[[ -r "$VOLATILE/$user-$browser" ]] || install -dm755 --owner=$user --group=$group "$VOLATILE/$user-$browser"
-
-				# backup target and link to tmpfs container
-				if [[ $(readlink "$DIR") != "$VOLATILE/$user-$browser" ]]; then
-					mv "$DIR" "$BACKUP"
-					ln -s "$VOLATILE/$user-$browser" "$DIR"
-					chown -h $user:$group "$DIR"
-				fi
-
-				# sync the tmpfs targets to the disc
-				if [[ -e $DIR/.flagged ]]; then
-					rsync -aog --delete-after --delay-updates --exclude .flagged "$DIR/" "$BACKUP/"
+			x=1
+			while [[ $x -le 5 ]]; do
+				if [[ -n $(pgrep -u $user $PSNAME) ]]; then
+					pkill -SIGTERM -u $user $PSNAME
 				else
-					rsync -aog --delay-updates "$BACKUP/" "$DIR/"
-					touch "$DIR/.flagged"
+					/bin/true
 				fi
-			fi
+				x=$(( $x + 1 ))
+			done
+			### Do we need a secondary, more powerful method of killing if the first fails?
 		done
 	done
+	sleep 2s	# pause allowing things to settle one slow machines
 }
 
 debug() {
@@ -136,13 +162,20 @@ debug() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			if [[ -d "$DIR" ]]; then
-				echo "browser to manage: $browser"
-				echo "owner/group:       $user:$group"
-				echo "homedir:           $homedir"
-				echo "backup target:     $BACKUP"
-				echo
-			fi
+			for item in ${DIRArray[@]}; do
+				DIR="$item"
+				BACKUP="$item-backup"
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+
+				if [[ -d "$DIR" ]]; then
+					echo "browser:psname  $browser:$PSNAME"
+					echo "owner/group:    $user:$group"
+					echo "sync target:    $DIR"
+					echo "backup target:  $BACKUP"
+					echo "tmpfs dir:      $VOLATILE/$user-$browser$suffix"
+					echo
+				fi
+			done
 		done
 	done
 }
@@ -153,16 +186,61 @@ check() {
 	# we need to simply remove the link and rotate the backup into place
 
 	root_check
+	local browser user suffix
+	for user in $USERS; do
+		for browser in $BROWSERS; do
+			set_which "$user" "$browser"
+			for item in ${DIRArray[@]}; do
+				DIR="$item"
+				BACKUP="$item-backup"
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+
+				if [[ -e "$DIR/.flagged" ]]; then # all is well so continue
+					/bin/true
+				else
+					[[ -h "$DIR" ]] && unlink "$DIR"
+					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
+				fi
+			done
+		done
+	done
+}
+
+sync() {
+	root_check	# used to check if psd is active
+
+	touch "$DAEMON_FILE"
+
+	# sync profiles to tmpfs and back again
 	local browser user
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			if [[ -e "$DIR/.flagged" ]]; then # all is well so continue
-				/bin/true
-			else
-				[[ -h "$DIR" ]] && unlink "$DIR"
-				[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
-			fi
+			for item in ${DIRArray[@]}; do
+				DIR="$item"
+				BACKUP="$item-backup"
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+
+				# make tmpfs container
+				if [[ -d $DIR ]]; then
+					[[ -r "$VOLATILE/$user-$browser$suffix" ]] || install -dm755 --owner=$user --group=$group "$VOLATILE/$user-$browser$suffix"
+
+					# backup target and link to tmpfs container
+					if [[ $(readlink "$DIR") != "$VOLATILE/$user-$browser$suffix" ]]; then
+						mv "$DIR" "$BACKUP"
+						ln -s "$VOLATILE/$user-$browser$suffix" "$DIR"
+						chown -h $user:$group "$DIR"
+					fi
+
+					# sync the tmpfs targets to the disc
+					if [[ -e $DIR/.flagged ]]; then
+						rsync -aog --delete-after --delay-updates --exclude .flagged "$DIR/" "$BACKUP/"
+					else
+						rsync -aog --delay-updates "$BACKUP/" "$DIR/"
+						touch "$DIR/.flagged"
+					fi
+				fi
+			done
 		done
 	done
 }
@@ -178,31 +256,22 @@ unsync() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
+			for item in ${DIRArray[@]}; do
+				DIR="$item"
+				BACKUP="$item-backup"
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
 
-			# kill browser if running to safely sync back to disk thus safeguarding browser profile
-			x=1
-			while [[ $x -le 5 ]]; do
-				if [[ -n $(pgrep -u $user $ENAME) ]]; then
-					pkill -SIGTERM -u $user $ENAME
-					sleep 1s
-				else
-					/bin/true
+				# check if user has browser profile
+				if [[ -h "$DIR" ]]; then
+					unlink "$DIR"
+					# this assumes that the backup is always updated so be sure to invoke a sync
+					# before an unsync
+					#
+					# restore original dirtree
+					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
+					[[ -d "$VOLATILE/$user-$browser$suffix" ]] && rm -rf "$VOLATILE/$user-$browser$suffix"
 				fi
-				x=$(( $x + 1 ))
 			done
-
-			### Do we need a secondary, more powerful method of killing if the first fails?
-
-			# check if user has browser profile
-			if [[ -h "$DIR" ]]; then
-				unlink "$DIR"
-				# this assumes that the backup is always updated so be sure to invoke a sync
-				# before an unsync
-				#
-				# restore original dirtree
-				[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
-				[[ -d "$VOLATILE/$user-$browser" ]] && rm -rf "$VOLATILE/$user-$browser"
-			fi
 		done
 	done
 }
@@ -212,7 +281,7 @@ case "$1" in
 		debug
 		;;
 	sync)
-		[[ ! -f $DAEMON_FILE ]] && check
+		[[ ! -f $DAEMON_FILE ]] && refuse_to_start && check 
 		sync
 		;;
 	resync)
@@ -220,7 +289,7 @@ case "$1" in
 		;;
 	unsync)
 		# make sure the daemon is running
-		[[ -f $DAEMON_FILE ]] && sync && unsync
+		[[ -f $DAEMON_FILE ]] && sync && kill_browsers && unsync
 		;;
 	*) 
 		echo -en "\E[31musage: "
