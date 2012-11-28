@@ -133,8 +133,8 @@ kill_browsers() {
 
 			x=1
 			while [[ $x -le 5 ]]; do
-				if [[ -n $(pgrep -u $user $PSNAME) ]]; then
-					pkill -SIGTERM -u $user $PSNAME
+				if [[ -n "$PSNAME" ]] && pgrep -u "$user" "$PSNAME" &>/dev/null; then
+					pkill -SIGTERM -u "$user" "$PSNAME"
 				else
 					/bin/true
 				fi
