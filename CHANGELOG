@@ -1,3 +1,7 @@
+v5.06
+28-Nov-2012
+Fix kill_browsers - Only try to kill running browsers when PSNAME is not empty (xduugu).
+
 v5.05
 28-Nov-2012
 Fixed issue with start_check function (xduugu).
