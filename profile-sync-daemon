@@ -1,5 +1,5 @@
 #!/bin/bash
-PSD_VERS="5.03"
+PSD_VERS="5.04"
 
 ### Arrays
 # ProfileArray is transient used to store profile paths parsed from firefox from and aurora
