@@ -1,5 +1,5 @@
 #!/bin/bash
-PSD_VERS="5.04"
+PSD_VERS="5.05"
 
 ### Arrays
 # ProfileArray is transient used to store profile paths parsed from firefox from and aurora
@@ -14,7 +14,6 @@ fi
 
 if [[ -z "$USERS" ]]; then
 	echo "Must define at least one user in /etc/psd.conf"	# nothing to do if there are no users
-
 	exit 1
 fi
 
@@ -63,7 +62,6 @@ set_which() {
 			PSNAME="chrome"
 			;;
 		firefox)
-			# build DIRArrayy
 			if [[ -d $homedir/.mozilla/firefox ]]; then
 				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox/profiles.ini|sed 's/[P,p]ath=//') )
 				index=0
@@ -80,7 +78,6 @@ set_which() {
 			;;
 		heftig-aurora)
 			# https://bbs.archlinux.org/viewtopic.php?id=117157
-			# build DIRArray
 			if [[ -d $homedir/.mozilla/aurora ]]; then
 				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/aurora/profiles.ini|sed 's/[P,p]ath=//') )
 				index=0
@@ -110,15 +107,14 @@ set_which() {
 }
 
 refuse_to_start() {
-	# check for browsers running and kill them to safely sync
+	# check for browsers running and refuse to start if so
 	# without this cannot guarantee profile integrity
 	local browser user
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			if [[ -n $PSNAME ]] && pgrep -u "$user" "$PSNAME" &>/dev/null; then
-				echo "Refusing to start since $browser is running by $user"
-				echo "Exit this before starting the deamon to avoid data loss!"
+			if [[ -n "$PSNAME" ]] && pgrep -u "$user" "$PSNAME" &>/dev/null; then
+				echo "Refusing to start since $browser is running by $user!"
 				exit 1
 			else
 				/bin/true
@@ -147,16 +143,16 @@ kill_browsers() {
 			### Do we need a secondary, more powerful method of killing if the first fails?
 		done
 	done
-	sleep 2s	# pause allowing things to settle one slow machines
+	sleep 2s	# pause allowing things to settle on slow machines
 }
 
 debug() {
-	echo -en "\E[31m::DEBUG MODE::"
-	tput sgr0 # reset colors to normal
+	echo -en "profile-sync-daemon      \E[31m::DEBUG MODE::"
+	tput sgr0 
 	echo
-	echo "profile-sync-daemon version: $PSD_VERS"
+	echo "version: $PSD_VERS"
 	echo
-	echo "settings in /etc/psd.conf will make profile-sync-daemon manage the following browers/user combos when invoked:"
+	echo "/etc/psd.conf will make profile-sync-daemon manage the following:"
 	echo
 	local browser user
 	for user in $USERS; do
@@ -207,11 +203,9 @@ check() {
 }
 
 sync() {
-	root_check	# used to check if psd is active
-
+	root_check
 	touch "$DAEMON_FILE"
 
-	# sync profiles to tmpfs and back again
 	local browser user
 	for user in $USERS; do
 		for browser in $BROWSERS; do
@@ -247,11 +241,8 @@ sync() {
 
 unsync() {
 	root_check
-
-	# remove daemon state indicator file
 	rm -f "$DAEMON_FILE"
 
-	# restore virgin state of profiles on physical discs
 	local browser user
 	for user in $USERS; do
 		for browser in $BROWSERS; do
@@ -264,8 +255,7 @@ unsync() {
 				# check if user has browser profile
 				if [[ -h "$DIR" ]]; then
 					unlink "$DIR"
-					# this assumes that the backup is always updated so be sure to invoke a sync
-					# before an unsync
+					# this assumes that the backup is always updated so be sure to invoke a sync before an unsync
 					#
 					# restore original dirtree
 					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
@@ -288,16 +278,18 @@ case "$1" in
 		[[ -f $DAEMON_FILE ]] && sync
 		;;
 	unsync)
-		# make sure the daemon is running
 		[[ -f $DAEMON_FILE ]] && sync && kill_browsers && unsync
 		;;
 	*) 
-		echo -en "\E[31musage: "
-		tput sgr0 # reset colors to normal
+		echo -en "profile-sync-daemon      \E[31m::USAGE::"
+		tput sgr0 
+		echo
+		echo "version: $PSD_VERS"
+		echo
 		echo "$0 {sync|unsync|debug}"
 		echo "  sync) Force a manual sync."
 		echo "unsync) Force a manual unsync."
-		echo " debug) Parse config file to make sure vars are correctly defined."
+		echo " debug) Parse config file to see which profiles will be managed."
 		;;
 esac
 exit 0

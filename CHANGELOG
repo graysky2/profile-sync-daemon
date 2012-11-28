@@ -1,4 +1,9 @@
-v5.03
+v5.05
+28-Nov-2012
+Fixed issue with start_check function (xduugu).
+Fixed issue with conkeror not parsing profiles.ini like firefox and aurora do.
+
+v5.04
 27-Nov-2012
 Moved to array-based profiles for internal logic.
 Will parse through firefox/aurora ~/.mozilla/<BROWSER>/profiles.ini for syncs. This means that users may have profiles located outside of home dir.
