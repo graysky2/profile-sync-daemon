@@ -116,7 +116,7 @@ refuse_to_start() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			if [[ -n $(pgrep -u $user $PSNAME) ]]; then
+			if [[ -n $PSNAME ]] && pgrep -u "$user" "$PSNAME" &>/dev/null; then
 				echo "Refusing to start since $browser is running by $user"
 				echo "Exit this before starting the deamon to avoid data loss!"
 				exit 1
