@@ -1,4 +1,7 @@
 #!/bin/bash
+# By graysky <graysky AT archlinux DOT us>
+# Inspired by some code originally  written by Colin Verot
+
 PSD_VERS="5.06"
 
 ### Arrays
