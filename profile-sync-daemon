@@ -189,7 +189,6 @@ parse_conf_file() {
 			set_which "$user" "$browser"
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
-				BACKUP="$item-backup"
 				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
 				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null | awk '{ print $1 }')	# profile dir size
 				if [[ -d "$DIR" ]]; then
@@ -199,8 +198,6 @@ parse_conf_file() {
 					echo -e "$(tput cr)$(tput cuf 17) $user/$group"${NRM} 
 					echo -en " ${BLD}sync target:"
 					echo -e "$(tput cr)$(tput cuf 17) ${YLW}$DIR"${NRM} 
-					echo -en " ${BLD}backup target:"
-					echo -e "$(tput cr)$(tput cuf 17) ${YLW}$BACKUP"${NRM}
 					echo -en " ${BLD}tmpfs dir:"
 					echo -e "$(tput cr)$(tput cuf 17) ${RED}$VOLATILE/$user-$browser$suffix"${NRM}
 					echo -en " ${BLD}profile size:"
