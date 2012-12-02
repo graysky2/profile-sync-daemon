@@ -2,7 +2,7 @@
 # By graysky <graysky AT archlinux DOT us>
 # Inspired by some code originally  written by Colin Verot
 export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" YLW="\e[01;33m" NRM="\e[00m"
-VERS="5.07"
+VERS="5.08"
 
 if [[ ! -f /etc/psd.conf ]]; then
 	echo "Cannot find /etc/psd.conf so bailing.  Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
@@ -191,13 +191,20 @@ parse_conf_file() {
 				DIR="$item"
 				BACKUP="$item-backup"
 				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
-
+				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null | awk '{ print $1 }')	# profile dir size
 				if [[ -d "$DIR" ]]; then
-					echo -e "${BLD}browser:psname  $browser:$PSNAME"${NRM}
-					echo -e "${BLD}owner/group:    $user:$group"${NRM}
-					echo -e "${BLD}sync target:    ${YLW}$DIR"${NRM}
-					echo -e "${BLD}backup target:  ${YLW}$BACKUP"${NRM}
-					echo -e "${BLD}tmpfs dir:      ${RED}$VOLATILE/$user-$browser$suffix"${NRM}
+					echo -en " ${BLD}browser/psname:"
+					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
+					echo -en " ${BLD}owner/group:"    
+					echo -e "$(tput cr)$(tput cuf 17) $user/$group"${NRM} 
+					echo -en " ${BLD}sync target:"
+					echo -e "$(tput cr)$(tput cuf 17) ${YLW}$DIR"${NRM} 
+					echo -en " ${BLD}backup target:"
+					echo -e "$(tput cr)$(tput cuf 17) ${YLW}$BACKUP"${NRM}
+					echo -en " ${BLD}tmpfs dir:"
+					echo -e "$(tput cr)$(tput cuf 17) ${RED}$VOLATILE/$user-$browser$suffix"${NRM}
+					echo -en " ${BLD}profile size:"
+					echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM} 
 					echo
 				fi
 			done

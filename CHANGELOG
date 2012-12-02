@@ -1,3 +1,7 @@
+v5.08
+02-Dec-2012
+Added profile size display to output.
+
 v5.07
 02-Dec-2012
 Logic to refuse to start if duplicate entries are present for firefix/aurora. See man page for details.
