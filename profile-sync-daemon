@@ -181,7 +181,7 @@ kill_browsers() {
 parse_conf_file() {
 	echo -e "${RED}Profile-sync-daemon v$VERS${NRM}"
 	echo
-	echo -e "${BLD}Psd will manage the following per ${YLW}/etc/psd.conf${BLD} settings${NRM}${BLD}:"${NRM}
+	echo -e "${BLD}Psd will manage the following per ${YLW}/etc/psd.conf${NRM}${BLD} settings:"${NRM}
 	echo
 	local browser user
 	for user in $USERS; do
