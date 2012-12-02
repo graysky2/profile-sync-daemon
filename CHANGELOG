@@ -1,3 +1,9 @@
+v5.07
+02-Dec-2012
+Logic to refuse to start if duplicate entries are present for firefix/aurora. See man page for details.
+Change 'debug' mode to 'parse' mode.
+Colorized deamon a bit.
+
 v5.06
 28-Nov-2012
 Fix kill_browsers - Only try to kill running browsers when PSNAME is not empty (xduugu).
