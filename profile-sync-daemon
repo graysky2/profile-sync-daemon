@@ -190,7 +190,7 @@ parse_conf_file() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
-				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null | awk '{ print $1 }')	# profile dir size
+				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null | gawk '{ print $1 }')	# profile dir size
 				if [[ -d "$DIR" ]]; then
 					echo -en " ${BLD}browser/psname:"
 					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
