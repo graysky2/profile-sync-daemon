@@ -2,7 +2,7 @@
 # By graysky <graysky AT archlinux DOT us>
 # Inspired by some code originally  written by Colin Verot
 export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" YLW="\e[01;33m" NRM="\e[00m"
-VERS="5.08"
+VERS="5.09"
 
 if [[ ! -f /etc/psd.conf ]]; then
 	echo "Cannot find /etc/psd.conf so bailing.  Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
@@ -190,7 +190,7 @@ parse_conf_file() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
-				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null | gawk '{ print $1 }')	# profile dir size
+				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null | awk '{ print $1 }')	# profile dir size
 				if [[ -d "$DIR" ]]; then
 					echo -en " ${BLD}browser/psname:"
 					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
@@ -263,7 +263,11 @@ do_sync() {
 					if [[ -e $DIR/.flagged ]]; then
 						rsync -aog --delete-after --delay-updates --exclude .flagged "$DIR/" "$BACKUP/"
 					else
+						# initial sync
+						# keep user from launching browser while rsync is active
+						chmod -rwx $DIR
 						rsync -aog --delay-updates "$BACKUP/" "$DIR/"
+						chmod +rwx $DIR
 						touch "$DIR/.flagged"
 					fi
 				fi
