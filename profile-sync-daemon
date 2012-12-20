@@ -2,7 +2,7 @@
 # By graysky <graysky AT archlinux DOT us>
 # Inspired by some code originally  written by Colin Verot
 export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" YLW="\e[01;33m" NRM="\e[00m"
-VERS="5.09"
+VERS="5.10"
 
 if [[ ! -f /etc/psd.conf ]]; then
 	echo "Cannot find /etc/psd.conf so bailing.  Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
@@ -265,9 +265,7 @@ do_sync() {
 					else
 						# initial sync
 						# keep user from launching browser while rsync is active
-						chmod -rwx $DIR
 						rsync -aog --delay-updates "$BACKUP/" "$DIR/"
-						chmod +rwx $DIR
 						touch "$DIR/.flagged"
 					fi
 				fi
