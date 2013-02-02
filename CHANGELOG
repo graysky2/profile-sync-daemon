@@ -1,3 +1,7 @@
+v5.12
+02-Feb-2013
+Added dependency checks and debain init script (provided by jcharaoui).
+
 v5.11
 26-Jan-2013
 Added option to deny access to sync target while initial rsync is active (GNA).

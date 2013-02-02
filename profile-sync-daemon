@@ -2,7 +2,7 @@
 # By graysky <graysky AT archlinux DOT us>
 # Inspired by some code originally  written by Colin Verot
 export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" YLW="\e[01;33m" NRM="\e[00m"
-VERS="5.11"
+VERS="5.12"
 
 if [[ ! -f /etc/psd.conf ]]; then
 	echo "Cannot find /etc/psd.conf so bailing.  Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
@@ -21,6 +21,12 @@ BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox google-chrome heftig-
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
 
 DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}	# make it overrideable from the commandline / config
+
+dep_check() {
+	# Although the package manager should handle these deps, this function is a sanity check for users.
+	command -v rsync >/dev/null 2>&1 || { echo "I require rsync but it's not installed. Aborting." >&2; exit 1; }
+	command -v gawk >/dev/null 2>&1 || { echo "I require gawk but it's not installed. Aborting." >&2; exit 1; }
+}
 
 root_check() {
 	# we call this to ensure that only the root user is calling the function
@@ -303,10 +309,10 @@ do_unsync() {
 
 case "$1" in
 	p|P|Parse|parse|debug)
-		dup_check && parse_conf_file
+		dep_check && dup_check && parse_conf_file
 		;;
 	sync)
-		[[ ! -f $DAEMON_FILE ]] && dup_check && running_check && ungraceful_state_check
+		[[ ! -f $DAEMON_FILE ]] && dep_check && dup_check && running_check && ungraceful_state_check
 		do_sync
 		;;
 	resync)

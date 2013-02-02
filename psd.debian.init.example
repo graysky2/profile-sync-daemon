@@ -1,0 +1,124 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          profile-sync-daemon
+# Required-Start:    $local_fs
+# Required-Stop:     $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Keeps browser profiles in RAM.
+# Description:       Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage
+#                    your browser's profile in tmpfs and to periodically sync it back to
+#                    your physical disc (HDD/SSD).
+### END INIT INFO
+
+# Author: Jerome Charaoui (jerome@riseup.net)
+#
+# The default configuration of profile-sync-daemon is to use /tmp over tmpfs
+# On Debian, this can be enabled with RAMTMP=yes in /etc/default/tmpfs
+
+# Do NOT "set -e"
+
+# PATH should only include /usr/* if it runs after the mountnfs.sh script
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+DESC="Profile-sync-daemon"
+NAME=profile-sync-daemon
+DAEMON=/usr/local/bin/$NAME
+LOCKFILE=/run/psd
+SCRIPTNAME=/etc/init.d/$NAME
+
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
+
+# Exit if rsync is not installed
+if [ ! -x "/usr/bin/rsync" ]; then
+    log_failure_msg "Could not locate rsync."
+    exit 1
+fi
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+# Depend on lsb-base (>= 3.2-14) to ensure that this file is present
+# and status_of_proc is working.
+. /lib/lsb/init-functions
+
+#
+# Function that starts the daemon/service
+#
+do_start()
+{
+    [ -f $LOCKFILE ] && return 1
+    $DAEMON sync
+    RETVAL="$?"
+    [ "$RETVAL" != 0 ] && return 2
+    return 0
+}
+
+#
+# Function that stops the daemon/service
+#
+do_stop()
+{
+    [ ! -f $LOCKFILE ] && return 1
+    $DAEMON unsync
+    RETVAL="$?"
+    [ "$RETVAL" != 0 ] && return 2
+    return 0
+}
+
+case "$1" in
+  start)
+    [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+    do_start
+    case "$?" in
+        0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+        2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
+    ;;
+  stop)
+    [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+    do_stop
+    case "$?" in
+        0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+        2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+    esac
+    ;;
+  status)
+    if [ -f $LOCKFILE ]; then
+        log_success_msg "$NAME is running"
+        exit 0
+    else
+        log_failure_msg "$NAME is not running"
+        exit 1
+    fi
+    ;;
+  restart|force-reload)
+    #
+    # If the "reload" option is implemented then remove the
+    # 'force-reload' alias
+    #
+    log_daemon_msg "Restarting $DESC" "$NAME"
+    do_stop
+    case "$?" in
+      0|1)
+        do_start
+        case "$?" in
+            0) log_end_msg 0 ;;
+            1) log_end_msg 1 ;; # Old process is still running
+            *) log_end_msg 1 ;; # Failed to start
+        esac
+        ;;
+      *)
+        # Failed to stop
+        log_end_msg 1
+        ;;
+    esac
+    ;;
+  *)
+    echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+    exit 3
+    ;;
+esac
+
+:
