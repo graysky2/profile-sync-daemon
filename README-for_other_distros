@@ -10,19 +10,18 @@ DESCRIPTION
 Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browser profile(s) in tmpfs and to periodically sync back to the physical disc (HDD/SSD). This is accomplished via a symlinking step and an innovative use of rsync to maintain back-up and synchronization between the two. One of the major design goals of psd is a completely transparent user experience.
 
 Running this daemon is beneficial for two reasons:
+
  o Reduced wear to physical discs (particularly SSDs)
  o Speed
 
 Since the profile(s), browser cache*, etc. are relocated into tmpfs (RAM disk), the corresponding onslaught of I/O associated with using the browser is also redirected from the physical disc to RAM, thus reducing wear to the physical disc and also greatly improving browser speed and responsiveness. For example, the access time of RAM is on the order of nanoseconds while the access time of physical discs is on the order of milliseconds. This is a difference of six orders of magnitude or 1,000,000 times faster.
-*Note that some browsers such as Chromium, Google-chrome, and Midori, actually keeps their cache directories separately from their browser profile directory. It is not within the scope of profile-sync-daemon to modify this behavior; users are encouraged to modify this behavir. For example, refer to the following url for several work-arounds for the Chrome-based browsers: https://wiki.archlinux.org/index.php/Chromium_Tips_and_Tweaks#Cache_in_tmpfs
+
+*Note that some browsers such as Chromium, Google-chrome, and Midori, actually keeps their cache directories separately from their browser profile directory. It is not within the scope of profile-sync-daemon to modify this behavior; users are encouraged to modify this behavior. For example, refer to the following url for several work-arounds for the Chrome-based browsers: https://wiki.archlinux.org/index.php/Chromium_Tips_and_Tweaks#Cache_in_tmpfs
 
 SETUP
-User managed settings are defined in /etc/psd.conf which is included in the package. At a minimum, define which user(s) will have their profiles managed by psd and note that at least one user must be defined.
+User managed settings are defined in /etc/psd.conf which is included in the package.
 
-Example: 
-
- USERS="bar foo"
-
+ o At a minimum, define which user(s) will have their profiles managed by psd and note that at least one user must be defined.
  o Optionally uncomment and define which browsers are to be managed in the BROWSERS array. Note that the default is all browsers unless otherwise defined.
  o Optionally redefine the location of your distro's tmpfs. Do this in the VOLATILE variable. Note that for Arch Linux, the default value of "/tmp" should work just fine.
 
@@ -34,7 +33,7 @@ The parse option can be called to show users exactly what psd will do based on t
 As you will see in the output and as stated above, if no specific browser or subset of browsers are defined in the BROWSERS array, psd will sync ALL supported profiles that it finds for the given user(s).
 
 GENERAL USAGE
-Do not call /usr/bin/profile-sync-daemon to sync or to unsync directly. Instead use the provided service file. The initial synchronization will occur when the daemon starts. Additionally, cron (if running on your system) will call it to sync or update once per hour. Finally, psd will sync back a final time when it is called to stop.
+Do NOT call /usr/bin/profile-sync-daemon to sync or to unsync directly! Instead, use your distro's init system. The initial synchronization will occur when the daemon starts. Additionally, cron (if running on your system) will call it to sync or update once per hour. Finally, psd will sync back a final time when it is called to stop.
 
 FOR SYSTEMD USERS (OFFICIALLY SUPPORTED METHOD)
 The provided daemon file should be used to interact with psd (/usr/lib/systemd/system/psd.service):
@@ -48,7 +47,7 @@ Available options:
  disable  Remove daemon from the list of autostart daemons.
 
 OTHER INITSCRIPTS
-Other init script may be used to manage the deamon, but they are unsupported by the author.
+Other init scripts may be used to manage the deamon, but they are unsupported by the author. 
 
 SUPPORTED BROWSERS
 Currently, the following browsers are auto-detected and managed:
@@ -82,6 +81,16 @@ The following is an example of a BAD profile that will not pass the test. You ca
  Name=proxy
  IsRelative=0
  Path=/mnt/data/docs/happy/mozilla/firefox/myprofile.abc
+
+SUPPORTED DISTROS
+At this time, The only officially supported distro package is for Arch Linux and can be downloaded and built from the AUR at the following URL: https://aur.archlinux.org/packages/profile-sync-daemon/
+
+UNSUPPORTED DISTROS
+Psd is a simple bash script and should therefore run on any Linux distro. Below is a list of distros known to package psd, and a link to download their respective packages. As noted above, these are unsupported by the author due to their own, unique init scripts:
+
+ o Chakra Linux via CCR Package: http://chakra-linux.org/ccr/packages.php?ID=3388
+ o Gentoo via Ebuild: http://packages.gentoo.org/package/www-misc/profile-sync-daemon
+ o Ubuntu package: http://link.coming.soon
 
 CONTRIBUTE
 Should you wish to contribute to this code, please fork and send a pull request. Source is freely available on github: https://github.com/graysky2/profile-sync-daemon
