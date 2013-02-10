@@ -3,8 +3,6 @@ profile-sync-daemon - Symlinks and syncs browser profile dirs to RAM thus reduci
 
 SYNOPSIS
 systemctl [options] psd.service
-or
-rc.d [options] psd
 
 DESCRIPTION
 Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browser profile(s) in tmpfs and to periodically sync back to the physical disc (HDD/SSD). This is accomplished via a symlinking step and an innovative use of rsync to maintain back-up and synchronization between the two. One of the major design goals of psd is a completely transparent user experience.
@@ -19,7 +17,7 @@ Since the profile(s), browser cache*, etc. are relocated into tmpfs (RAM disk), 
 *Note that some browsers such as Chromium, Google-chrome, and Midori, actually keeps their cache directories separately from their browser profile directory. It is not within the scope of profile-sync-daemon to modify this behavior; users are encouraged to modify this behavior. For example, refer to the following url for several work-arounds for the Chrome-based browsers: https://wiki.archlinux.org/index.php/Chromium_Tips_and_Tweaks#Cache_in_tmpfs
 
 SETUP
-User managed settings are defined in /etc/psd.conf which is included in the package.
+User managed settings are defined in /etc/psd.conf.
 
  o At a minimum, define which user(s) will have their profiles managed by psd and note that at least one user must be defined.
  o Optionally uncomment and define which browsers are to be managed in the BROWSERS array. Note that the default is all browsers unless otherwise defined.
@@ -35,8 +33,8 @@ As you will see in the output and as stated above, if no specific browser or sub
 GENERAL USAGE
 Do NOT call /usr/bin/profile-sync-daemon to sync or to unsync directly! Instead, use your distro's init system. The initial synchronization will occur when the daemon starts. Additionally, cron (if running on your system) will call it to sync or update once per hour. Finally, psd will sync back a final time when it is called to stop.
 
-FOR SYSTEMD USERS (OFFICIALLY SUPPORTED METHOD)
-The provided daemon file should be used to interact with psd (/usr/lib/systemd/system/psd.service):
+FOR SYSTEMD USERS
+This officially supported method provides a systemd service file which should be used to interact with psd (/usr/lib/systemd/system/psd.service):
 
  # systemctl [option] psd.service
 
@@ -83,7 +81,7 @@ The following is an example of a BAD profile that will not pass the test. You ca
  Path=/mnt/data/docs/happy/mozilla/firefox/myprofile.abc
 
 SUPPORTED DISTROS
-At this time, The only officially supported distro package is for Arch Linux and can be downloaded and built from the AUR at the following URL: https://aur.archlinux.org/packages/profile-sync-daemon/
+At this time, the only officially supported distro package is for Arch Linux and can be downloaded and built from the AUR at the following URL: https://aur.archlinux.org/packages/profile-sync-daemon/
 
 UNSUPPORTED DISTROS
 Psd is a simple bash script and should therefore run on any Linux distro. Below is a list of distros known to package psd, and a link to download their respective packages. As noted above, these are unsupported by the author due to their own, unique init scripts:
