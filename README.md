@@ -2,10 +2,11 @@
 Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browser's profile in tmpfs and to periodically sync it back to your physical disc (HDD/SSD). This is accomplished via a symlinking step and an innovative use of rsync to maintain back-up and synchronization between the two. One of the major design goals of psd is a completely transparent user experience.
 
 ##Links to Distro-Provided Packages
-* Arch Linux via AUR Package: https://aur.archlinux.org/packages/profile-sync-daemon
-* Chakra Linux via CCR Package: http://chakra-linux.org/ccr/packages.php?ID=3388
-* Gentoo via Ebuild: http://packages.gentoo.org/package/www-misc/profile-sync-daemon
-* Ubuntu via user created deb: http://link.coming.soon
+* ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch Linux via AUR Package: https://aur.archlinux.org/packages/profile-sync-daemon
+* ![logo](http://chakra-linux.org/img/icon/chakra-kde_32.png "chakra logo")Chakra Linux via CCR Package: http://chakra-linux.org/ccr/packages.php?ID=3388
+* ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo via Ebuild: http://packages.gentoo.org/package/www-misc/profile-sync-daemon
+* ![logo](http://www.monitorix.org/imgs/debian.png "debian logo")Debian/Ubuntu via user created deb: http://link.coming.soon
+* ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Debian/Ubuntu via user created deb: http://link.coming.soon
 
 If you are interested in packaging psd for your favorite distro, please contact me and I will add the link here.
 
