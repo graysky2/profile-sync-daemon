@@ -1,11 +1,12 @@
 #!/bin/sh
+set -e
 
-if [[ $(grep -c -i debian /etc/issue) = 1 ]]; then
+if [ $(grep -c -i debian /etc/issue) = 1 ]; then
 	# debian does not mount /tmp to tmpfs by default so use /dev/shm
 	sed -i 's/#VOLATILE="\/tmp"/VOLATILE="\/dev\/shm"/' /etc/psd.conf
 fi
 
-if [[ $(grep -c -i ubuntu /etc/issue) = 1 ]]; then
+if [ $(grep -c -i ubuntu /etc/issue) = 1 ]; then
 	# ubuntu does not mount /tmp to tmpfs by default so use /run/shm
 	sed -i 's/#VOLATILE="\/tmp"/VOLATILE="\/run\/shm"/' /etc/psd.conf
 fi
