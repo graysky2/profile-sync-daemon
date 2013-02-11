@@ -1,9 +1,13 @@
+v5.16
+11-Feb-2013
+Added support for ubuntu/debian and gentoo.
+
 v5.15
 11-Feb-2013
 Updated debian init script.
 
 v5.14
-70-Feb-2013
+10-Feb-2013
 Update to man page.
 
 v5.13

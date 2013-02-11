@@ -2,7 +2,7 @@
 # By graysky <graysky AT archlinux DOT us>
 # Inspired by some code originally  written by Colin Verot
 export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" YLW="\e[01;33m" NRM="\e[00m"
-VERS="5.15"
+VERS="5.16"
 
 if [[ ! -f /etc/psd.conf ]]; then
 	echo "Cannot find /etc/psd.conf so bailing.  Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
@@ -25,7 +25,7 @@ DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}	# make it overrideable from the commandli
 dep_check() {
 	# Although the package manager should handle these deps, this function is a sanity check for users.
 	command -v rsync >/dev/null 2>&1 || { echo "I require rsync but it's not installed. Aborting." >&2; exit 1; }
-	command -v gawk >/dev/null 2>&1 || { echo "I require gawk but it's not installed. Aborting." >&2; exit 1; }
+	command -v awk >/dev/null 2>&1 || { echo "I require awk but it's not installed. Aborting." >&2; exit 1; }
 }
 
 root_check() {
@@ -196,7 +196,7 @@ parse_conf_file() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
-				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null | gawk '{ print $1 }')	# profile dir size
+				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null | awk '{ print $1 }')	# profile dir size
 				if [[ -d "$DIR" ]]; then
 					echo -en " ${BLD}browser/psname:"
 					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
