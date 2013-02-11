@@ -22,8 +22,8 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 DESC="Profile-sync-daemon"
 NAME=profile-sync-daemon
-DAEMON=/usr/local/bin/$NAME
-LOCKFILE=/run/psd
+DAEMON=/usr/bin/$NAME
+LOCKFILE=/var/run/psd
 SCRIPTNAME=/etc/init.d/$NAME
 
 # Exit if the package is not installed
