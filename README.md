@@ -9,11 +9,9 @@ Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browse
 
 To add the PPA (personal package archive) to your Ubuntu system, and to install psd:
 
-```
-$ sudo add-apt-repository ppa:graysky/utils
-$ sudo apt-get update
-$ sudo apt-get install profile-sync-daemon
-```
+    $ sudo add-apt-repository ppa:graysky/utils
+    $ sudo apt-get update
+    $ sudo apt-get install profile-sync-daemon
 
 If you are interested in packaging psd for your favorite distro, please contact me and I will add the link here.
 
