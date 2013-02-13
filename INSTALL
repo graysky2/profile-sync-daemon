@@ -1,5 +1,6 @@
 Makefile.archlinux is setup for Archlinux.  
 Makefile.ubuntu is setup for Debian/Ubuntu.
+Makefile.gentoo is setup for Gentoo.
 
 There is no configure script nor is there anything to compile.
 Copy or symlink the Makefile.x of your chosing to Makefile.
