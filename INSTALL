@@ -1,0 +1,17 @@
+Makefile is setup for Archlinux.  
+Makefile.ubuntu is setup for Debian/Ubuntu.
+
+There is no configure script nor is there anything to compile.
+Running a `make install` will file unless you do so as root.
+Doing so with the Makefile included will install an Arch Linux
+setup on your machine. It is highly discouraged to manually build
+this on Arch Linux. Instead, use the PKGBUILD in the AUR:
+https://aur.archlinux.org/packages/profile-sync-daemon
+
+Ubuntu/Debian users may use the PPA graysky maintains or build
+it yourself using the included Makefile.debian and the debian
+build tools such as dh_make and dpkg-buildpackage.
+
+If you wish to contribute to other distros, fork this project
+on github and submit a pull request:
+https://github.com/graysky2/profile-sync-daemon
