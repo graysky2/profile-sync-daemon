@@ -42,7 +42,7 @@ Available options:
  disable  Remove daemon from the list of autostart daemons.
 
 OTHER INITSCRIPTS
-Other init scripts may be used to manage the deamon, but they are unsupported by the author.
+Other init scripts may be used to manage the deamon.
  o Debian/Ubuntu, a user-contributed init.d file suitable for use on both Debian and Ubuntu is included (psd.debian.init.example). 
  o Gentoo users have a similar developer-contributed init.d script (psd.rc.gentoo.example).
 
@@ -93,8 +93,7 @@ BUGS
 It is known that on slow systems with large profiles, the sync'ing step sometimes take longer than the boot-up of the WM. Therefore, users can theoretically start their browser before the profile has been transitioned to tmpfs. This is particularly prevalent on systems with slow HDDs running systemd.
 
 ONLINE
-	o Wiki page: https://wiki.archlinux.org/index.php/Profile-sync-daemon
-	o Discussion thread: https://bbs.archlinux.org/viewtopic.php?id=131321
+	o Project page: https://github.com/graysky2/profile-sync-daemon 
 
 AUTHOR
 graysky (graysky AT archlinux DOT us)
