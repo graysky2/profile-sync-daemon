@@ -11,10 +11,10 @@ Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browse
 To add the PPA (personal package archive) to your Debian (tested on squeeze) system, and to install psd:
 
     # echo "deb http://ppa.launchpad.net/graysky/utils/ubuntu quantal main" > /etc/apt/sources.list.d/graysky.list
-		# echo "deb-src http://ppa.launchpad.net/graysky/utils/ubuntu quantal main" >> /etc/apt/sources.list.d/graysky.list
-		# apt-key adv --keyserver keyserver.ubuntu.com --recv-keys FF7F9516
-		# apt-get update
-		# apt-get install profile-sync-daemon
+    # echo "deb-src http://ppa.launchpad.net/graysky/utils/ubuntu quantal main" >> /etc/apt/sources.list.d/graysky.list
+    # apt-key adv --keyserver keyserver.ubuntu.com --recv-keys FF7F9516
+    # apt-get update
+    # apt-get install profile-sync-daemon
 
 To add the PPA (personal package archive) to your Ubuntu (packages available for Lucid and newer) system, and to install psd:
 
