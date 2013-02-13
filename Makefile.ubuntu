@@ -10,8 +10,6 @@ BINDIR = $(PREFIX)/bin
 DOCDIR = $(PREFIX)/share/doc/$(PN)-$(VERSION)
 MANDIR = $(PREFIX)/share/man/man1
 
-RM = @rm
-
 all:
 	@echo -e '\033[1;32mseting up\033[0m'
 	@sed -i -e 's/@VERSION@/'$(VERSION)'/' common/$(PN)
@@ -50,21 +48,3 @@ install-cron:
 	install -Dm755 common/psd.cron.hourly "$(DESTDIR)$(CRONDIR)/psd-update"
 
 install: install-bin install-man install-cron
-
-uninstall:
-	$(RM) "$(DESTDIR)$(CONFDIR)/rc0.d/K20psd"
-	$(RM) "$(DESTDIR)$(CONFDIR)/rc1.d/S20psd"
-	$(RM) "$(DESTDIR)$(CONFDIR)/rc2.d/S20psd"
-	$(RM) "$(DESTDIR)$(CONFDIR)/rc3.d/S20psd"
-	$(RM) "$(DESTDIR)$(CONFDIR)/rc4.d/S20psd"
-	$(RM) "$(DESTDIR)$(CONFDIR)/rc5.d/S20psd"
-	$(RM) "$(DESTDIR)$(CONFDIR)/rc6.d/K20psd"
-	$(RM) "$(DESTDIR)$(INITDIR)/psd"
-	$(RM) "$(DESTDIR)$(BINDIR)/$(PN)"
-	$(RM) "$(DESTDIR)$(BINDIR)/psd"
-	$(RM) "$(DESTDIR)$(MANDIR)/$(PN).1.gz"
-	$(RM) "$(DESTDIR)$(MANDIR)/psd.1.gz"
-	@echo -e '\033[1;33mif you want to remove your config as well, run: "make uninstall-conf"\033[0m'
-
-uninstall-conf:
-	$(RM) "$(DESTDIR)$(CONFDIR)/psd.conf"
