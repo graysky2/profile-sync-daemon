@@ -1,0 +1,37 @@
+VERSION = 5.19
+PN = profile-sync-daemon
+
+PREFIX ?= /usr
+CONFDIR = /etc/conf.d
+CRONDIR = /etc/cron.hourly
+INITDIR = /etc/init.d
+BINDIR = $(PREFIX)/bin
+DOCDIR = $(PREFIX)/share/doc/$(PN)-$(VERSION)
+MANDIR = $(PREFIX)/share/man/man1
+
+all:
+	@echo -e '\033[1;32msetting version\033[0m'
+	@sed -i -e 's/@VERSION@/'$(VERSION)'/' common/$(PN)
+
+install-bin:
+	@echo -e '\033[1;32minstalling main script, initd and config...\033[0m'
+	install -Dm755 common/$(PN) "$(DESTDIR)$(BINDIR)/$(PN)"
+	install -Dm755 init/psd.gentoo "$(DESTDIR)$(INITDIR)/psd"
+	install -Dm644 common/psd.conf "$(DESTDIR)$(CONFDIR)/psd"
+	ln -s $(PN) "$(DESTDIR)$(BINDIR)/psd"
+
+install-doc:
+	@echo -e '\033[1;32minstalling docs...\033[0m'
+	install -Dm644 README.md "$(DESTDIR)$(DOCDIR)/README"
+	install -Dm644 CHANGELOG "$(DESTDIR)$(DOCDIR)/CHANGELOG"
+
+install-man:
+	@echo -e '\033[1;32minstalling manpage...\033[0m'
+	install -Dm644 doc/psd.1 "$(DESTDIR)$(MANDIR)/psd.1"
+	ln -s psd.1 "$(DESTDIR)$(MANDIR)/$(PN).1"
+
+install-cron:
+	@echo -e '\033[1;32minstalling cronjob...\033[0m'
+	install -Dm755 common/psd.cron.hourly "$(DESTDIR)$(CRONDIR)/psd-update"
+
+install: install-bin install-doc install-man install-cron
