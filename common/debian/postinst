@@ -1,8 +1,6 @@
 #!/bin/sh
 set -e
-
-sed 's/#DAEMON_FILE="\/run\/psd"/DAEMON_FILE="\/var\/run\/psd"/' /etc/psd.conf
-
+sed -i 's/#DAEMON_FILE="\/run\/psd"/DAEMON_FILE="\/var\/run\/psd"/' /etc/psd.conf
 if [ $(grep -c -i debian /etc/issue) = 1 ]; then
 	# debian does not mount /tmp to tmpfs by default so use /dev/shm
 	sed -i 's/#VOLATILE="\/tmp"/VOLATILE="\/dev\/shm"/' /etc/psd.conf
