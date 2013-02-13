@@ -20,8 +20,6 @@ install-bin:
 	@echo -e '\033[1;32minstalling main script, initd and config...\033[0m'
 	install -Dm755 common/$(PN) "$(DESTDIR)$(BINDIR)/$(PN)"
 	# debian and ubuntu use /var/run for their pid files
-	@sed -i -e '/DAEMON_FILE=/ s,run,var\/run,' "$(DESTDIR)$(BINDIR)/$(PN)"
-	@sed -i -e 's/@VERSION@/'$(VERSION)'/' "$(DESTDIR)$(BINDIR)/$(PN)"
 	install -Dm644 common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
 	install -Dm755 init/psd.ubuntu "$(DESTDIR)$(INITDIR)/psd"
 	ln -s $(PN) "$(DESTDIR)$(BINDIR)/psd"
