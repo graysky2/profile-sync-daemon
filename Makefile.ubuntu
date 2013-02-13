@@ -21,7 +21,7 @@ install-bin:
 	@sed -i -e '/DAEMON_FILE=/ s,run,var\/run,' "$(DESTDIR)$(BINDIR)/$(PN)"
 	@sed -i -e 's/@VERSION@/'$(VERSION)'/' "$(DESTDIR)$(BINDIR)/$(PN)"
 	install -Dm644 common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
-	install -Dm755 init/psd.debian.init.example "$(DESTDIR)$(INITDIR)/psd"
+	install -Dm755 init/psd.ubuntu "$(DESTDIR)$(INITDIR)/psd"
 	ln -s $(PN) "$(DESTDIR)$(BINDIR)/psd"
 	# debian and ubuntu specific init links
 	install -dm755 "$(DESTDIR)$(CONFDIR)/rc0.d"
