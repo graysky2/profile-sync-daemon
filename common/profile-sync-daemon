@@ -4,15 +4,17 @@
 export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" YLW="\e[01;33m" NRM="\e[00m"
 VERS="@VERSION@"
 
-if [[ ! -f /etc/psd.conf ]]; then
-	echo "Cannot find /etc/psd.conf so bailing.  Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
+PSDCONF=${PSDCONF:-"/etc/psd.conf"}
+
+if [[ ! -f $PSDCONF ]]; then
+	echo "Cannot find $PSDCONF so bailing.  Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
 	exit 1
 else
-	. /etc/psd.conf
+	. $PSDCONF
 fi
 
 if [[ -z "$USERS" ]]; then
-	echo "Must define at least one user in /etc/psd.conf"	# nothing to do if there are no users
+	echo "Must define at least one user in $PSDCONF"	# nothing to do if there are no users
 	exit 1
 fi
 
@@ -187,7 +189,7 @@ kill_browsers() {
 parse_conf_file() {
 	echo -e "${RED}Profile-sync-daemon v$VERS${NRM}"
 	echo
-	echo -e "${BLD}Psd will manage the following per ${YLW}/etc/psd.conf${NRM}${BLD} settings:"${NRM}
+	echo -e "${BLD}Psd will manage the following per ${YLW}${PSDCONF}${NRM}${BLD} settings:"${NRM}
 	echo
 	local browser user
 	for user in $USERS; do
@@ -327,7 +329,7 @@ case "$1" in
 		echo
 		echo -e " ${BLD}$0 ${NRM}${GRN}{parse|sync|unsync}${NRM}"
 		echo
-		echo -e " ${BLD}parse)  ${NRM}${GRN}Parse${NRM}${BLD} config file (${NRM}${YLW}/etc/psd.conf${NRM}${BLD}) to see which profiles will be managed."${NRM}
+		echo -e " ${BLD}parse)  ${NRM}${GRN}Parse${NRM}${BLD} config file (${NRM}${YLW}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed."${NRM}
 		echo -e " ${BLD}sync)   Force a manual ${NRM}${GRN}sync${NRM}${BLD}. Must be run as root user and NOT recommended."${NRM}
 		echo -e " ${BLD}unsync) Force a manual ${NRM}${GRN}unsync${NRM}${BLD}. Must be run as root user and NOT recommended."${NRM}
 		;;
