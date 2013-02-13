@@ -1,9 +1,16 @@
 #!/sbin/runscript
-# Copyright 1999-2012 Gentoo Foundation
+# Copyright 1999-2013 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 description="Webbrowser profile syncing"
 extra_commands="debug resync"
+PIDFILE="/var/run/psd.pid"
+
+PSDCONF="/etc/conf.d/psd"
+export PSDCONF
+
+DAEMON_FILE=${PIDFILE}
+export DAEMON_FILE
 
 wait(){
     for pid in "$@"; do
@@ -38,13 +45,7 @@ start() {
 
 stop() {
 	ebegin "Stopping Profile-Sync-Daemon"
-	if [ ! -f "$PIDFILE" ]; then
-		eerror "Profile-Sync-Daemon is not running, nothing to stop!"
-		return 1
-	else
-		/usr/bin/profile-sync-daemon unsync
-		rm -f "${PIDFILE}"
-	fi
+	/usr/bin/profile-sync-daemon unsync
 	eend $?
 }
 
@@ -54,12 +55,7 @@ debug() {
 
 resync() {
 	ebegin "Syncing browser profiles in tmpfs to physical disc"
-	if [ ! -f "$PIDFILE" ]; then
-		eerror "Profile-Sync-Daemon is not running... cannot sync!"
-		return 1
-	else
-		/usr/bin/profile-sync-daemon resync
-	fi
+	/usr/bin/profile-sync-daemon resync
 	eend $?
 }
 
