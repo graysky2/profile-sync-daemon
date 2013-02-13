@@ -10,6 +10,10 @@ BINDIR = $(PREFIX)/bin
 DOCDIR = $(PREFIX)/share/doc/$(PN)-$(VERSION)
 MANDIR = $(PREFIX)/share/man/man1
 
+all:
+	@echo -e '\033[1;32mseting up\033[0m'
+	@sed -i -e 's/@VERSION@/'$(VERSION)'/' common/$(PN)
+
 install-bin:
 	@echo -e '\033[1;32minstalling main script, initd and config...\033[0m'
 	install -Dm755 common/$(PN) "$(DESTDIR)$(BINDIR)/$(PN)"
