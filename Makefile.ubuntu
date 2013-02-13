@@ -1,9 +1,8 @@
 VERSION = 5.19
 PN = profile-sync-daemon
 
-DESTDIR = debian/$(PN)
-PACKAGER = debian
-PREFIX = /usr
+DESTDIR ?= debian/$(PN)
+PREFIX ?= /usr
 CONFDIR = /etc
 CRONDIR = /etc/cron.hourly
 INITDIR = /etc/init.d
@@ -46,9 +45,4 @@ install-cron:
 	@echo -e '\033[1;32minstalling cronjob...\033[0m'
 	install -Dm755 common/psd.cron.hourly "$(DESTDIR)$(CRONDIR)/psd-update"
 
-install-packager:
-	@echo -e '\033[1;32minstalling debian scripts for debuild...\033[0m'
-	install -dm755 debian/postins $(PACKAGER)/postins
-	install -dm755 debian/prerm $(PACKAGER)/prerm
-	
-install: install-bin install-man install-cron install-packager
+install: install-bin install-man install-cron
