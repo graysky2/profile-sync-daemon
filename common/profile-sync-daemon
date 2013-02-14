@@ -2,7 +2,7 @@
 # By graysky <graysky AT archlinux DOT us>
 # Inspired by some code originally  written by Colin Verot
 export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" YLW="\e[01;33m" NRM="\e[00m"
-VERS="@VERSION@"
+VERS="5.19"
 
 PSDCONF=${PSDCONF:-"/etc/psd.conf"}
 
@@ -18,7 +18,7 @@ if [[ -z "$USERS" ]]; then
 	exit 1
 fi
 
-BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox google-chrome heftig-aurora midori opera opera-next qupzilla"} # all supported browsers
+BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox firefox-trunk google-chrome heftig-aurora midori opera opera-next qupzilla"} # all supported browsers
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
 
@@ -71,6 +71,21 @@ set_which() {
 		google-chrome)
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="chrome"
+			;;
+		firefox-trunk)
+			if [[ -d $homedir/.mozilla/firefox-trunk ]]; then
+				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox-trunk/profiles.ini|sed 's/[P,p]ath=//') )
+				index=0
+				PSNAME="$browser"
+				for profileItem in ${profileArr[@]}; do
+					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
+						DIRArr[index]="$profileItem"	# path is not relative
+					else
+						DIRArr[index]="$homedir/.mozilla/firefox-trunk/$profileItem"	# we need to append the default path to give a fully qualified path
+					fi
+					index=$index+1
+				done
+			fi
 			;;
 		firefox)
 			if [[ -d $homedir/.mozilla/firefox ]]; then
@@ -142,7 +157,7 @@ dup_check() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			if [[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]]; then
+			if [[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]]; then
 				if [[ -z ${DIRArr[@]} ]]; then
 					/bin/true # nothing to check
 				else
@@ -197,7 +212,7 @@ parse_conf_file() {
 			set_which "$user" "$browser"
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
 				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null | awk '{ print $1 }')	# profile dir size
 				if [[ -d "$DIR" ]]; then
 					echo -en " ${BLD}browser/psname:"
@@ -230,7 +245,7 @@ ungraceful_state_check() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
 
 				if [[ -e "$DIR/.flagged" ]]; then # all is well so continue
 					/bin/true
@@ -254,7 +269,7 @@ do_sync() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
 
 				# make tmpfs container
 				if [[ -d $DIR ]]; then
@@ -293,7 +308,7 @@ do_unsync() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
 
 				# check if user has browser profile
 				if [[ -h "$DIR" ]]; then
