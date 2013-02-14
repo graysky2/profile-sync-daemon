@@ -92,9 +92,11 @@ Conkeror
 .IP \(bu 3
 Firefox (stable,beta,aurora)
 .IP \(bu 3
+Firefox-trunk (this is an Ubuntu-only browser: http://www.webupd8.org/2011/05/install-firefox-nightly-from-ubuntu-ppa.html)
+.IP \(bu 3
 Google-chrome
 .IP \(bu 3
-Heftig's version of Aurora (https://bbs.archlinux.org/viewtopic.php?id=117157)
+Heftig's version of Aurora (this is an Arch Linux-only browser: https://bbs.archlinux.org/viewtopic.php?id=117157)
 .IP \(bu 3
 Midori
 .IP \(bu 3
@@ -103,7 +105,7 @@ Opera
 Opera-Next
 .IP \(bu 3
 QupZilla
-.SH CAVEATS FOR FIREFOX AND HEFTIG AURORA USERS ONLY
+.SH CAVEATS FOR FIREFOX AND ITS KIN
 The way psd keeps track of browser profiles and sync targets requires users to have unique name as the last directory for all profiles in their respective $HOME/.mozilla/<browser>/profiles.ini files. Psd will check when it is called to run for this and refuse if you have not satisfied the condition.
 .PP
 The following is an example of a BAD profile that will not pass the test. You can see that although each full path is unique, they both END in the same name! Again, you must modify the profiles.ini and the corresponding directory on the filesystem to correct this if you want to use psd.
@@ -137,5 +139,7 @@ It is known that on slow systems with large profiles, the sync'ing step sometime
 .SH ONLINE
 .IP \(bu 3
 Project page: https://github.com/graysky2/profile-sync-daemon
+.IP \(bu 3
+Wiki page: https://wiki.archlinux.org/index.php/Profile-sync-daemon
 .SH AUTHOR
 graysky (graysky AT archlinux DOT us)
