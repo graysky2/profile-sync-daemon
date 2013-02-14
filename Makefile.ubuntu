@@ -1,4 +1,4 @@
-VERSION = 5.19
+VERSION = 5.20
 PN = profile-sync-daemon
 
 DESTDIR =
@@ -10,18 +10,18 @@ BINDIR = $(PREFIX)/bin
 DOCDIR = $(PREFIX)/share/doc/$(PN)-$(VERSION)
 MANDIR = $(PREFIX)/share/man/man1
 
+RM = @rm
+
 all:
-	@echo -e '\033[1;32mseting up\033[0m'
+	@echo -e '\033[1;32mSetting version\033[0m'
 	@sed -i -e 's/@VERSION@/'$(VERSION)'/' common/$(PN)
 
 install-bin:
-	@echo -e '\033[1;32minstalling main script, initd and config...\033[0m'
-	install -Dm755 common/$(PN) "$(DESTDIR)$(BINDIR)/$(PN)"
-	# debian and ubuntu use /var/run for their pid files
+	@echo -e '\033[1;32mInstalling main script, initd and config...\033[0m'
 	install -Dm644 common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
 	install -Dm755 init/psd.ubuntu "$(DESTDIR)$(INITDIR)/psd"
+	install -Dm755 common/$(PN) "$(DESTDIR)$(BINDIR)/$(PN)"
 	ln -s $(PN) "$(DESTDIR)$(BINDIR)/psd"
-	# debian and ubuntu specific init links
 	install -dm755 "$(DESTDIR)$(CONFDIR)/rc0.d"
 	install -dm755 "$(DESTDIR)$(CONFDIR)/rc1.d"
 	install -dm755 "$(DESTDIR)$(CONFDIR)/rc2.d"
@@ -30,21 +30,40 @@ install-bin:
 	install -dm755 "$(DESTDIR)$(CONFDIR)/rc5.d"
 	install -dm755 "$(DESTDIR)$(CONFDIR)/rc6.d"
 	ln -s ../init.d/psd "$(DESTDIR)$(CONFDIR)/rc0.d/K20psd"
-	ln -s ../init.d/psd "$(DESTDIR)$(CONFDIR)/rc6.d/K20psd"
 	ln -s ../init.d/psd "$(DESTDIR)$(CONFDIR)/rc1.d/S20psd"
 	ln -s ../init.d/psd "$(DESTDIR)$(CONFDIR)/rc2.d/S20psd"
 	ln -s ../init.d/psd "$(DESTDIR)$(CONFDIR)/rc3.d/S20psd"
 	ln -s ../init.d/psd "$(DESTDIR)$(CONFDIR)/rc4.d/S20psd"
 	ln -s ../init.d/psd "$(DESTDIR)$(CONFDIR)/rc5.d/S20psd"
+	ln -s ../init.d/psd "$(DESTDIR)$(CONFDIR)/rc6.d/K20psd"
 
 install-man:
-	@echo -e '\033[1;32minstalling manpage...\033[0m'
+	@echo -e '\033[1;32mInstalling manpage...\033[0m'
 	install -Dm644 doc/psd.1 "$(DESTDIR)$(MANDIR)/psd.1"
 	gzip -9 "$(DESTDIR)$(MANDIR)/psd.1"
 	ln -s psd.1.gz "$(DESTDIR)$(MANDIR)/$(PN).1.gz"
 
 install-cron:
-	@echo -e '\033[1;32minstalling cronjob...\033[0m'
+	@echo -e '\033[1;32mInstalling cronjob...\033[0m'
 	install -Dm755 common/psd.cron.hourly "$(DESTDIR)$(CRONDIR)/psd-update"
 
 install: install-bin install-man install-cron
+
+uninstall:
+	$(RM) "$(DESTDIR)$(INITDIR)/psd"
+	$(RM) "$(DESTDIR)$(BINDIR)/$(PN)"
+	$(RM) "$(DESTDIR)$(BINDIR)/psd"
+	$(RM) "$(DESTDIR)$(CONFDIR)/rc0.d/K20psd"
+	$(RM) "$(DESTDIR)$(CONFDIR)/rc1.d/S20psd"
+	$(RM) "$(DESTDIR)$(CONFDIR)/rc2.d/S20psd"
+	$(RM) "$(DESTDIR)$(CONFDIR)/rc3.d/S20psd"
+	$(RM) "$(DESTDIR)$(CONFDIR)/rc4.d/S20psd"
+	$(RM) "$(DESTDIR)$(CONFDIR)/rc5.d/S20psd"
+	$(RM) "$(DESTDIR)$(CONFDIR)/rc6.d/K20psd"
+	$(RM) "$(DESTDIR)$(MANDIR)/$(PN).1.gz"
+	$(RM) "$(DESTDIR)$(MANDIR)/psd.1.gz"
+	$(RM) "$(DESTDIR)$(CRONDIR)/psd-update"
+	@echo -e '\033[1;33mIf you want to remove your config as well, run: "make uninstall-conf"\033[0m'
+
+uninstall-conf:
+	$(RM) "$(DESTDIR)$(CONFDIR)/psd.conf"
