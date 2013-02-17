@@ -1,3 +1,7 @@
+v5.22
+16-Feb-2013
+License change GPL --> MIT.
+
 v5.21
 14-Feb-2013
 add support for firefox-trunk (Firefox Nightly from the ppa:ubuntu-mozilla-daily/ppa -> more info @ http://www.webupd8.org/2011/05/install-firefox-nightly-from-ubuntu-ppa.html) (hotice).
