@@ -21,6 +21,10 @@ To add the PPA (personal package archive) to your Debian (tested on squeeze) sys
     apt-get update
     apt-get install profile-sync-daemon
 
+###Fedora Users
+RPM package available: http://repo-ck.com/fedora_rpms
+
+
 ###Ubuntu Users
 To add the PPA (personal package archive) to your Ubuntu (packages available for Lucid and newer) system, and to install psd:
 
