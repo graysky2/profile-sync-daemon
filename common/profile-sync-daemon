@@ -1,20 +1,20 @@
 #!/bin/bash
 # By graysky <graysky AT archlinux DOT us>
-# Inspired by some code originally  written by Colin Verot
-export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" YLW="\e[01;33m" NRM="\e[00m"
+# Inspired by some code originally written by Colin Verot
+export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" BLU="\e[01;34m" NRM="\e[00m"
 VERS="@VERSION@"
 
 PSDCONF=${PSDCONF:-"/etc/psd.conf"}
 
 if [[ ! -f $PSDCONF ]]; then
-	echo "Cannot find $PSDCONF so bailing.  Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
+	echo -e " Cannot find $PSDCONF so bailing.  Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
 	exit 1
 else
 	. $PSDCONF
 fi
 
 if [[ -z "$USERS" ]]; then
-	echo "Must define at least one user in $PSDCONF"	# nothing to do if there are no users
+	echo -e " ${BLD}Must define at least one user in ${NRM}${BLU}$PSDCONF"${NRM}	# nothing to do if there are no users
 	exit 1
 fi
 
@@ -36,7 +36,7 @@ root_check() {
 	# running as unprivileged user will fuck up the sync process resulting in unhappy users
 
 	if [[ $EUID -ne 0 ]]; then
-		echo "This function must be called as root!" 1>&2
+		echo -e " ${BLD}This function must be called as root!"${NRM} 1>&2
 		exit 1
 	fi
 }
@@ -170,7 +170,7 @@ dup_check() {
 					else
 						echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
 						[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"	# clip of the 'heftig-' to give correct path
-						echo -e " ${BLD}Must have unique last directories in ${YLW}$homedir/.mozilla/$browser/profiles.ini${NRM}${BLD} to use psd."${NRM}
+						echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.mozilla/$browser/profiles.ini${NRM}${BLD} to use psd."${NRM}
 						exit 1
 					fi
 				fi
@@ -204,7 +204,7 @@ kill_browsers() {
 parse_conf_file() {
 	echo -e "${RED}Profile-sync-daemon v$VERS${NRM}"
 	echo
-	echo -e "${BLD}Psd will manage the following per ${YLW}${PSDCONF}${NRM}${BLD} settings:"${NRM}
+	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD} settings:"${NRM}
 	echo
 	local browser user
 	for user in $USERS; do
@@ -220,7 +220,7 @@ parse_conf_file() {
 					echo -en " ${BLD}owner/group:"    
 					echo -e "$(tput cr)$(tput cuf 17) $user/$group"${NRM} 
 					echo -en " ${BLD}sync target:"
-					echo -e "$(tput cr)$(tput cuf 17) ${YLW}$DIR"${NRM} 
+					echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR"${NRM} 
 					echo -en " ${BLD}tmpfs dir:"
 					echo -e "$(tput cr)$(tput cuf 17) ${RED}$VOLATILE/$user-$browser$suffix"${NRM}
 					echo -en " ${BLD}profile size:"
@@ -344,9 +344,26 @@ case "$1" in
 		echo
 		echo -e " ${BLD}$0 ${NRM}${GRN}{parse|sync|unsync}${NRM}"
 		echo
-		echo -e " ${BLD}parse)  ${NRM}${GRN}Parse${NRM}${BLD} config file (${NRM}${YLW}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed."${NRM}
+		echo -e " ${BLD}parse)  ${NRM}${GRN}Parse${NRM}${BLD} config file (${NRM}${BLU}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed."${NRM}
 		echo -e " ${BLD}sync)   Force a manual ${NRM}${GRN}sync${NRM}${BLD}. Must be run as root user and NOT recommended."${NRM}
 		echo -e " ${BLD}unsync) Force a manual ${NRM}${GRN}unsync${NRM}${BLD}. Must be run as root user and NOT recommended."${NRM}
+		echo
+		echo -e " ${BLD}It is HIGHLY discouraged to directly call $0 to sync or to unsync."${NRM}
+		if [[ -f /usr/lib/systemd/system/psd.service ]]; then
+			echo -e " ${BLD}Instead, use systemd to start/stop profile-sync-daemon."${NRM}
+			echo
+			echo -e " ${BLD}systemctl ${NRM}${GRN}[option]${NRM}${BLD} psd.service"${NRM}
+			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}		Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}
+			echo -e " ${BLD} ${NRM}${GRN}stop${NRM}${BLD}		Turn off daemon; remove symlinks and rotate tmpfs data back to disc."${NRM}
+			echo -e " ${BLD} ${NRM}${GRN}enable${NRM}${BLD}	Autostart daemon when system comes up."${NRM}
+			echo -e " ${BLD} ${NRM}${GRN}disable${NRM}${BLD}	Remove daemon from the list of autostart daemons."${NRM}
+		elif [[ -f /etc/init.d/psd ]]; then
+			echo -e " ${BLD}Instead, use the init system to start/stop profile-sync-daemon."${NRM}
+			echo
+			echo -e " ${BLD}sudo service psd ${NRM}${GRN}[option]${NRM}${BLD} or /etc/init.d/psd ${NRM}${GRN}[option]"${NRM}
+			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}	Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}
+			echo -e " ${BLD} ${NRM}${GRN}stop${NRM}${BLD}	Turn off daemon; remove symlinks and rotate tmpfs data back to disc."${NRM}
+		fi
 		;;
 esac
 exit 0

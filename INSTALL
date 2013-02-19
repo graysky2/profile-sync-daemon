@@ -1,36 +1,46 @@
-* Makefile.archlinux is setup for Archlinux.  
-* Makefile.gentoo is setup for Gentoo.
-* Makefile.ubuntu is setup for Debian/Ubuntu.
-* Makefile.fedora18 is setup for Fedora 18 and is identical
-  to the Arch Linux Makefile.
+BUILDING
+ There is no configure script nor is there anything to compile.
+ Copy or symlink the Makefile.x of your chosing to Makefile.
 
-There is no configure script nor is there anything to compile.
-Copy or symlink the Makefile.x of your chosing to Makefile.
+  $ ln -s Makefile.archlinux Makefile
 
- $ ln -s Makefile.archlinux Makefile
+ * Makefile.archlinux is setup for Archlinux.  
+ * Makefile.gentoo is setup for Gentoo.
+ * Makefile.ubuntu is setup for Debian/Ubuntu.
+ * Makefile.fedora18 is setup for Fedora 18.
 
-Setup the via a make.
+ Setup the via a make.
 
- $ make
+  $ make
 
-Running a `make install` as root will distribute the files to
-the filesystem.
+ Running a `make install` as root will distribute the files to
+ the filesystem.
 
- # make install
+  # make install
 
-It is highly discouraged to manually build this on Arch Linux.
-Instead, use the PKGBUILD in the AUR so the resulting package
-can be managed by pacman:
-https://aur.archlinux.org/packages/profile-sync-daemon
+USE A DISTRO PROVIDED PACKAGE
+ ARCH LINUX
+ Arch Linux users may, use the PKGBUILD in the AUR at this url:
+ https://aur.archlinux.org/packages/profile-sync-daemon
 
-Ubuntu/Debian users may use the PPA graysky maintains at this url: 
-https://launchpad.net/~graysky/+archive/utils
-Or build themselves using the included Makefile.ubuntu and debian
-build tools such as dh_make and dpkg-buildpackage. Note in this 
-case the scripts in common/debian.  Of particular interest is 
-the fact that Ubuntu/Debian use different paths for both their 
-lock files and for their default mounted tmpfs paths. See 
-common/debian/postinst for the changes.
+ GENTOO
+ Gentoo users can build the package directly with the provided
+ ebuild:
+ http://packages.gentoo.org/package/www-misc/profile-sync-daemon
+
+ FEDORA
+ Fedora 18 users may use prepackaged rpms maintained by graysky
+ at the following url: http://repo-ck.com/fedora_rpms
+
+ UBUNTU/DEBIAN
+ Ubuntu/Debian users may use the PPA graysky maintains at this url: 
+ https://launchpad.net/~graysky/+archive/utils
+ Or build themselves using the included Makefile.ubuntu and debian
+ build tools such as dh_make and dpkg-buildpackage. Note in this 
+ case the scripts in common/debian.  Of particular interest is 
+ the fact that Ubuntu/Debian use different paths for both their 
+ lock files and for their default mounted tmpfs paths. See 
+ common/debian/postinst for the changes.
 
 If you wish to contribute to other distros, fork this project
 on github and submit a pull request:
