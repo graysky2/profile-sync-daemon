@@ -348,9 +348,9 @@ case "$1" in
 		echo -e " ${BLD}sync)   Force a manual ${NRM}${GRN}sync${NRM}${BLD}. Must be run as root user and NOT recommended."${NRM}
 		echo -e " ${BLD}unsync) Force a manual ${NRM}${GRN}unsync${NRM}${BLD}. Must be run as root user and NOT recommended."${NRM}
 		echo
-		echo -e " ${BLD}It is HIGHLY discouraged to directly call $0 to sync or to unsync."${NRM}
+		echo -e " ${BLD}${RED}It is HIGHLY discouraged to directly call $0 to sync or to unsync."${NRM}
 		if [[ -f /usr/lib/systemd/system/psd.service ]]; then
-			echo -e " ${BLD}Instead, use systemd to start/stop profile-sync-daemon."${NRM}
+			echo -e " ${BLD}${RED}Instead, use systemd to start/stop profile-sync-daemon."${NRM}
 			echo
 			echo -e " ${BLD}systemctl ${NRM}${GRN}[option]${NRM}${BLD} psd.service"${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}		Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}
@@ -358,7 +358,7 @@ case "$1" in
 			echo -e " ${BLD} ${NRM}${GRN}enable${NRM}${BLD}	Autostart daemon when system comes up."${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}disable${NRM}${BLD}	Remove daemon from the list of autostart daemons."${NRM}
 		elif [[ -f /etc/init.d/psd ]]; then
-			echo -e " ${BLD}Instead, use the init system to start/stop profile-sync-daemon."${NRM}
+			echo -e " ${BLD}${RED}Instead, use the init system to start/stop profile-sync-daemon."${NRM}
 			echo
 			echo -e " ${BLD}sudo service psd ${NRM}${GRN}[option]${NRM}${BLD} or /etc/init.d/psd ${NRM}${GRN}[option]"${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}	Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}

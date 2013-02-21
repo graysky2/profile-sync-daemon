@@ -1,3 +1,9 @@
+v5.25
+21-Feb-2013
+Added support for Mint Linux.
+Add more generic Ubuntu Makefile. Now only Debian installs are identified from the postin scriptlet.
+Updated man page.
+
 v5.24
 19-Feb-2013
 More verbose help for new users.
@@ -13,7 +19,7 @@ License change GPL --> MIT.
 
 v5.21
 14-Feb-2013
-add support for firefox-trunk (Firefox Nightly from the ppa:ubuntu-mozilla-daily/ppa -> more info @ http://www.webupd8.org/2011/05/install-firefox-nightly-from-ubuntu-ppa.html) (hotice).
+Added support for firefox-trunk (Firefox Nightly from the ppa:ubuntu-mozilla-daily/ppa -> more info @ http://www.webupd8.org/2011/05/install-firefox-nightly-from-ubuntu-ppa.html) (hotice).
 
 v5.20
 14-Feb-2013
