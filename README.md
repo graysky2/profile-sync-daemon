@@ -5,8 +5,8 @@ Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browse
 Consult the man page or the wiki page: https://wiki.archlinux.org/index.php/Profile-sync-daemon
 
 ##Packages by Distro
-* ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch Linux via AUR Package: https://aur.archlinux.org/packages/profile-sync-daemon
-* ![logo](http://chakra-linux.org/img/icon/chakra-kde_32.png "chakra logo")Chakra Linux via CCR Package: http://chakra-linux.org/ccr/packages.php?ID=5007
+* ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch via AUR Package: https://aur.archlinux.org/packages/profile-sync-daemon
+* ![logo](http://chakra-linux.org/img/icon/chakra-kde_32.png "chakra logo")Chakra via CCR Package: http://chakra-linux.org/ccr/packages.php?ID=5007
 * ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian: https://launchpad.net/~graysky/+archive/utils
 * ![logo](http://www.repo-ck.com/fedora.png "fedora logo")Fedora: http://repo-ck.com/fedora_rpms
 * ![logo](http://www.repo-ck.com/linux_mint.png "mint logo")Mint: https://launchpad.net/~graysky/+archive/utils
