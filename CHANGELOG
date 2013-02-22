@@ -1,3 +1,8 @@
+v5.26
+22-Feb-2013
+Ubuntu init.d links now match distro defaults.
+Streamlined man page a bit.
+
 v5.25
 21-Feb-2013
 Added support for Mint Linux.

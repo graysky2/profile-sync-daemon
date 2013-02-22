@@ -325,7 +325,7 @@ do_unsync() {
 }
 
 case "$1" in
-	p|P|Parse|parse|debug)
+	p|P|Parse|parse|Preview|preview|debug)
 		dep_check && dup_check && parse_conf_file
 		;;
 	sync)
@@ -342,15 +342,14 @@ case "$1" in
 	*) 
 		echo -e "${RED}Profile-sync-daemon v$VERS${NRM}"
 		echo
-		echo -e " ${BLD}$0 ${NRM}${GRN}{parse|sync|unsync}${NRM}"
+		echo -e " ${BLD}$0 ${NRM}${GRN}[option]${NRM}"
+		echo -e " ${BLD} ${NRM}${GRN}preview${NRM}${BLD}	Parse config file (${NRM}${BLU}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed."${NRM}
+		echo -e " ${BLD} ${NRM}${RED}sync${NRM}${BLD}		Force a manual sync. Must be run as root user and NOT recommended."${NRM}
+		echo -e " ${BLD} ${NRM}${RED}unsync${NRM}${BLD}	Force a manual unsync. Must be run as root user and NOT recommended."${NRM}
 		echo
-		echo -e " ${BLD}parse)  ${NRM}${GRN}Parse${NRM}${BLD} config file (${NRM}${BLU}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed."${NRM}
-		echo -e " ${BLD}sync)   Force a manual ${NRM}${GRN}sync${NRM}${BLD}. Must be run as root user and NOT recommended."${NRM}
-		echo -e " ${BLD}unsync) Force a manual ${NRM}${GRN}unsync${NRM}${BLD}. Must be run as root user and NOT recommended."${NRM}
-		echo
-		echo -e " ${BLD}${RED}It is HIGHLY discouraged to directly call $0 to sync or to unsync."${NRM}
+		echo -e " ${BLD}It is ${RED}HIGHLY DISCOURAGED${NRM}${BLD} to directly call $0 to sync or to unsync."${NRM}
 		if [[ -f /usr/lib/systemd/system/psd.service ]]; then
-			echo -e " ${BLD}${RED}Instead, use systemd to start/stop profile-sync-daemon."${NRM}
+			echo -e " ${BLD}Instead, use systemd to start/stop profile-sync-daemon."${NRM}
 			echo
 			echo -e " ${BLD}systemctl ${NRM}${GRN}[option]${NRM}${BLD} psd.service"${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}		Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}
@@ -358,7 +357,7 @@ case "$1" in
 			echo -e " ${BLD} ${NRM}${GRN}enable${NRM}${BLD}	Autostart daemon when system comes up."${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}disable${NRM}${BLD}	Remove daemon from the list of autostart daemons."${NRM}
 		elif [[ -f /etc/init.d/psd ]]; then
-			echo -e " ${BLD}${RED}Instead, use the init system to start/stop profile-sync-daemon."${NRM}
+			echo -e " ${BLD}Instead, use the init system to start/stop profile-sync-daemon."${NRM}
 			echo
 			echo -e " ${BLD}sudo service psd ${NRM}${GRN}[option]${NRM}${BLD} or /etc/init.d/psd ${NRM}${GRN}[option]"${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}	Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}
