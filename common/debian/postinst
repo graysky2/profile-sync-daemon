@@ -42,4 +42,9 @@ case "$1" in
 		;;
 esac
 
+# setup to run at boot with default order
+update-rc.d -f psd remove >/dev/null 2>&1
+update-rc.d psd defaults
+
+
 exit 0
