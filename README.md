@@ -6,7 +6,7 @@ Consult the man page or the wiki page: https://wiki.archlinux.org/index.php/Prof
 
 ##Packages by Distro
 * ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch via AUR Package: https://aur.archlinux.org/packages/profile-sync-daemon
-* ![logo](http://chakra-linux.org/img/icon/chakra-kde_32.png "chakra logo")Chakra via CCR Package: http://chakra-linux.org/ccr/packages.php?ID=5007
+* ![logo](http://chakra-linux.org/img/icon/chakra-kde_32.png "chakra logo")Chakra via CCR Package: http://chakra-linux.org/ccr/packages.php?ID=5008
 * ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian: See instruction below
 * ![logo](http://www.repo-ck.com/fedora.png "fedora logo")Fedora: See instruction below
 * ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo via Ebuild: http://packages.gentoo.org/package/www-misc/profile-sync-daemon
