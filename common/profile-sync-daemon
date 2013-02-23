@@ -22,7 +22,7 @@ if [[ -z "$USERS" ]]; then
 	exit 1
 fi
 
-BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox firefox-trunk google-chrome heftig-aurora midori opera opera-next qupzilla"} # all supported browsers
+BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox firefox-trunk google-chrome heftig-aurora rekonq midori opera opera-next qupzilla"} # all supported browsers
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
 
@@ -121,6 +121,10 @@ set_which() {
 					index=$index+1
 				done
 			fi
+			;;
+		rekonq)
+			DIRArr[0]="$homedir/.kde4/share/apps/$browser"
+			PSNAME="$browser"
 			;;
 		opera|opera-next|qupzilla)
 			DIRArr[0]="$homedir/.$browser"
