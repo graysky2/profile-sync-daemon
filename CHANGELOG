@@ -1,3 +1,40 @@
+v5.27
+23-Feb-2013
+Fixed Gentoo bug not detecting /etc/conf.d/psd which kept users from running `psd p` (preview mode).
+Better output in preview/parse mode.
+
+v5.26
+22-Feb-2013
+Ubuntu init.d links now match distro defaults.
+Streamlined man page a bit.
+
+v5.25
+21-Feb-2013
+Added support for Mint Linux.
+Add more generic Ubuntu Makefile. Now only Debian installs are identified from the postin scriptlet.
+Updated man page.
+
+v5.24
+19-Feb-2013
+More verbose help for new users.
+Changed yellow color to blue for users of light colored terminals.
+
+v5.23
+17-Feb-2013
+Fixed debian scriptlets.
+
+v5.22
+16-Feb-2013
+License change GPL --> MIT.
+
+v5.21
+14-Feb-2013
+Added support for firefox-trunk (Firefox Nightly from the ppa:ubuntu-mozilla-daily/ppa -> more info @ http://www.webupd8.org/2011/05/install-firefox-nightly-from-ubuntu-ppa.html) (hotice).
+
+v5.20
+14-Feb-2013
+Updated Makefiles and docs.
+
 v5.19
 13-Feb-2013
 Moved to a Makefile paradigm for wider support on other distros.

@@ -1,0 +1,28 @@
+#!/bin/sh
+set -e
+# summary of how this script can be called:
+#        * <prerm> `remove'
+#        * <old-prerm> `upgrade' <new-version>
+#        * <new-prerm> `failed-upgrade' <old-version>
+#        * <conflictor's-prerm> `remove' `in-favour' <package> <new-version>
+#        * <deconfigured's-prerm> `deconfigure' `in-favour'
+#          <package-being-installed> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see http://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+
+
+case "$1" in
+	purge|remove|deconfigure)
+		update-rc.d -f psd remove >/dev/null 2>&1
+	;;
+	upgrade|abort-upgrade|failed-upgrade)
+	/bin/true
+	;;
+*)
+	echo "unknown argument \`$1'" >&2
+	exit 1
+	;;
+esac
+
+exit 0

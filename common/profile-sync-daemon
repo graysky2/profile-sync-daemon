@@ -1,24 +1,28 @@
 #!/bin/bash
 # By graysky <graysky AT archlinux DOT us>
-# Inspired by some code originally  written by Colin Verot
-export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" YLW="\e[01;33m" NRM="\e[00m"
+# Inspired by some code originally written by Colin Verot
+export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" BLU="\e[01;34m" NRM="\e[00m"
 VERS="@VERSION@"
 
-PSDCONF=${PSDCONF:-"/etc/psd.conf"}
+# package default
+[[ -f /etc/psd.conf ]] && PSDCONF=${PSDCONF:-"/etc/psd.conf"}
+
+# gentoo default
+[[ -f /etc/conf.d/psd ]] && PSDCONF=${PSDCONF:-"/etc/conf.d/psd"}
 
 if [[ ! -f $PSDCONF ]]; then
-	echo "Cannot find $PSDCONF so bailing.  Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
+	echo -e " Cannot find $PSDCONF so bailing.	Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
 	exit 1
 else
 	. $PSDCONF
 fi
 
 if [[ -z "$USERS" ]]; then
-	echo "Must define at least one user in $PSDCONF"	# nothing to do if there are no users
+	echo -e " ${BLD}Must define at least one user in ${NRM}${BLU}$PSDCONF"${NRM}	# nothing to do if there are no users
 	exit 1
 fi
 
-BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox google-chrome heftig-aurora midori opera opera-next qupzilla"} # all supported browsers
+BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox firefox-trunk google-chrome heftig-aurora midori opera opera-next qupzilla"} # all supported browsers
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
 
@@ -32,11 +36,11 @@ dep_check() {
 
 root_check() {
 	# we call this to ensure that only the root user is calling the function
-	# why care? both the sync and unsync functions require root access to /run/psd (the pseudo pid file)
-	# running as unprivileged user will fuck up the sync process resulting in unhappy users
+	# why care? both the sync and unsync functions require root access to $DAEMON_FILE
+	# Running as unprivileged user will fuck up the sync process resulting in unhappy users
 
 	if [[ $EUID -ne 0 ]]; then
-		echo "This function must be called as root!" 1>&2
+		echo -e " ${BLD}This function must be called as root!"${NRM} 1>&2
 		exit 1
 	fi
 }
@@ -71,6 +75,21 @@ set_which() {
 		google-chrome)
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="chrome"
+			;;
+		firefox-trunk)
+			if [[ -d $homedir/.mozilla/firefox-trunk ]]; then
+				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox-trunk/profiles.ini|sed 's/[P,p]ath=//') )
+				index=0
+				PSNAME="$browser"
+				for profileItem in ${profileArr[@]}; do
+					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
+						DIRArr[index]="$profileItem"	# path is not relative
+					else
+						DIRArr[index]="$homedir/.mozilla/firefox-trunk/$profileItem"	# we need to append the default path to give a fully qualified path
+					fi
+					index=$index+1
+				done
+			fi
 			;;
 		firefox)
 			if [[ -d $homedir/.mozilla/firefox ]]; then
@@ -142,7 +161,7 @@ dup_check() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			if [[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]]; then
+			if [[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]]; then
 				if [[ -z ${DIRArr[@]} ]]; then
 					/bin/true # nothing to check
 				else
@@ -155,7 +174,7 @@ dup_check() {
 					else
 						echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
 						[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"	# clip of the 'heftig-' to give correct path
-						echo -e " ${BLD}Must have unique last directories in ${YLW}$homedir/.mozilla/$browser/profiles.ini${NRM}${BLD} to use psd."${NRM}
+						echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.mozilla/$browser/profiles.ini${NRM}${BLD} to use psd."${NRM}
 						exit 1
 					fi
 				fi
@@ -187,9 +206,21 @@ kill_browsers() {
 }
 
 parse_conf_file() {
-	echo -e "${RED}Profile-sync-daemon v$VERS${NRM}"
+	if [[ -z $(sed 's| \\.*$||' /etc/issue | head -n 1) ]]; then
+		echo -e "${RED}Profile-sync-daemon v$VERS"${NRM}
+	else
+		echo -e "${RED}Profile-sync-daemon v$VERS${NRM}${BLD} on $(sed 's| \\.*$||' /etc/issue | head -n 1)."${NRM}
+	fi
+	
 	echo
-	echo -e "${BLD}Psd will manage the following per ${YLW}${PSDCONF}${NRM}${BLD} settings:"${NRM}
+	echo -e "${BLD}Daemon file ${BLU}$DAEMON_FILE${NRM}${BLD} is $([[ -f $DAEMON_FILE ]] && echo present || echo not present)."${NRM}
+
+	if [[ -f /usr/lib/systemd/system/psd.service ]]; then
+		# running sysmted
+		echo -e "${BLD}Service is currently $(systemctl is-active psd)."${NRM}
+	fi
+	echo
+	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD} settings:"${NRM}
 	echo
 	local browser user
 	for user in $USERS; do
@@ -197,15 +228,15 @@ parse_conf_file() {
 			set_which "$user" "$browser"
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
 				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null | awk '{ print $1 }')	# profile dir size
 				if [[ -d "$DIR" ]]; then
 					echo -en " ${BLD}browser/psname:"
 					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
-					echo -en " ${BLD}owner/group:"    
+					echo -en " ${BLD}owner/group:"		
 					echo -e "$(tput cr)$(tput cuf 17) $user/$group"${NRM} 
 					echo -en " ${BLD}sync target:"
-					echo -e "$(tput cr)$(tput cuf 17) ${YLW}$DIR"${NRM} 
+					echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR"${NRM} 
 					echo -en " ${BLD}tmpfs dir:"
 					echo -e "$(tput cr)$(tput cuf 17) ${RED}$VOLATILE/$user-$browser$suffix"${NRM}
 					echo -en " ${BLD}profile size:"
@@ -230,7 +261,7 @@ ungraceful_state_check() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
 
 				if [[ -e "$DIR/.flagged" ]]; then # all is well so continue
 					/bin/true
@@ -254,7 +285,7 @@ do_sync() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
 
 				# make tmpfs container
 				if [[ -d $DIR ]]; then
@@ -293,7 +324,7 @@ do_unsync() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
 
 				# check if user has browser profile
 				if [[ -h "$DIR" ]]; then
@@ -310,7 +341,7 @@ do_unsync() {
 }
 
 case "$1" in
-	p|P|Parse|parse|debug)
+	p|P|Parse|parse|Preview|preview|debug)
 		dep_check && dup_check && parse_conf_file
 		;;
 	sync)
@@ -327,11 +358,29 @@ case "$1" in
 	*) 
 		echo -e "${RED}Profile-sync-daemon v$VERS${NRM}"
 		echo
-		echo -e " ${BLD}$0 ${NRM}${GRN}{parse|sync|unsync}${NRM}"
+		echo -e " ${BLD}$0 ${NRM}${GRN}[option]${NRM}"
+		echo -e " ${BLD} ${NRM}${GRN}preview${NRM}${BLD}	Parse config file (${NRM}${BLU}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed."${NRM}
+		echo -e " ${BLD} ${NRM}${RED}sync${NRM}${BLD}		Force a manual sync. Must be run as root user and NOT recommended."${NRM}
+		echo -e " ${BLD} ${NRM}${RED}unsync${NRM}${BLD}	Force a manual unsync. Must be run as root user and NOT recommended."${NRM}
 		echo
-		echo -e " ${BLD}parse)  ${NRM}${GRN}Parse${NRM}${BLD} config file (${NRM}${YLW}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed."${NRM}
-		echo -e " ${BLD}sync)   Force a manual ${NRM}${GRN}sync${NRM}${BLD}. Must be run as root user and NOT recommended."${NRM}
-		echo -e " ${BLD}unsync) Force a manual ${NRM}${GRN}unsync${NRM}${BLD}. Must be run as root user and NOT recommended."${NRM}
+		echo -e " ${BLD}It is ${RED}HIGHLY DISCOURAGED${NRM}${BLD} to directly call $0 to sync or to unsync."${NRM}
+		if [[ -f /usr/lib/systemd/system/psd.service ]]; then
+			echo -e " ${BLD}Instead, use systemd to start/stop profile-sync-daemon."${NRM}
+			echo
+			echo -e " ${BLD}systemctl ${NRM}${GRN}[option]${NRM}${BLD} psd.service"${NRM}
+			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}		Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}
+			echo -e " ${BLD} ${NRM}${GRN}stop${NRM}${BLD}		Turn off daemon; remove symlinks and rotate tmpfs data back to disc."${NRM}
+			echo -e " ${BLD} ${NRM}${GRN}enable${NRM}${BLD}	Autostart daemon when system comes up."${NRM}
+			echo -e " ${BLD} ${NRM}${GRN}disable${NRM}${BLD}	Remove daemon from the list of autostart daemons."${NRM}
+		elif [[ -f /etc/init.d/psd ]]; then
+			echo -e " ${BLD}Instead, use the init system to start/stop profile-sync-daemon."${NRM}
+			echo
+			echo -e " ${BLD}sudo service psd ${NRM}${GRN}[option]${NRM}${BLD} or /etc/init.d/psd ${NRM}${GRN}[option]"${NRM}
+			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}	Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}
+			echo -e " ${BLD} ${NRM}${GRN}stop${NRM}${BLD}	Turn off daemon; remove symlinks and rotate tmpfs data back to disc."${NRM}
+		fi
 		;;
 esac
 exit 0
+
+#vim:set ts=2 sw=2 et:

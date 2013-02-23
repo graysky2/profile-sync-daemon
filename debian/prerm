@@ -1,7 +1,0 @@
-#!/bin/sh
-set -e
-if [ -f /var/run/psd ]; then
-/etc/init.d/psd stop
-else
-/bin/true
-fi
