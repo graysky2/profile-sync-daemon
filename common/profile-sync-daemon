@@ -32,8 +32,8 @@ dep_check() {
 
 root_check() {
 	# we call this to ensure that only the root user is calling the function
-	# why care? both the sync and unsync functions require root access to /run/psd (the pseudo pid file)
-	# running as unprivileged user will fuck up the sync process resulting in unhappy users
+	# why care? both the sync and unsync functions require root access to $DAEMON_FILE
+	# Running as unprivileged user will fuck up the sync process resulting in unhappy users
 
 	if [[ $EUID -ne 0 ]]; then
 		echo -e " ${BLD}This function must be called as root!"${NRM} 1>&2
@@ -366,3 +366,5 @@ case "$1" in
 		;;
 esac
 exit 0
+
+#vim:set ts=2 sw=2 et:
