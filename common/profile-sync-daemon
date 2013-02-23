@@ -7,7 +7,7 @@ VERS="@VERSION@"
 PSDCONF=${PSDCONF:-"/etc/psd.conf"}
 
 if [[ ! -f $PSDCONF ]]; then
-	echo -e " Cannot find $PSDCONF so bailing.  Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
+	echo -e " Cannot find $PSDCONF so bailing.	Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
 	exit 1
 else
 	. $PSDCONF
@@ -217,7 +217,7 @@ parse_conf_file() {
 				if [[ -d "$DIR" ]]; then
 					echo -en " ${BLD}browser/psname:"
 					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
-					echo -en " ${BLD}owner/group:"    
+					echo -en " ${BLD}owner/group:"		
 					echo -e "$(tput cr)$(tput cuf 17) $user/$group"${NRM} 
 					echo -en " ${BLD}sync target:"
 					echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR"${NRM} 
