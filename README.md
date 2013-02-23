@@ -5,13 +5,13 @@ Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browse
 Consult the man page or the wiki page: https://wiki.archlinux.org/index.php/Profile-sync-daemon
 
 ##Packages by Distro
-* ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch via AUR Package: https://aur.archlinux.org/packages/profile-sync-daemon
-* ![logo](http://chakra-linux.org/img/icon/chakra-kde_32.png "chakra logo")Chakra via CCR Package: http://chakra-linux.org/ccr/packages.php?ID=5008
-* ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian: See instruction below
-* ![logo](http://www.repo-ck.com/fedora.png "fedora logo")Fedora: See instruction below
+* ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch via AUR: https://aur.archlinux.org/packages/profile-sync-daemon
+* ![logo](http://chakra-linux.org/img/icon/chakra-kde_32.png "chakra logo")Chakra via CCR: http://chakra-linux.org/ccr/packages.php?ID=5008
+* ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian: See instruction below.
+* ![logo](http://www.repo-ck.com/fedora.png "fedora logo")Fedora: See instruction below.
 * ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo via Ebuild: http://packages.gentoo.org/package/www-misc/profile-sync-daemon
-* ![logo](http://www.repo-ck.com/linux_mint.png "mint logo")Mint: See instruction below
-* ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu: See instruction below
+* ![logo](http://www.repo-ck.com/linux_mint.png "mint logo")Mint: See instruction below.
+* ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu: See instruction below.
 
 ###Debian Users
 To add the PPA (personal package archive) to your Debian (tested on squeeze) system, and to install psd, do the following as the root user:
@@ -19,8 +19,8 @@ To add the PPA (personal package archive) to your Debian (tested on squeeze) sys
     echo "deb http://ppa.launchpad.net/graysky/utils/ubuntu quantal main" > /etc/apt/sources.list.d/graysky.list
     echo "deb-src http://ppa.launchpad.net/graysky/utils/ubuntu quantal main" >> /etc/apt/sources.list.d/graysky.list
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys FF7F9516
-		gpg --keyserver wwwkeys.pgp.net --recv-keys C1C5C63BF0E0B4E7
-		gpg --armor --export C1C5C63BF0E0B4E7 | apt-key add -
+    gpg --keyserver wwwkeys.pgp.net --recv-keys C1C5C63BF0E0B4E7
+    gpg --armor --export C1C5C63BF0E0B4E7 | apt-key add -
     apt-get update
     apt-get install profile-sync-daemon
 
