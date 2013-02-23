@@ -4,6 +4,8 @@
 
 description="Webbrowser profile syncing"
 extra_commands="debug resync"
+description_debug="Show debug info about psd settings/profiles"
+description_resync="Manually sync the disk profile with running tmpfs image"
 PIDFILE="/var/run/psd.pid"
 
 PSDCONF="/etc/conf.d/psd"
