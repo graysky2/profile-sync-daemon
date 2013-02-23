@@ -4,7 +4,11 @@
 export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" BLU="\e[01;34m" NRM="\e[00m"
 VERS="@VERSION@"
 
-PSDCONF=${PSDCONF:-"/etc/psd.conf"}
+# package default
+[[ -f /etc/psd.conf ]] && PSDCONF=${PSDCONF:-"/etc/psd.conf"}
+
+# gentoo default
+[[ -f /etc/conf.d/psd ]] && PSDCONF=${PSDCONF:-"/etc/conf.d/psd"}
 
 if [[ ! -f $PSDCONF ]]; then
 	echo -e " Cannot find $PSDCONF so bailing.	Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
@@ -202,7 +206,19 @@ kill_browsers() {
 }
 
 parse_conf_file() {
-	echo -e "${RED}Profile-sync-daemon v$VERS${NRM}"
+	if [[ -z $(sed 's| \\.*$||' /etc/issue | head -n 1) ]]; then
+		echo -e "${RED}Profile-sync-daemon v$VERS"${NRM}
+	else
+		echo -e "${RED}Profile-sync-daemon v$VERS${NRM}${BLD} on $(sed 's| \\.*$||' /etc/issue | head -n 1)."${NRM}
+	fi
+	
+	echo
+	echo -e "${BLD}Daemon file ${BLU}$DAEMON_FILE${NRM}${BLD} is $([[ -f $DAEMON_FILE ]] && echo present || echo not present)."${NRM}
+
+	if [[ -f /usr/lib/systemd/system/psd.service ]]; then
+		# running sysmted
+		echo -e "${BLD}Service is currently $(systemctl is-active psd)."${NRM}
+	fi
 	echo
 	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD} settings:"${NRM}
 	echo

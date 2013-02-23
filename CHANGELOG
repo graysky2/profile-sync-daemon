@@ -1,3 +1,8 @@
+v5.27
+23-Feb-2013
+Fixed Gentoo bug not detecting /etc/conf.d/psd which kept users from running `psd p` (preview mode).
+Better output in preview/parse mode.
+
 v5.26
 22-Feb-2013
 Ubuntu init.d links now match distro defaults.
