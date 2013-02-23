@@ -1,3 +1,7 @@
+v5.27.1
+23-Feb-2013
+Gentoo only, add description for extra commands (hasufell).
+
 v5.27
 23-Feb-2013
 Fixed Gentoo bug not detecting /etc/conf.d/psd which kept users from running `psd p` (preview mode).
