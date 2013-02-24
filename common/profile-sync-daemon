@@ -123,7 +123,8 @@ set_which() {
 			fi
 			;;
 		rekonq)
-			DIRArr[0]="$homedir/.kde4/share/apps/$browser"
+			[[ -d $homedir/.kde4/share/apps/$browser ]] && DIRArr[0]="$homedir/.kde4/share/apps/$browser"
+			[[ -d $homedir/.kde/share/apps/$browser ]] && DIRArr[0]="$homedir/.kde/share/apps/$browser"
 			PSNAME="$browser"
 			;;
 		opera|opera-next|qupzilla)
