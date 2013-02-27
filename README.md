@@ -1,9 +1,6 @@
 #Profile-sync-daemon
 Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browser's profile in tmpfs and to periodically sync it back to your physical disc (HDD/SSD). This is accomplished via a symlinking step and an innovative use of rsync to maintain back-up and synchronization between the two. One of the major design goals of psd is a completely transparent user experience.
 
-##Documentation
-Consult the man page or the wiki page: https://wiki.archlinux.org/index.php/Profile-sync-daemon
-
 ##Supported Browsers
 Currently, the following browsers are auto-detected and managed:
 * Chromium
@@ -57,3 +54,6 @@ To add the PPA (personal package archive) to your Ubuntu system (packages availa
 
 ###Other Distros
 If you are interested in packaging psd for your favorite distro, please contact me.
+
+##Documentation
+Consult the man page or the wiki page: https://wiki.archlinux.org/index.php/Profile-sync-daemon
