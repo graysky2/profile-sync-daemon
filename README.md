@@ -4,6 +4,20 @@ Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browse
 ##Documentation
 Consult the man page or the wiki page: https://wiki.archlinux.org/index.php/Profile-sync-daemon
 
+##Supported Browsers
+Currently, the following browsers are auto-detected and managed:
+* Chromium
+* Conkeror
+* Firefox (stable,beta,aurora)
+* Firefox-trunk (this is an Ubuntu-only browser: http://www.webupd8.org/2011/05/install-firefox-nightly-from-ubuntu-ppa.html)
+* Google-chrome
+* Heftig's version of Aurora (this is an Arch Linux-only browser: https://bbs.archlinux.org/viewtopic.php?id=117157)
+* Midori
+* Opera
+* Opera-Next
+* QupZilla
+* Rekonq
+
 ##Packages by Distro
 * ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch via AUR: https://aur.archlinux.org/packages/profile-sync-daemon
 * ![logo](http://chakra-linux.org/img/icon/chakra-kde_32.png "chakra logo")Chakra via CCR: http://chakra-linux.org/ccr/packages.php?ID=5008
