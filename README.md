@@ -19,7 +19,7 @@ Currently, the following browsers are auto-detected and managed:
 * ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch via AUR: https://aur.archlinux.org/packages/profile-sync-daemon
 * ![logo](http://chakra-linux.org/img/icon/chakra-kde_32.png "chakra logo")Chakra via CCR: http://chakra-linux.org/ccr/packages.php?ID=5008
 * ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian: See instruction below.
-* ![logo](http://cloud.ohloh.net/attachments/14589/me_small.png "exherbo logo")Exherbo via exheres: http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon/index.html
+* ![logo](http://cloud.ohloh.net/attachments/14589/me_small.png "exherbo logo")Exherbo via exheres: http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon
 * ![logo](http://sec-wall.gefira.pl/media/gfx/logo-fedora.png "fedora logo")Fedora: See instruction below.
 * ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo via Ebuild: http://packages.gentoo.org/package/www-misc/profile-sync-daemon
 * ![logo](http://www.haskell.org/platform/icons/mint.png "mint logo")Mint: See instruction below.
