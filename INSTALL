@@ -5,9 +5,10 @@ BUILDING
   $ ln -s Makefile.archlinux Makefile
 
  * Makefile.archlinux is setup for Archlinux.  
+ * Makefile.exherbo is setup for Exherbo. 
  * Makefile.gentoo is setup for Gentoo.
- * Makefile.ubuntu is setup for Debian/Ubuntu.
- * Makefile.fedora18 is setup for Fedora 18.
+ * Makefile.ubuntu is setup for Debian/Mint/Ubuntu.
+ * Makefile.fedora18 is setup for Fedora 18 and Rawhide.
 
  Setup the via a make.
 
@@ -32,8 +33,8 @@ USE A DISTRO PROVIDED PACKAGE
  Fedora 18 users may use prepackaged rpms maintained by graysky
  at the following url: http://repo-ck.com/fedora_rpms
 
- UBUNTU/DEBIAN
- Ubuntu/Debian users may use the PPA graysky maintains at this url: 
+ DEBIAN/MINT/UBUNTU
+ Debian/Mint/Ubuntu users may use the PPA graysky maintains at this url: 
  https://launchpad.net/~graysky/+archive/utils
  Or build themselves using the included Makefile.ubuntu and debian
  build tools such as dh_make and dpkg-buildpackage. Note in this 
