@@ -1,0 +1,12 @@
+[Unit]
+Description=Timed Profile-resync
+After=psd.service
+Wants=psd-resync.timer
+PartOf=psd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/profile-sync-daemon resync
+
+[Install]
+WantedBy=default.target
