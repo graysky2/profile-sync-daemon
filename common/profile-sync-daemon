@@ -68,6 +68,10 @@ set_which() {
 	fi
 
 	case "$browser" in
+		conkeror.mozdev.org)
+			DIRArr[0]="$homedir/.$browser"
+			PSNAME="xulrunner"
+			;;
 		chromium|midori)
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="$browser"
@@ -76,20 +80,20 @@ set_which() {
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="chrome"
 			;;
-		firefox-trunk)
-			if [[ -d $homedir/.mozilla/firefox-trunk ]]; then
-				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox-trunk/profiles.ini|sed 's/[P,p]ath=//') )
-				index=0
-				PSNAME="$browser"
-				for profileItem in ${profileArr[@]}; do
-					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
-						DIRArr[index]="$profileItem"	# path is not relative
-					else
-						DIRArr[index]="$homedir/.mozilla/firefox-trunk/$profileItem"	# we need to append the default path to give a fully qualified path
-					fi
-					index=$index+1
-				done
-			fi
+		opera|opera-next)
+			DIRArr[0]="$homedir/.$browser"
+			PSNAME="$browser"
+			;;
+		qupzilla)
+			#	http://blog.qupzilla.com/2013/03/qupzilla-140-released.html
+			[[ -d $homedir/.$browser ]] && DIRArr[0]="$homedir/.$browser"
+			[[ -d $homedir/.config/$browser ]] && DIRArr[0]="$homedir/.config/$browser"
+			PSNAME="$browser"
+			;;
+		rekonq)
+			[[ -d $homedir/.kde4/share/apps/$browser ]] && DIRArr[0]="$homedir/.kde4/share/apps/$browser"
+			[[ -d $homedir/.kde/share/apps/$browser ]] && DIRArr[0]="$homedir/.kde/share/apps/$browser"
+			PSNAME="$browser"
 			;;
 		firefox)
 			if [[ -d $homedir/.mozilla/firefox ]]; then
@@ -106,16 +110,16 @@ set_which() {
 				done
 			fi
 			;;
-		seamonkey)
-			if [[ -d $homedir/.mozilla/seamonkey ]]; then
-				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/seamonkey/profiles.ini|sed 's/[P,p]ath=//') )
+		firefox-trunk)
+			if [[ -d $homedir/.mozilla/firefox-trunk ]]; then
+				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox-trunk/profiles.ini|sed 's/[P,p]ath=//') )
 				index=0
 				PSNAME="$browser"
 				for profileItem in ${profileArr[@]}; do
 					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
 						DIRArr[index]="$profileItem"	# path is not relative
 					else
-						DIRArr[index]="$homedir/.mozilla/seamonkey/$profileItem"	# we need to append the default path to give a fully qualified path
+						DIRArr[index]="$homedir/.mozilla/firefox-trunk/$profileItem"	# we need to append the default path to give a fully qualified path
 					fi
 					index=$index+1
 				done
@@ -137,18 +141,20 @@ set_which() {
 				done
 			fi
 			;;
-		rekonq)
-			[[ -d $homedir/.kde4/share/apps/$browser ]] && DIRArr[0]="$homedir/.kde4/share/apps/$browser"
-			[[ -d $homedir/.kde/share/apps/$browser ]] && DIRArr[0]="$homedir/.kde/share/apps/$browser"
-			PSNAME="$browser"
-			;;
-		opera|opera-next|qupzilla)
-			DIRArr[0]="$homedir/.$browser"
-			PSNAME="$browser"
-			;;
-		conkeror.mozdev.org)
-			DIRArr[0]="$homedir/.$browser"
-			PSNAME="xulrunner"
+		seamonkey)
+			if [[ -d $homedir/.mozilla/seamonkey ]]; then
+				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/seamonkey/profiles.ini|sed 's/[P,p]ath=//') )
+				index=0
+				PSNAME="$browser"
+				for profileItem in ${profileArr[@]}; do
+					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
+						DIRArr[index]="$profileItem"	# path is not relative
+					else
+						DIRArr[index]="$homedir/.mozilla/seamonkey/$profileItem"	# we need to append the default path to give a fully qualified path
+					fi
+					index=$index+1
+				done
+			fi
 			;;
 		*)
 			# skip invalid browser entries
@@ -167,7 +173,7 @@ running_check() {
 				echo "Refusing to start; $browser is running by $user!"
 				exit 1
 			else
-				/bin/true
+				return
 			fi
 		done
 	done
@@ -183,14 +189,14 @@ dup_check() {
 			set_which "$user" "$browser"
 			if [[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] || [[ "$browser" = "seamonkey" ]]; then
 				if [[ -z ${DIRArr[@]} ]]; then
-					/bin/true # nothing to check
+					return # nothing to check
 				else
 					# browser is on system so check profiles
 					#
 					# check that the LAST DIRECTORY in the full path is unique
 					unique_count=$(echo ${DIRArr[@]##*/} | sed 's/ /\n/g' | sort | uniq | wc -l)
 					if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
-						/bin/true	# no problems so do nothing
+						return	# no problems so do nothing
 					else
 						echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
 						[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"	# clip of the 'heftig-' to give correct path
@@ -216,7 +222,7 @@ kill_browsers() {
 				if [[ -n "$PSNAME" ]] && pgrep -u "$user" "$PSNAME" &>/dev/null; then
 					pkill -SIGTERM -u "$user" "$PSNAME"
 				else
-					/bin/true
+					return
 				fi
 				x=$(( $x + 1 ))
 			done
@@ -231,7 +237,7 @@ parse_conf_file() {
 	else
 		echo -e "${RED}Profile-sync-daemon v$VERS${NRM}${BLD} on $(sed 's| \\.*$||' /etc/issue | head -n 1)."${NRM}
 	fi
-	
+
 	echo
 	echo -e "${BLD}Daemon file ${BLU}$DAEMON_FILE${NRM}${BLD} is $([[ -f $DAEMON_FILE ]] && echo present || echo not present)."${NRM}
 
@@ -284,7 +290,7 @@ ungraceful_state_check() {
 				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] || [[ "$browser" = "seamonkey" ]] && suffix="-${item##*/}" || suffix=
 
 				if [[ -e "$DIR/.flagged" ]]; then # all is well so continue
-					/bin/true
+					return
 				else
 					[[ -h "$DIR" ]] && unlink "$DIR"
 					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"

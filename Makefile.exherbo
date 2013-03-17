@@ -1,4 +1,4 @@
-VERSION = 5.30
+VERSION = 5.31
 PN = profile-sync-daemon
 
 PREFIX ?= /usr
