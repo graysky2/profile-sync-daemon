@@ -22,7 +22,7 @@ if [[ -z "$USERS" ]]; then
 	exit 1
 fi
 
-BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox firefox-trunk google-chrome heftig-aurora rekonq midori opera opera-next qupzilla"} # all supported browsers
+BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox firefox-trunk google-chrome heftig-aurora midori opera opera-next qupzilla rekonq seamonkey"} # all supported browsers
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
 
@@ -106,6 +106,21 @@ set_which() {
 				done
 			fi
 			;;
+		seamonkey)
+			if [[ -d $homedir/.mozilla/seamonkey ]]; then
+				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/seamonkey/profiles.ini|sed 's/[P,p]ath=//') )
+				index=0
+				PSNAME="$browser"
+				for profileItem in ${profileArr[@]}; do
+					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
+						DIRArr[index]="$profileItem"	# path is not relative
+					else
+						DIRArr[index]="$homedir/.mozilla/seamonkey/$profileItem"	# we need to append the default path to give a fully qualified path
+					fi
+					index=$index+1
+				done
+			fi
+			;;
 		heftig-aurora)
 			# https://bbs.archlinux.org/viewtopic.php?id=117157
 			if [[ -d $homedir/.mozilla/aurora ]]; then
@@ -166,7 +181,7 @@ dup_check() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			if [[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]]; then
+			if [[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] || [[ "$browser" = "seamonkey" ]]; then
 				if [[ -z ${DIRArr[@]} ]]; then
 					/bin/true # nothing to check
 				else
@@ -233,7 +248,7 @@ parse_conf_file() {
 			set_which "$user" "$browser"
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] || [[ "$browser" = "seamonkey" ]] && suffix="-${item##*/}" || suffix=
 				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null | awk '{ print $1 }')	# profile dir size
 				if [[ -d "$DIR" ]]; then
 					echo -en " ${BLD}browser/psname:"
@@ -266,7 +281,7 @@ ungraceful_state_check() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] || [[ "$browser" = "seamonkey" ]] && suffix="-${item##*/}" || suffix=
 
 				if [[ -e "$DIR/.flagged" ]]; then # all is well so continue
 					/bin/true
@@ -290,7 +305,7 @@ do_sync() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] || [[ "$browser" = "seamonkey" ]] && suffix="-${item##*/}" || suffix=
 
 				# make tmpfs container
 				if [[ -d $DIR ]]; then
@@ -329,7 +344,7 @@ do_unsync() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] && suffix="-${item##*/}" || suffix=
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] || [[ "$browser" = "seamonkey" ]] && suffix="-${item##*/}" || suffix=
 
 				# check if user has browser profile
 				if [[ -h "$DIR" ]]; then

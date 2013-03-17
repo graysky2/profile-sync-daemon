@@ -1,3 +1,7 @@
+v5.30
+17-Mar-2013
+Added support for seamonkey.
+
 v5.29
 14-Mar-2013
 Depreciated cron for systemd distros.
