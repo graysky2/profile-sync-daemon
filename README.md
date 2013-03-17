@@ -14,6 +14,7 @@ Currently, the following browsers are auto-detected and managed:
 * Opera-Next
 * QupZilla
 * Rekonq
+* Seamonkey
 
 ##Packages by Distro
 * ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch via AUR: https://aur.archlinux.org/packages/profile-sync-daemon
