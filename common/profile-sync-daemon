@@ -386,6 +386,7 @@ case "$1" in
 		echo
 		echo -e " ${BLD}$0 ${NRM}${GRN}[option]${NRM}"
 		echo -e " ${BLD} ${NRM}${GRN}preview${NRM}${BLD}	Parse config file (${NRM}${BLU}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed."${NRM}
+		echo -e " ${BLD} ${NRM}${GRN}resync${NRM}${BLD}	Synchronize the tmpfs and media bound copy. Must be run as root user."${NRM}
 		echo -e " ${BLD} ${NRM}${RED}sync${NRM}${BLD}		Force a manual sync. Must be run as root user and NOT recommended."${NRM}
 		echo -e " ${BLD} ${NRM}${RED}unsync${NRM}${BLD}	Force a manual unsync. Must be run as root user and NOT recommended."${NRM}
 		echo
@@ -393,7 +394,7 @@ case "$1" in
 		if [[ -f /usr/lib/systemd/system/psd.service ]]; then
 			echo -e " ${BLD}Instead, use systemd to start/stop profile-sync-daemon."${NRM}
 			echo
-			echo -e " ${BLD}systemctl ${NRM}${GRN}[option]${NRM}${BLD} psd.service"${NRM}
+			echo -e " ${BLD}systemctl ${NRM}${GRN}[option]${NRM}${BLD} psd psd-resync"${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}		Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}stop${NRM}${BLD}		Turn off daemon; remove symlinks and rotate tmpfs data back to disc."${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}enable${NRM}${BLD}	Autostart daemon when system comes up."${NRM}
