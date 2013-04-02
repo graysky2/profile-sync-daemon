@@ -54,6 +54,11 @@ USE A DISTRO PROVIDED PACKAGE
  ebuild:
  http://packages.gentoo.org/package/www-misc/profile-sync-daemon
 
+ OPENSUSE
+ OpenSUSE users are free to make use of a user supported repo hosting
+ the package:
+ http://download.opensuse.org/repositories/home:/Overman79:/Laptop
+
 If you wish to contribute to other distros, fork this project
 on github and submit a pull request:
 https://github.com/graysky2/profile-sync-daemon
