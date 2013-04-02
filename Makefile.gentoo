@@ -36,6 +36,6 @@ install-man:
 
 install-cron:
 	@echo -e '\033[1;32minstalling cronjob...\033[0m'
-	install -Dm755 common/psd.cron.hourly.gentoo "$(DESTDIR)$(CRONDIR)/psd-update"
+	install -Dm644 common/psd.cron.hourly.gentoo "$(DESTDIR)$(CRONDIR)/psd-update"
 
 install: install-bin install-doc install-man install-cron
