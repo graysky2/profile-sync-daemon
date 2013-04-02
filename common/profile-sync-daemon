@@ -2,7 +2,7 @@
 # By graysky <graysky AT archlinux DOT us>
 # Inspired by some code originally written by Colin Verot
 export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" BLU="\e[01;34m" NRM="\e[00m"
-VERS="@VERSION@"
+VERS="5.32.1"
 
 # package default
 [[ -f /etc/psd.conf ]] && PSDCONF=${PSDCONF:-"/etc/psd.conf"}
