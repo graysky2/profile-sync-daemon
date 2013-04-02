@@ -8,6 +8,7 @@ INITDIR = /etc/init.d
 BINDIR = $(PREFIX)/bin
 DOCDIR = $(PREFIX)/share/doc/$(PN)-$(VERSION)
 MANDIR = $(PREFIX)/share/man/man1
+SYSTEMDDIR = $(PREFIX)/lib/systemd/system
 
 all:
 	@echo -e '\033[1;32msetting version\033[0m'
@@ -18,6 +19,9 @@ install-bin:
 	install -Dm755 common/$(PN) "$(DESTDIR)$(BINDIR)/$(PN)"
 	install -Dm755 init/psd.gentoo "$(DESTDIR)$(INITDIR)/psd"
 	install -Dm644 common/psd.conf "$(DESTDIR)$(CONFDIR)/psd"
+	install -Dm644 init/psd.service "$(DESTDIR)$(SYSTEMDDIR)/psd.service"
+	install -Dm644 init/psd-resync.service "$(DESTDIR)$(SYSTEMDDIR)/psd-resync.service"
+	install -Dm644 init/psd-resync.timer "$(DESTDIR)$(SYSTEMDDIR)/psd-resync.timer"
 	ln -s $(PN) "$(DESTDIR)$(BINDIR)/psd"
 
 install-doc:
