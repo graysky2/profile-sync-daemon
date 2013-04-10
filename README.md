@@ -23,7 +23,7 @@ Currently, the following browsers are auto-detected and managed:
 * ![logo](http://cloud.ohloh.net/attachments/14589/me_small.png "exherbo logo")Exherbo via exheres: http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon
 * ![logo](http://sec-wall.gefira.pl/media/gfx/logo-fedora.png "fedora logo")Fedora: See instruction below.
 * ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo via Ebuild: http://packages.gentoo.org/package/www-misc/profile-sync-daemon
-* ![logo](http://www.haskell.org/platform/icons/mint.png "mint logo")Mint: See instruction below.
+* ![logo](http://i1-news.softpedia-static.com/images/extra/LINUX/small/slw106news5.png "mint logo")Mint: See instruction below.
 * ![logo](http://gitorious.org/system/group_avatars/opensuse-developers/thumb/Geeko_head_simple.png?1259921566 "open suse")OpenSUSE via user maintained package: http://download.opensuse.org/repositories/home:/Overman79:/Laptop
 * ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu: See instruction below.
 
