@@ -22,7 +22,7 @@ if [[ -z "$USERS" ]]; then
 	exit 1
 fi
 
-BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox firefox-trunk google-chrome heftig-aurora midori opera opera-next qupzilla rekonq seamonkey"} # all supported browsers
+BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox firefox-trunk google-chrome heftig-aurora midori opera opera-next qupzilla rekonq seamonkey luakit"} # all supported browsers
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
 
@@ -76,6 +76,10 @@ set_which() {
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="$browser"
 			;;
+                luakit)
+                        DIRArr[0]="$homedir/.local/share/$browser"
+                        PSNAME="$browser"
+                        ;;
 		google-chrome)
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="chrome"
