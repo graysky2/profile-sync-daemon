@@ -9,6 +9,7 @@ Currently, the following browsers are auto-detected and managed:
 * Firefox-trunk (this is an Ubuntu-only browser: http://www.webupd8.org/2011/05/install-firefox-nightly-from-ubuntu-ppa.html)
 * Google-chrome
 * Heftig's version of Aurora (this is an Arch Linux-only browser: https://bbs.archlinux.org/viewtopic.php?id=117157)
+* Luakit
 * Midori
 * Opera
 * Opera-Next
