@@ -40,7 +40,7 @@ To add the PPA (personal package archive) to your Debian (tested on squeeze) sys
     apt-get install profile-sync-daemon
 
 ###Fedora Users
-RPM package available: http://repo-ck.com/fedora_rpms#Fedora_RPMs
+RPM package available: http://repo-ck.com/bench.htm#Fedora_RPMs
 
 ###Mint Users
 To add the PPA (personal package archive) to your Mint system (tested on 14.1), and to install psd:
