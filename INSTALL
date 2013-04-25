@@ -15,14 +15,14 @@ BUILDING
   $ make
 
  Running a `make install` as root will distribute the files to
- the filesystem.
+ the file system.
 
   # make install
 
  As of v5.29, the Makefiles for systemd-native distros such as 
  Arch, Exherbo, and Fedora, no longer install the deprecated 
  cron script using a systemd timer instead. Users may override 
- and install the  depracated cron script by running make with 
+ and install the deprecated cron script by running make with 
  `install-with-cron` instead  of `install` at this point.
 
 USE A DISTRO PROVIDED PACKAGE
@@ -53,6 +53,12 @@ USE A DISTRO PROVIDED PACKAGE
  Gentoo users can build the package directly with the provided
  ebuild:
  http://packages.gentoo.org/package/www-misc/profile-sync-daemon
+ 
+ A special note for Gentoo users on this topic: the gentoo
+ Makefile (and corresponding ebuild) supply both the service
+ files AND the cronjob in /etc/cron.hourly/psd-update HOWEVER,
+ /etc/cron.hourly/psd-update is installed by default 644 so that
+ it cannot execute with you manually chmod'ing it to +x.
 
  OPENSUSE
  OpenSUSE users are free to make use of a user supported repo hosting

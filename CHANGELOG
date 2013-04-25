@@ -1,3 +1,7 @@
+v5.33
+25-Apr-2013
+Support for luakit (bwright1558).
+
 v5.32
 25-Mar-2013
 Reworded manpage and documented the resync option.
