@@ -1,3 +1,7 @@
+v5.34
+05-May-2013
+Added check for invalid entries in /etc/psd.conf.
+
 v5.33
 25-Apr-2013
 Support for luakit (bwright1558).

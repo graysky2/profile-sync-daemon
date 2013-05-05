@@ -1,10 +1,14 @@
 #!/bin/bash
-# By graysky <graysky AT archlinux DOT us>
+
+#
+# Profile-sync-deamon by graysky <graysky AT archlinux DOT us>
 # Inspired by some code originally written by Colin Verot
+#
+
 export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" BLU="\e[01;34m" NRM="\e[00m"
 VERS="@VERSION@"
 
-# package default
+# Setup check
 [[ -f /etc/psd.conf ]] && PSDCONF=${PSDCONF:-"/etc/psd.conf"}
 
 # gentoo default
@@ -17,11 +21,6 @@ else
 	. $PSDCONF
 fi
 
-if [[ -z "$USERS" ]]; then
-	echo -e " ${BLD}Must define at least one user in ${NRM}${BLU}$PSDCONF"${NRM}	# nothing to do if there are no users
-	exit 1
-fi
-
 BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox firefox-trunk google-chrome heftig-aurora midori opera opera-next qupzilla rekonq seamonkey luakit"} # all supported browsers
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
@@ -29,9 +28,70 @@ BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox firefox-trunk google-
 DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}	# make it overrideable from the commandline / config
 
 dep_check() {
-	# Although the package manager should handle these deps, this function is a sanity check for users.
+	# Function is used to insure all dependencies are installed and that /etc/psd.conf is setup correctly
 	command -v rsync >/dev/null 2>&1 || { echo "I require rsync but it's not installed. Aborting." >&2; exit 1; }
 	command -v awk >/dev/null 2>&1 || { echo "I require awk but it's not installed. Aborting." >&2; exit 1; }
+
+	if [[ -z "$USERS" ]]; then
+		echo -e " ${BLD}Must define at least one user in ${NRM}${BLU}$PSDCONF"${NRM}	# nothing to do if there are no users
+		exit 1
+	fi
+
+	for user in $(echo "$USERS"); do
+		if [[ -z $(getent passwd $user) ]]; then
+			# user defined a bad user in the USERS array so quit
+			echo -e " ${BLD}${RED}$user${NRM}${BLD} is not a valid user on this system.  Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
+			exit 1
+		fi
+	done
+
+	for browser in $(echo "$BROWSERS"); do
+		case "$browser" in
+			chromium)
+				return
+				;;
+			conkeror.mozdev.org)
+				return
+				;;
+			firefox)
+				return
+				;;
+			firefox-trunk)
+				return
+				;;
+			google-chrome)
+				return
+				;;
+			heftig-aurora)
+				return
+				;;
+			midori)
+				return
+				;;
+			opera)
+				return
+				;;
+			opera-next)
+				return
+				;;
+			qupzilla)
+				return
+				;;
+			rekonq)
+				return
+				;;
+			seamonkey)
+				return
+				;;
+			laukit)
+				return
+				;;
+			*)
+				# user defined an invalid browser
+				echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser.  Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
+				exit 1
+		esac
+	done
 }
 
 root_check() {
