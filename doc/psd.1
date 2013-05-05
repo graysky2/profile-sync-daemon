@@ -177,11 +177,12 @@ For a list of distro provided packages, see the project page linked below.
 .SH CONTRIBUTE
 Users wishing to contribute to this code, should fork and send a pull request. Source is freely available on the project page linked below.
 .SH BUGS
-It is known that on slow systems with large profiles, the sync'ing step sometimes take longer than the boot-up of the WM. Therefore, users can theoretically start their browser before the profile has been transitioned to tmpfs. This is particularly prevalent on systems with slow HDDs running systemd. This effect can be exacerbated with excessively large profiles that store mail as well as browser profiles.
-.PP
-Currently, psd does not work with encrypted home directories.
-.PP
 Discover a bug? Please open an issue on the project page linked below.
+.RS
+.IP \(bu 3
+It is known that on slow systems with large profiles, the sync'ing step sometimes take longer than the boot-up of the WM. Therefore, users can theoretically start their browser before the profile has been transitioned to tmpfs. This is particularly prevalent on systems with slow HDDs running systemd. This effect can be exacerbated with excessively large profiles that store mail as well as browser profiles.
+.IP \(bu 3
+Currently, psd does not work with encrypted home directories.
 .SH ONLINE
 .IP \(bu 3
 Project page: https://github.com/graysky2/profile-sync-daemon
