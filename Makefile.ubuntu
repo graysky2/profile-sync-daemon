@@ -1,4 +1,4 @@
-VERSION = 5.34.1
+VERSION = 5.35
 PN = profile-sync-daemon
 
 DESTDIR =
