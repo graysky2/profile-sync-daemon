@@ -1,0 +1,56 @@
+VERSION = 5.35
+PN = profile-sync-daemon
+
+PREFIX ?= /usr
+CONFDIR = /etc
+CRONDIR = /etc/cron.hourly
+INITDIR = /usr/lib/systemd/system
+BINDIR = $(PREFIX)/bin
+DOCDIR = $(PREFIX)/share/doc/$(PN)-$(VERSION)
+MANDIR = $(PREFIX)/share/man/man1
+
+RM = rm
+Q = @
+
+all:
+	$(Q)echo -e '\033[1;32mSetting version\033[0m'
+	$(Q)sed -i -e 's/@VERSION@/'$(VERSION)'/' common/$(PN)
+
+install-bin:
+	$(Q)echo -e '\033[1;32mInstalling main script, initd and config...\033[0m'
+	install -Dm644 common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
+	install -Dm644 init/psd.service "$(DESTDIR)$(INITDIR)/psd.service"
+	install -Dm644 init/psd-resync.service "$(DESTDIR)$(INITDIR)/psd-resync.service"
+	install -Dm644 init/psd-resync.timer "$(DESTDIR)$(INITDIR)/psd-resync.timer"
+	install -Dm755 common/$(PN) "$(DESTDIR)$(BINDIR)/$(PN)"
+	ln -s $(PN) "$(DESTDIR)$(BINDIR)/psd"
+
+install-man:
+	$(Q)echo -e '\033[1;32mInstalling manpage...\033[0m'
+	install -Dm644 doc/psd.1 "$(DESTDIR)$(MANDIR)/psd.1"
+	gzip -9 "$(DESTDIR)$(MANDIR)/psd.1"
+	ln -s psd.1.gz "$(DESTDIR)$(MANDIR)/$(PN).1.gz"
+
+install-cron:
+	$(Q)echo -e '\033[1;32mInstalling cronjob...\033[0m'
+	install -Dm755 common/psd.cron.hourly "$(DESTDIR)$(CRONDIR)/psd-update"
+
+install: install-bin install-man
+
+install-with-cron: install
+	$(Q)echo -e '\033[1;32mInstalling cronjob...\033[0m'
+	install -Dm755 common/psd.cron.hourly "$(DESTDIR)$(CRONDIR)/psd-update"
+
+uninstall:
+	$(Q)$(RM) "$(DESTDIR)$(INITDIR)/psd.service"
+	$(Q)$(RM) "$(DESTDIR)$(INITDIR)/psd-resync.service"
+	$(Q)$(RM) "$(DESTDIR)$(INITDIR)/psd-resync.timer"
+	$(Q)$(RM) "$(DESTDIR)$(BINDIR)/$(PN)"
+	$(Q)$(RM) "$(DESTDIR)$(BINDIR)/psd"
+	$(Q)$(RM) "$(DESTDIR)$(MANDIR)/$(PN).1.gz"
+	$(Q)$(RM) "$(DESTDIR)$(MANDIR)/psd.1.gz"
+	$(Q)if [ -f "$(DESTDIR)$(CRONDIR)/psd-update" ]; then $(RM) "$(DESTDIR)$(CRONDIR)/psd-update"; fi
+	$(Q)echo -e '\033[1;33mIf you want to remove your config as well, run: "make uninstall-conf"\033[0m'
+
+uninstall-conf:
+	$(RM) "$(DESTDIR)$(CONFDIR)/psd.conf"
