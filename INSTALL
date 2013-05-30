@@ -8,6 +8,7 @@ BUILDING
  * Makefile.exherbo is setup for Exherbo. 
  * Makefile.fedora18 is setup for Fedora 18 and Rawhide.
  * Makefile.gentoo is setup for Gentoo.
+ * Makefile.openSUSE is setup for openSUSE.
  * Makefile.ubuntu is setup for Debian/Mint/Ubuntu.
 
  Setup the via a make.
