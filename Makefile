@@ -77,7 +77,7 @@ install-upstart:
 		-i -e 's/#VOLATILE="\/tmp"/VOLATILE="\/run\/shm"/' "$(DESTDIR)$(CONFDIR)/psd.conf"
 	$(INSTALL_SCRIPT) init/psd.upstart "$(DESTDIR)$(INITDIR_UPSTART)/psd"
 
-install-openrc-all: install-bin install-man install-cron install-openrc
+install-openrc-all: install-bin install-man install-cron-openrc install-openrc
 
 install-systemd-all: install-bin install-man install-cron install-systemd
 
