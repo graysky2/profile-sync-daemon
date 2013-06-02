@@ -138,3 +138,5 @@ uninstall:
 	$(Q)echo
 	$(Q)echo "or check out the Makefile for specific rules"
 
+clean:
+	$(RM) common/$(PN)
