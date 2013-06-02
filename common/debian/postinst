@@ -18,8 +18,9 @@ case "$1" in
 		[ -f /etc/psd.conf ] && . /etc/psd.conf
 		if [ -z "$USERS" ]; then
 			# empty var means fresh install or user did not setup
-			if [ $(grep -c -i debian /etc/issue) = 1 ]; then
+			if [ $(grep -c -i 6.0 /etc/issue) = 1 ]; then
 				# debian squeeze needs to /dev/shm
+				# but wheezy does not so only modify if user is running squeeze aka Debian GNU/Linux 6.0
 				sed -i 's/VOLATILE="\/run\/shm"/VOLATILE="\/dev\/shm"/' /etc/psd.conf
 			fi
 			echo '--------------------------------------------------------------------------'
