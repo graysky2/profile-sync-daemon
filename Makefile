@@ -25,13 +25,13 @@ INSTALL_DIR = $(INSTALL) -d
 
 Q = @
 
-all:
+common/$(PN): common/$(PN).in
 	$(Q)echo -e '\033[1;32mSetting version\033[0m'
-	$(Q)sed -e 's/@VERSION@/'$(VERSION)'/' common/$(PN).in > common/$(PN)
+	$(Q)$(SED) 's/@VERSION@/'$(VERSION)'/' common/$(PN).in > common/$(PN)
 
 help: install
 
-install-bin:
+install-bin: common/$(PN)
 	$(Q)echo -e '\033[1;32mInstalling main script...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(BINDIR)"
 	$(INSTALL_PROGRAM) common/$(PN) "$(DESTDIR)$(BINDIR)/$(PN)"
