@@ -300,7 +300,8 @@ dup_check() {
 			if [[ "$browser" = "firefox" ]] ||
 				[[ "$browser" = "firefox-trunk" ]] ||
 				[[ "$browser" = "heftig-aurora" ]] ||
-				[[ "$browser" = "seamonkey" ]]; then
+				[[ "$browser" = "seamonkey" ]]
+			then
 				if [[ -z ${DIRArr[@]} ]]; then
 					return # nothing to check
 				else
@@ -336,7 +337,7 @@ kill_browsers() {
 			while [[ $x -le 5 ]]; do
 				if [[ -n "$PSNAME" ]] &&
 					pgrep -u "$user" "$PSNAME" &>/dev/null
-				then 
+				then
 					pkill -SIGTERM -u "$user" "$PSNAME"
 				else
 					return
