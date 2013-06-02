@@ -323,14 +323,14 @@ parse_conf_file() {
 				if [[ -d "$DIR" ]]; then
 					echo -en " ${BLD}browser/psname:"
 					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
-					echo -en " ${BLD}owner/group:"		
-					echo -e "$(tput cr)$(tput cuf 17) $user/$group"${NRM} 
+					echo -en " ${BLD}owner/group:"
+					echo -e "$(tput cr)$(tput cuf 17) $user/$group"${NRM}
 					echo -en " ${BLD}sync target:"
-					echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR"${NRM} 
+					echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR"${NRM}
 					echo -en " ${BLD}tmpfs dir:"
 					echo -e "$(tput cr)$(tput cuf 17) ${RED}$VOLATILE/$user-$browser$suffix"${NRM}
 					echo -en " ${BLD}profile size:"
-					echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM} 
+					echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
 					echo
 				fi
 			done
@@ -445,7 +445,7 @@ case "$1" in
 		[[ -f $DAEMON_FILE ]] && do_sync && kill_browsers
 		do_unsync
 		;;
-	*) 
+	*)
 		echo -e "${RED}Profile-sync-daemon v$VERS${NRM}"
 		echo
 		echo -e " ${BLD}$0 ${NRM}${GRN}[option]${NRM}"

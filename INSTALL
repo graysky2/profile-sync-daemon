@@ -6,14 +6,14 @@ BUILDING
  Running a `make install-xxx` as root will distribute the files to
  the file system. Most users will want to select from three options
  depending on target init system (do not run all three)!
- 
+
 	# make install-openrc-all
 	# make install-systemd-all
 	# make install-upstart-all
 
  As of v5.29, systemd installations no longer install the deprecated
  cron script instead using a systemd timer instead. Users may override
- and install the deprecated cron script by running: 
+ and install the deprecated cron script by running:
  `make install-cron` then `make install-systemd-all` if desired.
 
  Note that the cron script is only deprecated for systemd installs;
@@ -29,18 +29,18 @@ USE A DISTRO PROVIDED PACKAGE
  PKGBUILD: http://chakra-linux.org/ccr/packages.php?ID=5008
 
  DEBIAN/MINT/UBUNTU
- Debian/Mint/Ubuntu users may use the PPA graysky maintains at 
+ Debian/Mint/Ubuntu users may use the PPA graysky maintains at
  this url: https://launchpad.net/~graysky/+archive/utils
  Or build themselves using the included Makefile.ubuntu and debian
- build tools such as dh_make and dpkg-buildpackage. Note in this 
- case the scripts in common/debian.  Of particular interest is 
- the fact that Ubuntu/Debian use different paths for both their 
- lock files and for their default mounted tmpfs paths. See 
+ build tools such as dh_make and dpkg-buildpackage. Note in this
+ case the scripts in common/debian.  Of particular interest is
+ the fact that Ubuntu/Debian use different paths for both their
+ lock files and for their default mounted tmpfs paths. See
  common/debian/postinst for the changes.
 
  EXHERBO
  Exherbo users can build the package directly with the provided
- exhere: 
+ exhere:
  http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon
 
  FEDORA
@@ -54,7 +54,7 @@ USE A DISTRO PROVIDED PACKAGE
  Gentoo users can build the package directly with the provided
  ebuild:
  http://packages.gentoo.org/package/www-misc/profile-sync-daemon
- 
+
  OPENSUSE
  OpenSUSE users are free to make use of a user supported repo hosting
  the package:
