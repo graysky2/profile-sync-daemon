@@ -2,22 +2,25 @@
 Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browser's profile in tmpfs and to periodically sync it back to your physical disc (HDD/SSD). This is accomplished via a symlinking step and an innovative use of rsync to maintain back-up and synchronization between the two. One of the major design goals of psd is a completely transparent user experience.
 
 ##Supported Browsers
-Currently, the following browsers are auto-detected and managed:
-* Chromium
+* Chome and Chromium
 * Conkeror
 * Firefox (stable,beta,aurora)
 * Firefox-trunk (this is an Ubuntu-only browser: http://www.webupd8.org/2011/05/install-firefox-nightly-from-ubuntu-ppa.html)
-* Google-chrome
 * Heftig's version of Aurora (this is an Arch Linux-only browser: https://bbs.archlinux.org/viewtopic.php?id=117157)
 * Luakit
 * Midori
-* Opera
-* Opera-Next
+* Opera and Opera-Next
 * QupZilla
 * Rekonq
 * Seamonkey
 
-##Packages by Distro
+##Documentation
+Consult the man page or the wiki page: https://wiki.archlinux.org/index.php/Profile-sync-daemon
+
+##Installation from Source
+To build from source, see the included INSTALL text document.
+
+##Installation from Distro Packages
 * ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch via AUR: https://aur.archlinux.org/packages/profile-sync-daemon
 * ![logo](http://chakra-linux.org/img/icon/chakra-kde_32.png "chakra logo")Chakra via CCR: http://chakra-linux.org/ccr/packages.php?ID=5008
 * ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian: See instruction below.
@@ -58,6 +61,3 @@ To add the PPA (personal package archive) to your Ubuntu system (packages availa
 
 ###Other Distros
 If you are interested in packaging psd for your favorite distro, please contact me.
-
-##Documentation
-Consult the man page or the wiki page: https://wiki.archlinux.org/index.php/Profile-sync-daemon

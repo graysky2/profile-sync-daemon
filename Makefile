@@ -1,4 +1,4 @@
-VERSION = 5.35.1
+VERSION = 5.35.2
 PN = profile-sync-daemon
 
 PREFIX ?= /usr
@@ -13,7 +13,7 @@ DOCDIR = $(PREFIX)/share/doc/$(PN)-$(VERSION)
 MANDIR = $(PREFIX)/share/man/man1
 
 # set to anything except 0 to enable manpage compression
-COMPRESS_MAN = 0
+COMPRESS_MAN = 1
 
 RM = rm
 SED = sed
@@ -25,13 +25,16 @@ INSTALL_DIR = $(INSTALL) -d
 
 Q = @
 
+all:
+	$(Q)echo -e '\033[1;32mSetting version\033[0m'
+	$(Q)sed -i -e 's/@VERSION@/'$(VERSION)'/' common/$(PN)
+
 help: install
 
 install-bin:
 	$(Q)echo -e '\033[1;32mInstalling main script...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(BINDIR)"
 	$(INSTALL_PROGRAM) common/$(PN) "$(DESTDIR)$(BINDIR)/$(PN)"
-	$(SED) -i -e 's/@VERSION@/'$(VERSION)'/' "$(DESTDIR)$(BINDIR)/$(PN)"
 	ln -s $(PN) "$(DESTDIR)$(BINDIR)/psd"
 
 install-man:
@@ -79,7 +82,7 @@ install-upstart:
 
 install-openrc-all: install-bin install-man install-cron-openrc install-openrc
 
-install-systemd-all: install-bin install-man install-cron install-systemd
+install-systemd-all: install-bin install-man install-systemd
 
 install-upstart-all: install-bin install-man install-cron install-upstart
 
@@ -120,7 +123,7 @@ uninstall-upstart:
 
 uninstall-openrc-all: uninstall-bin uninstall-man uninstall-cron uninstall-openrc
 
-uninstall-systemd-all: uninstall-bin uninstall-man uninstall-cron uninstall-systemd
+uninstall-systemd-all: uninstall-bin uninstall-man uninstall-systemd
 
 uninstall-upstart-all: uninstall-bin uninstall-man uninstall-cron uninstall-upstart
 

@@ -1,35 +1,32 @@
 BUILDING
- There is no configure script nor is there anything to compile.
- Copy or symlink the Makefile.x of your choosing to Makefile.
-
-  $ ln -s Makefile.archlinux Makefile
-
- * Makefile.archlinux is setup for Archlinux.  
- * Makefile.exherbo is setup for Exherbo. 
- * Makefile.fedora18 is setup for Fedora 18 and Rawhide.
- * Makefile.gentoo is setup for Gentoo.
- * Makefile.openSUSE is setup for openSUSE.
- * Makefile.ubuntu is setup for Debian/Mint/Ubuntu.
-
  Setup the via a make.
 
   $ make
 
- Running a `make install` as root will distribute the files to
- the file system.
+ Running a `make install-xxx` as root will distribute the files to
+ the file system. Most users will want to select from three options
+ depending on target init system (do not run all three)!
+ 
+	# make install-openrc-all
+	# make install-systemd-all
+	# make install-upstart-all
 
-  # make install
+ As of v5.29, systemd installations no longer install the deprecated
+ cron script instead using a systemd timer instead. Users may override
+ and install the deprecated cron script by running: 
+ `make install-cron` then `make install-systemd-all` if desired.
 
- As of v5.29, the Makefiles for systemd-native distros such as 
- Arch, Exherbo, and Fedora, no longer install the deprecated 
- cron script using a systemd timer instead. Users may override 
- and install the deprecated cron script by running make with 
- `install-with-cron` instead  of `install` at this point.
+ Note that the cron script is only deprecated for systemd installs;
+ it is still recommended for users of both upstart or openrc.
 
 USE A DISTRO PROVIDED PACKAGE
  ARCH LINUX
- Arch Linux users may, use the PKGBUILD in the AUR at this url:
- https://aur.archlinux.org/packages/profile-sync-daemon
+ Arch users may build the package directly with the provided
+ PKGBUILD: https://aur.archlinux.org/packages/profile-sync-daemon
+
+ CHAKRA
+ Chakra users may build the package directly with the provided
+ PKGBUILD: http://chakra-linux.org/ccr/packages.php?ID=5008
 
  DEBIAN/MINT/UBUNTU
  Debian/Mint/Ubuntu users may use the PPA graysky maintains at 
@@ -50,22 +47,15 @@ USE A DISTRO PROVIDED PACKAGE
  Fedora 18 users may use prepackaged rpms maintained by graysky
  at the following url: http://repo-ck.com/fedora_rpms
 
+ Inclusion into the official Fedora repositories has been approved
+ on 01-Jun-2013. https://bugzilla.redhat.com/show_bug.cgi?id=968253
+
  GENTOO
  Gentoo users can build the package directly with the provided
  ebuild:
  http://packages.gentoo.org/package/www-misc/profile-sync-daemon
  
- A special note for Gentoo users on this topic: the gentoo
- Makefile (and corresponding ebuild) supply both the service
- files AND the cronjob in /etc/cron.hourly/psd-update HOWEVER,
- /etc/cron.hourly/psd-update is installed by default 644 so that
- it cannot execute with you manually chmod'ing it to +x.
-
  OPENSUSE
  OpenSUSE users are free to make use of a user supported repo hosting
  the package:
  http://download.opensuse.org/repositories/home:/Overman79:/Laptop
-
-If you wish to contribute to other distros, fork this project
-on github and submit a pull request:
-https://github.com/graysky2/profile-sync-daemon
