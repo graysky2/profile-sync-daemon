@@ -139,6 +139,6 @@ uninstall:
 	$(Q)echo "or check out the Makefile for specific rules"
 
 clean:
-	$(RM) common/$(PN)
+	$(RM) -f common/$(PN)
 
 .PHONY: help install-bin install-man install-cron install-cron-openrc install-openrc install-systemd install-upstart install-openrc-all install-systemd-all install-upstart-all install uninstall-bin uninstall-man uninstall-cron uninstall-openrc uninstall-systemd uninstall-upstart uninstall-openrc-all uninstall-systemd-all uninstall-upstart-all uninstall clean
