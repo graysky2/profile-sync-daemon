@@ -27,7 +27,7 @@ Q = @
 
 all:
 	$(Q)echo -e '\033[1;32mSetting version\033[0m'
-	$(Q)sed -i -e 's/@VERSION@/'$(VERSION)'/' common/$(PN)
+	$(Q)sed -e 's/@VERSION@/'$(VERSION)'/' common/$(PN).in > common/$(PN)
 
 help: install
 
