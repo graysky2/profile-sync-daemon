@@ -5,7 +5,11 @@
 # Inspired by some code originally written by Colin Verot
 #
 
-export BLD="\e[01m" RED="\e[01;31m" GRN="\e[01;32m" BLU="\e[01;34m" NRM="\e[00m"
+export BLD="\e[01m" \
+	RED="\e[01;31m" \
+	GRN="\e[01;32m" \
+	BLU="\e[01;34m" \
+	NRM="\e[00m"
 VERS="@VERSION@"
 
 # Setup check
@@ -14,26 +18,49 @@ VERS="@VERSION@"
 # gentoo default
 [[ -f /etc/conf.d/psd ]] && PSDCONF=${PSDCONF:-"/etc/conf.d/psd"}
 
+# nothing to do if there is no conf file
 if [[ ! -f $PSDCONF ]]; then
-	echo -e " Cannot find $PSDCONF so bailing.	Reinstall package to use Profile-sync-daemon."	# nothing to do if there is no conf file
+	echo -e " Cannot find $PSDCONF so bailing.	Reinstall package to use Profile-sync-daemon."
 	exit 1
 else
 	. $PSDCONF
 fi
 
-BROWSERS=${BROWSERS:-"chromium conkeror.mozdev.org firefox firefox-trunk google-chrome heftig-aurora midori opera opera-next qupzilla rekonq seamonkey luakit"} # all supported browsers
+# all supported browsers
+ALL_BROWSERS=(
+	chromium
+	conkeror.mozdev.org
+	firefox
+	firefox-trunk
+	google-chrome
+	heftig-aurora
+	midori
+	opera
+	opera-next
+	qupzilla
+	rekonq
+	seamonkey
+	luakit
+	)
+BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
 
-DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}	# make it overrideable from the commandline / config
+# make it overrideable from the commandline / config
+DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}
 
 dep_check() {
-	# Function is used to insure all dependencies are installed and that /etc/psd.conf is setup correctly
-	command -v rsync >/dev/null 2>&1 || { echo "I require rsync but it's not installed. Aborting." >&2; exit 1; }
-	command -v awk >/dev/null 2>&1 || { echo "I require awk but it's not installed. Aborting." >&2; exit 1; }
+	# Function is used to insure all dependencies are installed and that
+	# /etc/psd.conf is setup correctly
+	command -v rsync >/dev/null 2>&1 ||	{
+		echo "I require rsync but it's not installed. Aborting." >&2
+		exit 1; }
+	command -v awk >/dev/null 2>&1 || {
+		echo "I require awk but it's not installed. Aborting." >&2; exit 1; }
 
+	# nothing to do if there are no users
 	if [[ -z "$USERS" ]]; then
-		echo -e " ${BLD}Must define at least one user in ${NRM}${BLU}$PSDCONF"${NRM}	# nothing to do if there are no users
+		echo -e " ${BLD}Must define at least one user in ${NRM}${BLU}$PSDCONF"${NRM}
 		exit 1
 	fi
 
@@ -95,9 +122,10 @@ dep_check() {
 }
 
 root_check() {
-	# we call this to ensure that only the root user is calling the function
-	# why care? both the sync and unsync functions require root access to $DAEMON_FILE
-	# Running as unprivileged user will fuck up the sync process resulting in unhappy users
+	# we call this to ensure that only the root user is calling the
+	# function why care? both the sync and unsync functions require
+	# root access to $DAEMON_FILE Running as unprivileged user will
+	# fuck up the sync process resulting in unhappy users
 
 	if [[ $EUID -ne 0 ]]; then
 		echo -e " ${BLD}This function must be called as root!"${NRM} 1>&2
@@ -107,8 +135,9 @@ root_check() {
 
 set_which() {
 	### Arrays
-	# profileArr is transient used to store profile paths parsed from firefox from and aurora
-	# DIRArr is a full path corrected for both relative and absolute paths
+	# profileArr is transient used to store profile paths parsed from
+	# firefox from and aurora DIRArr is a full path corrected for both
+	# relative and absolute paths
 
 	local user=$1
 	local browser=$2
@@ -146,25 +175,32 @@ set_which() {
 			;;
 		qupzilla)
 			#	http://blog.qupzilla.com/2013/03/qupzilla-140-released.html
-			[[ -d $homedir/.$browser ]] && DIRArr[0]="$homedir/.$browser"
-			[[ -d $homedir/.config/$browser ]] && DIRArr[0]="$homedir/.config/$browser"
+			[[ -d $homedir/.$browser ]] &&
+				DIRArr[0]="$homedir/.$browser"
+			[[ -d $homedir/.config/$browser ]] &&
+				DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="$browser"
 			;;
 		rekonq)
-			[[ -d $homedir/.kde4/share/apps/$browser ]] && DIRArr[0]="$homedir/.kde4/share/apps/$browser"
-			[[ -d $homedir/.kde/share/apps/$browser ]] && DIRArr[0]="$homedir/.kde/share/apps/$browser"
+			[[ -d $homedir/.kde4/share/apps/$browser ]] &&
+				DIRArr[0]="$homedir/.kde4/share/apps/$browser"
+			[[ -d $homedir/.kde/share/apps/$browser ]] &&
+				DIRArr[0]="$homedir/.kde/share/apps/$browser"
 			PSNAME="$browser"
 			;;
 		firefox)
 			if [[ -d $homedir/.mozilla/firefox ]]; then
-				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox/profiles.ini|sed 's/[P,p]ath=//') )
+				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox/profiles.ini |
+					sed 's/[P,p]ath=//') )
 				index=0
 				PSNAME="$browser"
 				for profileItem in ${profileArr[@]}; do
 					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
 						DIRArr[index]="$profileItem"	# path is not relative
 					else
-						DIRArr[index]="$homedir/.mozilla/firefox/$profileItem"	# we need to append the default path to give a fully qualified path
+						# we need to append the default path to give a
+						# fully qualified path
+						DIRArr[index]="$homedir/.mozilla/firefox/$profileItem"
 					fi
 					index=$index+1
 				done
@@ -172,14 +208,17 @@ set_which() {
 			;;
 		firefox-trunk)
 			if [[ -d $homedir/.mozilla/firefox-trunk ]]; then
-				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox-trunk/profiles.ini|sed 's/[P,p]ath=//') )
+				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox-trunk/profiles.ini |
+					sed 's/[P,p]ath=//') )
 				index=0
 				PSNAME="$browser"
 				for profileItem in ${profileArr[@]}; do
 					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
 						DIRArr[index]="$profileItem"	# path is not relative
 					else
-						DIRArr[index]="$homedir/.mozilla/firefox-trunk/$profileItem"	# we need to append the default path to give a fully qualified path
+						# we need to append the default path to give a fully
+						# qualified path
+						DIRArr[index]="$homedir/.mozilla/firefox-trunk/$profileItem"
 					fi
 					index=$index+1
 				done
@@ -188,14 +227,17 @@ set_which() {
 		heftig-aurora)
 			# https://bbs.archlinux.org/viewtopic.php?id=117157
 			if [[ -d $homedir/.mozilla/aurora ]]; then
-				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/aurora/profiles.ini|sed 's/[P,p]ath=//') )
+				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/aurora/profiles.ini |
+					sed 's/[P,p]ath=//') )
 				index=0
 				PSNAME="aurora"
 				for profileItem in ${profileArr[@]}; do
 					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
 						DIRArr[index]="$profileItem"	# path is not relative
 					else
-						DIRArr[index]="$homedir/.mozilla/aurora/$profileItem"	# we need to append the default path to give a fully qualified path
+						# we need to append the default path to give a fully
+						# qualified path
+						DIRArr[index]="$homedir/.mozilla/aurora/$profileItem"
 					fi
 					index=$index+1
 				done
@@ -203,14 +245,17 @@ set_which() {
 			;;
 		seamonkey)
 			if [[ -d $homedir/.mozilla/seamonkey ]]; then
-				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/seamonkey/profiles.ini|sed 's/[P,p]ath=//') )
+				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/seamonkey/profiles.ini |
+					sed 's/[P,p]ath=//') )
 				index=0
 				PSNAME="$browser"
 				for profileItem in ${profileArr[@]}; do
 					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
 						DIRArr[index]="$profileItem"	# path is not relative
 					else
-						DIRArr[index]="$homedir/.mozilla/seamonkey/$profileItem"	# we need to append the default path to give a fully qualified path
+						# we need to append the default path to give a fully
+						# qualified path
+						DIRArr[index]="$homedir/.mozilla/seamonkey/$profileItem"
 					fi
 					index=$index+1
 				done
@@ -233,7 +278,8 @@ running_check() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			if [[ -n "$PSNAME" ]] && pgrep -u "$user" "$PSNAME" &>/dev/null; then
+			if [[ -n "$PSNAME" ]] &&
+				pgrep -u "$user" "$PSNAME" &>/dev/null; then
 				echo "Refusing to start; $browser is running by $user!"
 				exit 1
 			else
@@ -251,19 +297,24 @@ dup_check() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			if [[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] || [[ "$browser" = "seamonkey" ]]; then
+			if [[ "$browser" = "firefox" ]] ||
+				[[ "$browser" = "firefox-trunk" ]] ||
+				[[ "$browser" = "heftig-aurora" ]] ||
+				[[ "$browser" = "seamonkey" ]]; then
 				if [[ -z ${DIRArr[@]} ]]; then
 					return # nothing to check
 				else
 					# browser is on system so check profiles
 					#
 					# check that the LAST DIRECTORY in the full path is unique
-					unique_count=$(echo ${DIRArr[@]##*/} | sed 's/ /\n/g' | sort | uniq | wc -l)
+					unique_count=$(echo ${DIRArr[@]##*/} |
+						sed 's/ /\n/g' | sort | uniq | wc -l)
 					if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
 						return	# no problems so do nothing
 					else
 						echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
-						[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"	# clip of the 'heftig-' to give correct path
+						# clip of the 'heftig-' to give correct path
+						[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"
 						echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.mozilla/$browser/profiles.ini${NRM}${BLD} to use psd."${NRM}
 						exit 1
 					fi
@@ -283,14 +334,17 @@ kill_browsers() {
 
 			x=1
 			while [[ $x -le 5 ]]; do
-				if [[ -n "$PSNAME" ]] && pgrep -u "$user" "$PSNAME" &>/dev/null; then
+				if [[ -n "$PSNAME" ]] &&
+					pgrep -u "$user" "$PSNAME" &>/dev/null
+				then 
 					pkill -SIGTERM -u "$user" "$PSNAME"
 				else
 					return
 				fi
 				x=$(( $x + 1 ))
 			done
-			### Do we need a secondary, more powerful method of killing if the first fails?
+			### Do we need a secondary, more powerful method of killing
+			### if the first fails?
 		done
 	done
 }
@@ -318,8 +372,14 @@ parse_conf_file() {
 			set_which "$user" "$browser"
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] || [[ "$browser" = "seamonkey" ]] && suffix="-${item##*/}" || suffix=
-				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null | awk '{ print $1 }')	# profile dir size
+				[[ "$browser" = "firefox" ]] ||
+					[[ "$browser" = "firefox-trunk" ]] ||
+					[[ "$browser" = "heftig-aurora" ]] ||
+					[[ "$browser" = "seamonkey" ]] &&
+					suffix="-${item##*/}" ||
+					suffix=
+				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null |
+					awk '{ print $1 }')	# profile dir size
 				if [[ -d "$DIR" ]]; then
 					echo -en " ${BLD}browser/psname:"
 					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
@@ -339,9 +399,10 @@ parse_conf_file() {
 }
 
 ungraceful_state_check() {
-	# if the machine was ungracefully shutdown then the backup will be on the filesystem
-	# and the link to tmpfs will be on the filesystem but the contents will be empty
-	# we need to simply remove the link and rotate the backup into place
+	# if the machine was ungracefully shutdown then the backup will be
+	# on the filesystem and the link to tmpfs will be on the filesystem
+	# but the contents will be empty we need to simply remove the link
+	# and rotate the backup into place
 
 	root_check
 	local browser user suffix
@@ -351,8 +412,12 @@ ungraceful_state_check() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] || [[ "$browser" = "seamonkey" ]] && suffix="-${item##*/}" || suffix=
-
+				[[ "$browser" = "firefox" ]] ||
+					[[ "$browser" = "firefox-trunk" ]] ||
+					[[ "$browser" = "heftig-aurora" ]] ||
+					[[ "$browser" = "seamonkey" ]] &&
+					suffix="-${item##*/}" ||
+					suffix=
 				if [[ -e "$DIR/.flagged" ]]; then # all is well so continue
 					return
 				else
@@ -375,11 +440,16 @@ do_sync() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] || [[ "$browser" = "seamonkey" ]] && suffix="-${item##*/}" || suffix=
-
+				[[ "$browser" = "firefox" ]] ||
+					[[ "$browser" = "firefox-trunk" ]] ||
+					[[ "$browser" = "heftig-aurora" ]] ||
+					[[ "$browser" = "seamonkey" ]] &&
+					suffix="-${item##*/}" ||
+					suffix=
 				# make tmpfs container
 				if [[ -d $DIR ]]; then
-					[[ -r "$VOLATILE/$user-$browser$suffix" ]] || install -dm755 --owner=$user --group=$group "$VOLATILE/$user-$browser$suffix"
+					[[ -r "$VOLATILE/$user-$browser$suffix" ]] ||
+						install -dm755 --owner=$user --group=$group "$VOLATILE/$user-$browser$suffix"
 
 					# backup target and link to tmpfs container
 					if [[ $(readlink "$DIR") != "$VOLATILE/$user-$browser$suffix" ]]; then
@@ -414,16 +484,22 @@ do_unsync() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] || [[ "$browser" = "heftig-aurora" ]] || [[ "$browser" = "seamonkey" ]] && suffix="-${item##*/}" || suffix=
-
+				[[ "$browser" = "firefox" ]] ||
+					[[ "$browser" = "firefox-trunk" ]] ||
+					[[ "$browser" = "heftig-aurora" ]] ||
+					[[ "$browser" = "seamonkey" ]] &&
+					suffix="-${item##*/}" ||
+					suffix=
 				# check if user has browser profile
 				if [[ -h "$DIR" ]]; then
 					unlink "$DIR"
-					# this assumes that the backup is always updated so be sure to invoke a sync before an unsync
+					# this assumes that the backup is always updated so
+					# be sure to invoke a sync before an unsync
 					#
 					# restore original dirtree
 					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
-					[[ -d "$VOLATILE/$user-$browser$suffix" ]] && rm -rf "$VOLATILE/$user-$browser$suffix"
+					[[ -d "$VOLATILE/$user-$browser$suffix" ]] &&
+						rm -rf "$VOLATILE/$user-$browser$suffix"
 				fi
 			done
 		done
@@ -435,7 +511,8 @@ case "$1" in
 		dep_check && dup_check && parse_conf_file
 		;;
 	sync)
-		[[ ! -f $DAEMON_FILE ]] && dep_check && dup_check && running_check && ungraceful_state_check
+		[[ ! -f $DAEMON_FILE ]] && dep_check && dup_check &&
+			running_check && ungraceful_state_check
 		do_sync
 		;;
 	resync)
