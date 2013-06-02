@@ -1,3 +1,7 @@
+DEPENDENCIES
+ bash
+ rsync
+
 BUILDING
  Setup the via a make.
 
