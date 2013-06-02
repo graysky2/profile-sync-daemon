@@ -54,17 +54,19 @@ install-cron:
 	$(INSTALL_SCRIPT) common/psd.cron.hourly "$(DESTDIR)$(CRONDIR)/psd-update"
 
 install-cron-openrc:
-	$(Q)echo -e '\033[1;32mInstalling cronjob...\033[0m'
+	$(Q)echo -e '\033[1;32mInstalling cronjob (openrc)...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(CRONDIR)"
 	$(INSTALL_SCRIPT) common/psd.cron.hourly.openrc "$(DESTDIR)$(CRONDIR)/psd-update"
 
 install-openrc:
+	$(Q)echo -e '\033[1;32mInstalling openrc files...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(INITDIR_OPENRC)"
 	$(INSTALL_DIR) "$(DESTDIR)$(CONFDIR_OPENRC)"
 	$(INSTALL_SCRIPT) init/psd.openrc "$(DESTDIR)$(INITDIR_OPENRC)/psd"
 	$(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(CONFDIR_OPENRC)/psd"
 
 install-systemd:
+	$(Q)echo -e '\033[1;32mInstalling systemd files...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(CONFDIR)"
 	$(INSTALL_DIR) "$(DESTDIR)$(INITDIR_SYSTEMD)"
 	$(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
@@ -73,6 +75,7 @@ install-systemd:
 	$(INSTALL_DATA) init/psd-resync.timer "$(DESTDIR)$(INITDIR_SYSTEMD)/psd-resync.timer"
 
 install-upstart:
+	$(Q)echo -e '\033[1;32mInstalling upstart files...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(CONFDIR)"
 	$(INSTALL_DIR) "$(DESTDIR)$(INITDIR_UPSTART)"
 	$(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
