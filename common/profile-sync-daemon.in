@@ -282,8 +282,6 @@ running_check() {
 				pgrep -u "$user" "$PSNAME" &>/dev/null; then
 				echo "Refusing to start; $browser is running by $user!"
 				exit 1
-			else
-				return
 			fi
 		done
 	done
@@ -339,8 +337,6 @@ kill_browsers() {
 					pgrep -u "$user" "$PSNAME" &>/dev/null
 				then
 					pkill -SIGTERM -u "$user" "$PSNAME"
-				else
-					return
 				fi
 				x=$(( $x + 1 ))
 			done
