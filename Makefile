@@ -1,4 +1,4 @@
-VERSION = 5.36
+VERSION = 5.36.1
 PN = profile-sync-daemon
 
 PREFIX ?= /usr
@@ -122,7 +122,7 @@ uninstall-systemd:
 
 uninstall-upstart:
 	$(RM) "$(DESTDIR)$(CONFDIR)/psd.conf"
-	$(RM) "$(DESTDIR)$(INITDIR)/psd"
+	$(RM) "$(DESTDIR)$(INITDIR_UPSTART)/psd"
 
 uninstall-openrc-all: uninstall-bin uninstall-man uninstall-cron uninstall-openrc
 

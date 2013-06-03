@@ -1,3 +1,7 @@
+v5.36.1
+03-Jun-2013
+Minor tweak to manpage and Makefile.
+
 v5.36
 02-Jun-2013
 Fixed bug affecting startup/shutdown checking of running browsers.
