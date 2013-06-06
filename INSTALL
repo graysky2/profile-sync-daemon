@@ -51,8 +51,9 @@ USE A DISTRO PROVIDED PACKAGE
  Fedora 18 users may use prepackaged rpms maintained by graysky
  at the following url: http://repo-ck.com/fedora_rpms
 
- Inclusion into the official Fedora repositories has been approved
- on 01-Jun-2013. https://bugzilla.redhat.com/show_bug.cgi?id=968253
+ Fedora 19 users may use the official Fedora repository to install
+ profile-sync-daemon. It has been approved on 01-Jun-2013
+ for entry https://bugzilla.redhat.com/show_bug.cgi?id=968253
 
  GENTOO
  Gentoo users can build the package directly with the provided
@@ -63,3 +64,6 @@ USE A DISTRO PROVIDED PACKAGE
  OpenSUSE users are free to make use of a user supported repo hosting
  the package:
  http://download.opensuse.org/repositories/home:/Overman79:/Laptop
+
+ VOID LINUX
+ Void users can download the package directly from the official repos.
