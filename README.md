@@ -21,15 +21,16 @@ Consult the man page or the wiki page: https://wiki.archlinux.org/index.php/Prof
 To build from source, see the included INSTALL text document.
 
 ##Installation from Distro Packages
-* ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch via AUR: https://aur.archlinux.org/packages/profile-sync-daemon
-* ![logo](http://chakra-linux.org/img/icon/chakra-kde_32.png "chakra logo")Chakra via CCR: http://chakra-linux.org/ccr/packages.php?ID=5008
-* ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian: See instruction below.
-* ![logo](http://cloud.ohloh.net/attachments/14589/me_small.png "exherbo logo")Exherbo via exheres: http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon
-* ![logo](http://sec-wall.gefira.pl/media/gfx/logo-fedora.png "fedora logo")Fedora: See instruction below.
-* ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo via Ebuild: http://packages.gentoo.org/package/www-misc/profile-sync-daemon
-* ![logo](http://i1-news.softpedia-static.com/images/extra/LINUX/small/slw106news5.png "mint logo")Mint: See instruction below.
-* ![logo](http://gitorious.org/system/group_avatars/opensuse-developers/thumb/Geeko_head_simple.png?1259921566 "open suse")OpenSUSE via user maintained package: http://download.opensuse.org/repositories/home:/Overman79:/Laptop
-* ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu: See instruction below.
+* ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch: in the [AUR](https://aur.archlinux.org/packages/profile-sync-daemon).
+* ![logo](http://chakra-linux.org/img/icon/chakra-kde_32.png "chakra logo")Chakra: in the [CCR](http://chakra-linux.org/ccr/packages.php?ID=5008).
+* ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian: in graysky's PPA, See instruction below.
+* ![logo](http://cloud.ohloh.net/attachments/14589/me_small.png "exherbo logo")Exherbo: in the Exherbo [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
+* ![logo](http://sec-wall.gefira.pl/media/gfx/logo-fedora.png "fedora logo")Fedora: in the F19 repos. F18 users, See instruction below.
+* ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo: in the Gentoo [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
+* ![logo](http://i1-news.softpedia-static.com/images/extra/LINUX/small/slw106news5.png "mint logo")Mint: in graysky's PPA, See instruction below.
+* ![logo](http://gitorious.org/system/group_avatars/opensuse-developers/thumb/Geeko_head_simple.png?1259921566 "open suse")OpenSUSE: packaged by [Overman79](http://download.opensuse.org/repositories/home:/Overman79:/Laptop).
+* ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu: in graysky's PPA, See instruction below.
+* ![logo](http://s23.postimg.org/5pabe2o5z/void_logo_transparent.png "void logo")Void: in the Void [repos](https://github.com/xtraeme/xbps-packages/tree/master/srcpkgs/profile-sync-daemon).
 
 ###Debian Users
 To add the PPA (personal package archive) to your Debian (tested on squeeze) system, and to install psd, do the following as the root user:
@@ -43,10 +44,9 @@ To add the PPA (personal package archive) to your Debian (tested on squeeze) sys
     apt-get install profile-sync-daemon
 
 ###Fedora Users
-RPM package by graysky available: http://repo-ck.com/bench.htm#Fedora_RPMs
+RPM package by graysky available for F18: http://repo-ck.com/bench.htm#Fedora_RPMs
 
-Psd has been accepted on 01-Jun-2013 into the official Fedora repos. 
-See, https://bugzilla.redhat.com/show_bug.cgi?id=968253
+F19 users may use the official package if the F19 testing repos are enabled. [Reference](https://bugzilla.redhat.com/show_bug.cgi?id=968253).
 
 ###Mint Users
 To add the PPA (personal package archive) to your Mint system (tested on 14.1), and to install psd:
