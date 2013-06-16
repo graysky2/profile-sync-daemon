@@ -25,7 +25,7 @@ To build from source, see the included INSTALL text document.
 * ![logo](http://chakra-linux.org/img/icon/chakra-kde_32.png "chakra logo")Chakra: in the [CCR](http://chakra-linux.org/ccr/packages.php?ID=5008).
 * ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian: in graysky's PPA, See instruction below.
 * ![logo](http://cloud.ohloh.net/attachments/14589/me_small.png "exherbo logo")Exherbo: in the Exherbo [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
-* ![logo](http://sec-wall.gefira.pl/media/gfx/logo-fedora.png "fedora logo")Fedora: in the F19 repos. F18 users, See instruction below.
+* ![logo](http://sec-wall.gefira.pl/media/gfx/logo-fedora.png "fedora logo")Fedora: in the official repos.
 * ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo: in the Gentoo [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
 * ![logo](http://i1-news.softpedia-static.com/images/extra/LINUX/small/slw106news5.png "mint logo")Mint: in graysky's PPA, See instruction below.
 * ![logo](http://gitorious.org/system/group_avatars/opensuse-developers/thumb/Geeko_head_simple.png?1259921566 "open suse")OpenSUSE: packaged by [Overman79](http://download.opensuse.org/repositories/home:/Overman79:/Laptop).
