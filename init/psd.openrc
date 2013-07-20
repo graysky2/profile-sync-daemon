@@ -6,9 +6,6 @@ description="Webbrowser profile syncing"
 extra_commands="resync"
 description_resync="Manually sync the disk profile with running tmpfs image"
 
-DAEMON_FILE=/var/run/psd.pid
-export DAEMON_FILE
-
 
 depend() {
 	need devfs localmount
