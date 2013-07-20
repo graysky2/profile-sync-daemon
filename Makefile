@@ -56,13 +56,13 @@ install-openrc:
 	$(Q)echo -e '\033[1;32mInstalling openrc files...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(INITDIR_OPENRC)"
 	$(INSTALL_SCRIPT) init/psd.openrc "$(DESTDIR)$(INITDIR_OPENRC)/psd"
-	$(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
+	[ -f "$(DESTDIR)$(CONFDIR)/psd.conf" ] || $(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
 
 install-systemd:
 	$(Q)echo -e '\033[1;32mInstalling systemd files...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(CONFDIR)"
 	$(INSTALL_DIR) "$(DESTDIR)$(INITDIR_SYSTEMD)"
-	$(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
+	[ -f "$(DESTDIR)$(CONFDIR)/psd.conf" ] || $(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
 	$(INSTALL_DATA) init/psd.service "$(DESTDIR)$(INITDIR_SYSTEMD)/psd.service"
 	$(INSTALL_DATA) init/psd-resync.service "$(DESTDIR)$(INITDIR_SYSTEMD)/psd-resync.service"
 	$(INSTALL_DATA) init/psd-resync.timer "$(DESTDIR)$(INITDIR_SYSTEMD)/psd-resync.timer"
