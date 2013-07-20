@@ -6,9 +6,6 @@ description="Webbrowser profile syncing"
 extra_commands="resync"
 description_resync="Manually sync the disk profile with running tmpfs image"
 
-PSDCONF="/etc/conf.d/psd"
-export PSDCONF
-
 DAEMON_FILE=/var/run/psd.pid
 export DAEMON_FILE
 
@@ -20,10 +17,6 @@ depend() {
 
 start() {
 	ebegin "Starting Profile-Sync-Daemon"
-	if [ -z "$USERS" ]; then
-		eerror "Define at least one user in /etc/conf.d/psd"
-		return 1
-	fi
 
 	/usr/bin/profile-sync-daemon sync
 	eend $?

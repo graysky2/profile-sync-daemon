@@ -3,7 +3,6 @@ PN = profile-sync-daemon
 
 PREFIX ?= /usr
 CONFDIR = /etc
-CONFDIR_OPENRC = /etc/conf.d
 CRONDIR = /etc/cron.hourly
 INITDIR_SYSTEMD = /usr/lib/systemd/system
 INITDIR_OPENRC = /etc/init.d
@@ -61,9 +60,8 @@ install-cron-openrc:
 install-openrc:
 	$(Q)echo -e '\033[1;32mInstalling openrc files...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(INITDIR_OPENRC)"
-	$(INSTALL_DIR) "$(DESTDIR)$(CONFDIR_OPENRC)"
 	$(INSTALL_SCRIPT) init/psd.openrc "$(DESTDIR)$(INITDIR_OPENRC)/psd"
-	$(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(CONFDIR_OPENRC)/psd"
+	$(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
 
 install-systemd:
 	$(Q)echo -e '\033[1;32mInstalling systemd files...\033[0m'
@@ -112,7 +110,6 @@ uninstall-cron:
 
 uninstall-openrc:
 	$(RM) "$(DESTDIR)$(INITDIR_OPENRC)/psd"
-	$(RM) "$(DESTDIR)$(CONFDIR_OPENRC)/psd"
 
 uninstall-systemd:
 	$(RM) "$(DESTDIR)$(CONFDIR)/psd.conf"
