@@ -15,9 +15,6 @@ VERS="@VERSION@"
 # Setup check
 [[ -f /etc/psd.conf ]] && PSDCONF=${PSDCONF:-"/etc/psd.conf"}
 
-# gentoo default
-[[ -f /etc/conf.d/psd ]] && PSDCONF=${PSDCONF:-"/etc/conf.d/psd"}
-
 # nothing to do if there is no conf file
 if [[ ! -f $PSDCONF ]]; then
 	echo -e " Cannot find $PSDCONF so bailing.	Reinstall package to use Profile-sync-daemon."

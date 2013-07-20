@@ -3,7 +3,6 @@ PN = profile-sync-daemon
 
 PREFIX ?= /usr
 CONFDIR = /etc
-CONFDIR_OPENRC = /etc/conf.d
 CRONDIR = /etc/cron.hourly
 INITDIR_SYSTEMD = /usr/lib/systemd/system
 INITDIR_OPENRC = /etc/init.d
@@ -53,23 +52,17 @@ install-cron:
 	$(INSTALL_DIR) "$(DESTDIR)$(CRONDIR)"
 	$(INSTALL_SCRIPT) common/psd.cron.hourly "$(DESTDIR)$(CRONDIR)/psd-update"
 
-install-cron-openrc:
-	$(Q)echo -e '\033[1;32mInstalling cronjob (openrc)...\033[0m'
-	$(INSTALL_DIR) "$(DESTDIR)$(CRONDIR)"
-	$(INSTALL_SCRIPT) common/psd.cron.hourly.openrc "$(DESTDIR)$(CRONDIR)/psd-update"
-
 install-openrc:
 	$(Q)echo -e '\033[1;32mInstalling openrc files...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(INITDIR_OPENRC)"
-	$(INSTALL_DIR) "$(DESTDIR)$(CONFDIR_OPENRC)"
 	$(INSTALL_SCRIPT) init/psd.openrc "$(DESTDIR)$(INITDIR_OPENRC)/psd"
-	$(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(CONFDIR_OPENRC)/psd"
+	[ -f "$(DESTDIR)$(CONFDIR)/psd.conf" ] || $(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
 
 install-systemd:
 	$(Q)echo -e '\033[1;32mInstalling systemd files...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(CONFDIR)"
 	$(INSTALL_DIR) "$(DESTDIR)$(INITDIR_SYSTEMD)"
-	$(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
+	[ -f "$(DESTDIR)$(CONFDIR)/psd.conf" ] || $(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
 	$(INSTALL_DATA) init/psd.service "$(DESTDIR)$(INITDIR_SYSTEMD)/psd.service"
 	$(INSTALL_DATA) init/psd-resync.service "$(DESTDIR)$(INITDIR_SYSTEMD)/psd-resync.service"
 	$(INSTALL_DATA) init/psd-resync.timer "$(DESTDIR)$(INITDIR_SYSTEMD)/psd-resync.timer"
@@ -83,7 +76,7 @@ install-upstart:
 		-i -e 's/#VOLATILE="\/tmp"/VOLATILE="\/run\/shm"/' "$(DESTDIR)$(CONFDIR)/psd.conf"
 	$(INSTALL_SCRIPT) init/psd.upstart "$(DESTDIR)$(INITDIR_UPSTART)/psd"
 
-install-openrc-all: install-bin install-man install-cron-openrc install-openrc
+install-openrc-all: install-bin install-man install-cron install-openrc
 
 install-systemd-all: install-bin install-man install-systemd
 
@@ -112,7 +105,6 @@ uninstall-cron:
 
 uninstall-openrc:
 	$(RM) "$(DESTDIR)$(INITDIR_OPENRC)/psd"
-	$(RM) "$(DESTDIR)$(CONFDIR_OPENRC)/psd"
 
 uninstall-systemd:
 	$(RM) "$(DESTDIR)$(CONFDIR)/psd.conf"
@@ -141,4 +133,4 @@ uninstall:
 clean:
 	$(RM) -f common/$(PN)
 
-.PHONY: help install-bin install-man install-cron install-cron-openrc install-openrc install-systemd install-upstart install-openrc-all install-systemd-all install-upstart-all install uninstall-bin uninstall-man uninstall-cron uninstall-openrc uninstall-systemd uninstall-upstart uninstall-openrc-all uninstall-systemd-all uninstall-upstart-all uninstall clean
+.PHONY: help install-bin install-man install-cron install-openrc install-systemd install-upstart install-openrc-all install-systemd-all install-upstart-all install uninstall-bin uninstall-man uninstall-cron uninstall-openrc uninstall-systemd uninstall-upstart uninstall-openrc-all uninstall-systemd-all uninstall-upstart-all uninstall clean
