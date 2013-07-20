@@ -1,3 +1,7 @@
+v5.36.4
+20-Jul-2013
+Minor changes conf and manpage.
+
 v5.36.3
 16-Jun-2013
 Makefile to preserve timestamps (cicku).
