@@ -52,11 +52,6 @@ install-cron:
 	$(INSTALL_DIR) "$(DESTDIR)$(CRONDIR)"
 	$(INSTALL_SCRIPT) common/psd.cron.hourly "$(DESTDIR)$(CRONDIR)/psd-update"
 
-install-cron-openrc:
-	$(Q)echo -e '\033[1;32mInstalling cronjob (openrc)...\033[0m'
-	$(INSTALL_DIR) "$(DESTDIR)$(CRONDIR)"
-	$(INSTALL_SCRIPT) common/psd.cron.hourly.openrc "$(DESTDIR)$(CRONDIR)/psd-update"
-
 install-openrc:
 	$(Q)echo -e '\033[1;32mInstalling openrc files...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(INITDIR_OPENRC)"
@@ -81,7 +76,7 @@ install-upstart:
 		-i -e 's/#VOLATILE="\/tmp"/VOLATILE="\/run\/shm"/' "$(DESTDIR)$(CONFDIR)/psd.conf"
 	$(INSTALL_SCRIPT) init/psd.upstart "$(DESTDIR)$(INITDIR_UPSTART)/psd"
 
-install-openrc-all: install-bin install-man install-cron-openrc install-openrc
+install-openrc-all: install-bin install-man install-cron install-openrc
 
 install-systemd-all: install-bin install-man install-systemd
 
@@ -138,4 +133,4 @@ uninstall:
 clean:
 	$(RM) -f common/$(PN)
 
-.PHONY: help install-bin install-man install-cron install-cron-openrc install-openrc install-systemd install-upstart install-openrc-all install-systemd-all install-upstart-all install uninstall-bin uninstall-man uninstall-cron uninstall-openrc uninstall-systemd uninstall-upstart uninstall-openrc-all uninstall-systemd-all uninstall-upstart-all uninstall clean
+.PHONY: help install-bin install-man install-cron install-openrc install-systemd install-upstart install-openrc-all install-systemd-all install-upstart-all install uninstall-bin uninstall-man uninstall-cron uninstall-openrc uninstall-systemd uninstall-upstart uninstall-openrc-all uninstall-systemd-all uninstall-upstart-all uninstall clean
