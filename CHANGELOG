@@ -2,6 +2,7 @@ v5.38
 21-Jul-2013
 Include status of psd.service and psd-resync.service in preview mode.
 Include status of pseudo pid file and resync cronjob for all others.
+Add some verbose nonfatal error messages (hasufell).
 
 v5.37
 20-Jul-2013
