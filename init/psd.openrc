@@ -3,65 +3,35 @@
 # Distributed under the terms of the GNU General Public License v2
 
 description="Webbrowser profile syncing"
-extra_commands="debug resync"
-description_debug="Show debug info about psd settings/profiles"
+extra_commands="resync"
 description_resync="Manually sync the disk profile with running tmpfs image"
-PIDFILE="/var/run/psd.pid"
 
-PSDCONF="/etc/conf.d/psd"
-export PSDCONF
 
-DAEMON_FILE=${PIDFILE}
-export DAEMON_FILE
-
-wait(){
-    for pid in "$@"; do
-        while kill -s 0 "$pid" 2>/dev/null; do
-            sleep 0.5
-        done
-    done
+depend() {
+	need devfs localmount
+	after swapfiles # bug 398431#c8
 }
 
 start() {
 	ebegin "Starting Profile-Sync-Daemon"
-	if [ -z "$USERS" ]; then
-		eerror "Define at least one user in /etc/conf.d/psd"
-		return 1
-	fi
 
-	start-stop-daemon \
-		--start \
-		--pidfile "${PIDFILE}" \
-		--make-pidfile \
-		--background \
-		--exec /usr/bin/profile-sync-daemon -- sync
-
-	wait $(cat "${PIDFILE}")
-
+	/usr/bin/profile-sync-daemon sync
 	eend $?
 }
 
 stop() {
 	ebegin "Stopping Profile-Sync-Daemon"
+
 	/usr/bin/profile-sync-daemon unsync
 	eend $?
 }
 
-debug() {
+status() {
 	/usr/bin/profile-sync-daemon debug
 }
 
 resync() {
 	ebegin "Syncing browser profiles in tmpfs to physical disc"
 	/usr/bin/profile-sync-daemon resync
-	eend $?
-}
-
-status() {
-	if [ ! -f "$PIDFILE" ]; then
-		eerror "Profile-Sync-Daemon is not running"
-	else
-		einfo "Profile-Sync-Daemon is running"
-	fi
 	eend $?
 }
