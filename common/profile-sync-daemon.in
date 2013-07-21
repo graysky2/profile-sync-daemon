@@ -345,18 +345,29 @@ kill_browsers() {
 
 parse_conf_file() {
 	if [[ -z $(sed 's| \\.*$||' /etc/issue | head -n 1) ]]; then
-		echo -e "${RED}Profile-sync-daemon v$VERS"${NRM}
+		echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM}
 	else
-		echo -e "${RED}Profile-sync-daemon v$VERS${NRM}${BLD} on $(sed 's| \\.*$||' /etc/issue | head -n 1)."${NRM}
+		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $(sed 's| \\.*$||' /etc/issue | head -n 1)."${NRM}
 	fi
 
 	echo
-	echo -e "${BLD}Daemon file ${BLU}$DAEMON_FILE${NRM}${BLD} is $([[ -f $DAEMON_FILE ]] && echo present || echo not present)."${NRM}
-
 	if [[ -f /usr/lib/systemd/system/psd.service ]]; then
-		# running sysmted
-		echo -e "${BLD}Service is currently $(systemctl is-active psd)."${NRM}
-	fi
+		# running systemd
+    psd_state=$(systemctl is-active psd)
+    resync_state=$(systemctl is-active psd-resync.timer)
+    [[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
+    [[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
+
+    echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}."${NRM}
+    echo -e " ${BLD}Systemd resync service is currently ${resync_color}$resync_state${NRM}${BLD}."${NRM}
+  else
+		# using other init system + cron job for resync
+		[[ -x /etc/cron.hourly/psd-update ]] && resync_state="present" || resync_state="not present"
+		[[ "$resync_state" = "present" ]] && resync_color=${GRN} || resync_color=${RED}
+    echo -e " ${BLD}Daemon pid file is $([[ -f $DAEMON_FILE ]] && \
+			echo -e ${GRN}present${NRM}${BLD} || echo -e ${RED}not present${NRM}${BLD})."${NRM}
+		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}."${NRM}
+  fi
 	echo
 	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD} settings:"${NRM}
 	echo

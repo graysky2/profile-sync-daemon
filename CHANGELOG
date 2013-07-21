@@ -1,7 +1,12 @@
+v5.38
+21-Jul-2013
+Include status of psd.service and psd-resync.service in preview mode.
+Include status of pseudo pid file and resync cronjob for all others.
+
 v5.37
 20-Jul-2013
-OpenRC: simplify service and fix bug on shutdown[1] (hasufell).
-1. Upstream bug report: https://bugs.gentoo.org/show_bug.cgi?id=398431
+OpenRC: simplify service and fix bug on shutdown (hasufell).
+Upstream bug report: https://bugs.gentoo.org/show_bug.cgi?id=398431
 
 v5.36.4
 20-Jul-2013
