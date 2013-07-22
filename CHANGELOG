@@ -1,11 +1,10 @@
-v5.38.1
-<<<<<<< HEAD
 22-Jul-2013
+v5.38.1
 Fixed small bug around luakit support.
-=======
+
 21-Jul-2013
+v5.38
 Fix typo in /etc/psd.conf on line 52.
->>>>>>> 7e14a8b2b528f5085031f7e676c69749dbceb07c
 
 v5.38
 21-Jul-2013
