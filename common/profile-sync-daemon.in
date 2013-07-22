@@ -107,7 +107,7 @@ dep_check() {
 			seamonkey)
 				return
 				;;
-			laukit)
+			luakit)
 				return
 				;;
 			*)

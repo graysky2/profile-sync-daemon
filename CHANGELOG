@@ -1,3 +1,7 @@
+v5.39
+22-Jul-2013
+Fixed small bug around luakit support.
+
 v5.38
 21-Jul-2013
 Include status of psd.service and psd-resync.service in preview mode.
