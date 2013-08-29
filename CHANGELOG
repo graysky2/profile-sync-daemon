@@ -1,3 +1,7 @@
+29-Aug-2013
+v5.39
+Use group id rather than group name for better winbindd support.
+
 22-Jul-2013
 v5.38.2
 Fixed small bug around luakit support.

@@ -4,6 +4,7 @@ Documentation=man:psd(1) man:profile-sync-daemon(1)
 Documentation=https://wiki.archlinux.org/index.php/Profile-sync-daemon
 Wants=local-fs.target
 RequiresMountsFor=/home/
+After=winbindd.service
 
 [Service]
 Type=oneshot

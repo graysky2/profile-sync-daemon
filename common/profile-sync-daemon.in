@@ -140,7 +140,7 @@ set_which() {
 	local browser=$2
 
 	homedir="$(getent passwd $user | cut -d: -f6)"
-	group="$(stat -c %G $homedir)"
+	group="$(id -g $user)"
 
 	# reset global variables and arrays
 	unset profileArr DIRArr
@@ -388,7 +388,7 @@ parse_conf_file() {
 				if [[ -d "$DIR" ]]; then
 					echo -en " ${BLD}browser/psname:"
 					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
-					echo -en " ${BLD}owner/group:"
+					echo -en " ${BLD}owner/group id:"
 					echo -e "$(tput cr)$(tput cuf 17) $user/$group"${NRM}
 					echo -en " ${BLD}sync target:"
 					echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR"${NRM}
