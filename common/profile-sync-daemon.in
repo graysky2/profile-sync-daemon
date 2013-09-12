@@ -481,9 +481,6 @@ do_sync() {
 						chown -h $user:$group "$DIR"
 						touch "$DIR/.flagged"
 					fi
-				else
-					[[ -d $DIR ]] &&
-					echo -e "${RED}${DIR} does not exist or is a broken symlink! Is /home or ${VOLATILE} unmounted?${NRM}" >&2
 				fi
 			done
 		done
@@ -517,9 +514,6 @@ do_unsync() {
 					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
 					[[ -d "$VOLATILE/$user-$browser$suffix" ]] &&
 						rm -rf "$VOLATILE/$user-$browser$suffix"
-				else
-					[[  -d $DIR ]] &&
-					echo -e "${RED}${DIR} does not exist or is not a symlink! Is /home unmounted?${NRM}" >&2
 				fi
 			done
 		done
