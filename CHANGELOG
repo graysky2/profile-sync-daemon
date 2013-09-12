@@ -1,3 +1,8 @@
+12-Sep-2013
+v5.40
+Snapshot feature if psd is started and symlink to browser profile is invalid.
+See manpage for details under the FAQ section.
+
 29-Aug-2013
 v5.39
 Use group id rather than group name for better winbindd support.

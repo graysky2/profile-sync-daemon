@@ -17,7 +17,7 @@ VERS="@VERSION@"
 
 # nothing to do if there is no conf file
 if [[ ! -f $PSDCONF ]]; then
-	echo -e " Cannot find $PSDCONF so bailing.	Reinstall package to use Profile-sync-daemon."
+	echo -e " Cannot find $PSDCONF so bailing. Reinstall package to use Profile-sync-daemon."
 	exit 1
 else
 	. $PSDCONF
@@ -49,7 +49,7 @@ DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}
 dep_check() {
 	# Function is used to insure all dependencies are installed and that
 	# /etc/psd.conf is setup correctly
-	command -v rsync >/dev/null 2>&1 ||	{
+	command -v rsync >/dev/null 2>&1 || {
 		echo "I require rsync but it's not installed. Aborting." >&2
 		exit 1; }
 	command -v awk >/dev/null 2>&1 || {
@@ -193,7 +193,8 @@ set_which() {
 				PSNAME="$browser"
 				for profileItem in ${profileArr[@]}; do
 					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
-						DIRArr[index]="$profileItem"	# path is not relative
+						# path is not relative
+						DIRArr[index]="$profileItem"
 					else
 						# we need to append the default path to give a
 						# fully qualified path
@@ -211,7 +212,8 @@ set_which() {
 				PSNAME="$browser"
 				for profileItem in ${profileArr[@]}; do
 					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
-						DIRArr[index]="$profileItem"	# path is not relative
+						# path is not relative
+						DIRArr[index]="$profileItem"
 					else
 						# we need to append the default path to give a fully
 						# qualified path
@@ -230,7 +232,8 @@ set_which() {
 				PSNAME="aurora"
 				for profileItem in ${profileArr[@]}; do
 					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
-						DIRArr[index]="$profileItem"	# path is not relative
+						# path is not relative
+						DIRArr[index]="$profileItem"
 					else
 						# we need to append the default path to give a fully
 						# qualified path
@@ -248,7 +251,8 @@ set_which() {
 				PSNAME="$browser"
 				for profileItem in ${profileArr[@]}; do
 					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
-						DIRArr[index]="$profileItem"	# path is not relative
+						# path is not relative
+						DIRArr[index]="$profileItem"
 					else
 						# we need to append the default path to give a fully
 						# qualified path
@@ -407,7 +411,7 @@ ungraceful_state_check() {
 	# if the machine was ungracefully shutdown then the backup will be
 	# on the filesystem and the link to tmpfs will be on the filesystem
 	# but the contents will be empty we need to simply remove the link
-	# and rotate the backup into place
+	# and rotate the backup into place.
 
 	root_check
 	local browser user suffix
@@ -423,11 +427,16 @@ ungraceful_state_check() {
 					[[ "$browser" = "seamonkey" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
-				if [[ -e "$DIR/.flagged" ]]; then # all is well so continue
+				if [[ -e "$DIR/.flagged" ]]; then
+					# all is well so continue
 					return
 				else
 					[[ -h "$DIR" ]] && unlink "$DIR"
-					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
+					NOW=$(date +%Y%m%d_%H%M%S)
+					if [[ -d "$BACKUP" ]]; then
+						cp -a "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+						mv "$BACKUP" "$DIR"
+					fi
 				fi
 			done
 		done
