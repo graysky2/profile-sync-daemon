@@ -310,7 +310,7 @@ dup_check() {
 					unique_count=$(echo ${DIRArr[@]##*/} |
 						sed 's/ /\n/g' | sort | uniq | wc -l)
 					if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
-						return	# no problems so do nothing
+						return # no problems so do nothing
 					else
 						echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
 						# clip of the 'heftig-' to give correct path
@@ -388,7 +388,7 @@ parse_conf_file() {
 					suffix="-${item##*/}" ||
 					suffix=
 				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null |
-					awk '{ print $1 }')	# profile dir size
+					awk '{ print $1 }') # profile dir size
 				if [[ -d "$DIR" ]]; then
 					echo -en " ${BLD}browser/psname:"
 					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
@@ -481,6 +481,12 @@ do_sync() {
 						chown -h $user:$group "$DIR"
 						touch "$DIR/.flagged"
 					fi
+				else
+					if [[ ! -d $homedir ]] ; then
+						echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
+         elif [[ -d ${BACKUP} ]] ; then
+           echo -e "${RED}$DIR does not exist or is a broken symlink! Is $VOLATILE unmounted?${NRM}" >&2
+         fi
 				fi
 			done
 		done
@@ -514,6 +520,10 @@ do_unsync() {
 					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
 					[[ -d "$VOLATILE/$user-$browser$suffix" ]] &&
 						rm -rf "$VOLATILE/$user-$browser$suffix"
+				else
+					if [[ ! -d $homedir ]] ; then
+           echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
+         fi
 				fi
 			done
 		done

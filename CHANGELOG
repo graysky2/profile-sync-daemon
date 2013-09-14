@@ -1,3 +1,7 @@
+14-Sep-2013
+v5.40.1
+Added reporting of an umounted /home for debugging purposes (hasufell).
+
 12-Sep-2013
 v5.40
 Snapshot feature if psd is started and symlink to browser profile is invalid.
