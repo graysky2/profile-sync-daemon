@@ -482,9 +482,9 @@ do_sync() {
 						touch "$DIR/.flagged"
 					fi
 				else
-					if [[ ! -d $homedir ]] ; then
+					if [[ ! -d "$homedir" ]] ; then
 						echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
-         elif [[ -d ${BACKUP} ]] ; then
+         elif [[ -d "$BACKUP" ]] ; then
            echo -e "${RED}$DIR does not exist or is a broken symlink! Is $VOLATILE unmounted?${NRM}" >&2
          fi
 				fi
@@ -521,7 +521,7 @@ do_unsync() {
 					[[ -d "$VOLATILE/$user-$browser$suffix" ]] &&
 						rm -rf "$VOLATILE/$user-$browser$suffix"
 				else
-					if [[ ! -d $homedir ]] ; then
+					if [[ ! -d "$homedir" ]] ; then
            echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
          fi
 				fi
