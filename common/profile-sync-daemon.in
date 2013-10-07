@@ -38,6 +38,7 @@ ALL_BROWSERS=(
 	rekonq
 	seamonkey
 	luakit
+	thunderbird
 	)
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
@@ -110,6 +111,9 @@ dep_check() {
 			luakit)
 				return
 				;;
+			thunderbird)
+				return
+				;;
 			*)
 				# user defined an invalid browser
 				echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser.  Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
@@ -133,7 +137,7 @@ root_check() {
 set_which() {
 	### Arrays
 	# profileArr is transient used to store profile paths parsed from
-	# firefox from and aurora DIRArr is a full path corrected for both
+	# firefox, aurora and thunderbird DIRArr is a full path corrected for both
 	# relative and absolute paths
 
 	local user=$1
@@ -223,6 +227,27 @@ set_which() {
 				done
 			fi
 			;;
+		################ New thunderbird code ###################
+		thunderbird)
+		if [[ -d $homedir/.thunderbird ]]; then
+			profileArr=( $(grep '[P,p]'ath= $homedir/.thunderbird/profiles.ini |
+				sed 's/[P,p]ath=//') )
+			index=0
+			PSNAME="$browser"
+			for profileItem in ${profileArr[@]}; do
+				if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
+					# path is not relative
+					DIRArr[index]="$profileItem"
+				else
+					# we need to append the default path to give a
+					# fully qualified path
+					DIRArr[index]="$homedir/.thunderbird/$profileItem"
+				fi
+				index=$index+1
+			done
+		fi
+		;;
+		###########################################################
 		heftig-aurora)
 			# https://bbs.archlinux.org/viewtopic.php?id=117157
 			if [[ -d $homedir/.mozilla/aurora ]]; then
@@ -289,7 +314,7 @@ running_check() {
 }
 
 dup_check() {
-	# only for firefox and aurora
+	# only for firefox, thunderbird and aurora
 	# the LAST directory in the profile MUST be unique
 	# make sure there are no duplicates in ~/.mozilla/<browser>/profiles.ini
 	local browser user
@@ -299,7 +324,8 @@ dup_check() {
 			if [[ "$browser" = "firefox" ]] ||
 				[[ "$browser" = "firefox-trunk" ]] ||
 				[[ "$browser" = "heftig-aurora" ]] ||
-				[[ "$browser" = "seamonkey" ]]
+				[[ "$browser" = "seamonkey" ]] ||
+				[[ "$browser" = "thunderbird" ]]
 			then
 				if [[ -z ${DIRArr[@]} ]]; then
 					return # nothing to check
@@ -384,7 +410,8 @@ parse_conf_file() {
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
-					[[ "$browser" = "seamonkey" ]] &&
+					[[ "$browser" = "seamonkey" ]] || 
+					[[ "$browser" = "thunderbird" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
 				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null |
@@ -424,7 +451,8 @@ ungraceful_state_check() {
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
-					[[ "$browser" = "seamonkey" ]] &&
+					[[ "$browser" = "seamonkey" ]] ||
+					[[ "$browser" = "thunderbird" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
 				if [[ -e "$DIR/.flagged" ]]; then
@@ -457,7 +485,8 @@ do_sync() {
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
-					[[ "$browser" = "seamonkey" ]] &&
+					[[ "$browser" = "seamonkey" ]] ||
+					[[ "$browser" = "thunderbird" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
 				# make tmpfs container
@@ -507,7 +536,8 @@ do_unsync() {
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
-					[[ "$browser" = "seamonkey" ]] &&
+					[[ "$browser" = "seamonkey" ]] || 
+					[[ "$browser" = "thunderbird" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
 				# check if user has browser profile
