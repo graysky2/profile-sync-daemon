@@ -2,11 +2,12 @@
 Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browser's profile in tmpfs and to periodically sync it back to your physical disc (HDD/SSD). This is accomplished via a symlinking step and an innovative use of rsync to maintain back-up and synchronization between the two. One of the major design goals of psd is a completely transparent user experience.
 
 ##Supported Browsers
-* Chome and Chromium
+* Chromium
 * Conkeror
 * Firefox (stable,beta,aurora)
 * Firefox-trunk (this is an Ubuntu-only browser: http://www.webupd8.org/2011/05/install-firefox-nightly-from-ubuntu-ppa.html)
 * Heftig's version of Aurora (this is an Arch Linux-only browser: https://bbs.archlinux.org/viewtopic.php?id=117157)
+* Google Chrome (stable and beta)
 * Luakit
 * Midori
 * Opera and Opera-Next

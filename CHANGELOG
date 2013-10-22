@@ -1,3 +1,7 @@
+21-Oct-2013
+v5.41
+Added support for google-chrome-beta (nexussfan).
+
 14-Sep-2013
 v5.40.1
 Added reporting of an umounted /home for debugging purposes (hasufell).
