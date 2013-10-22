@@ -26,6 +26,7 @@ fi
 # all supported browsers
 ALL_BROWSERS=(
 	chromium
+	chromium-dev
 	conkeror.mozdev.org
 	firefox
 	firefox-trunk
@@ -73,6 +74,9 @@ dep_check() {
 	for browser in $(echo "$BROWSERS"); do
 		case "$browser" in
 			chromium)
+				return
+				;;
+			chromium-dev)
 				return
 				;;
 			conkeror.mozdev.org)
@@ -162,7 +166,7 @@ set_which() {
 			DIRArr[0]="$homedir/.$browser"
 			PSNAME="xulrunner"
 			;;
-		chromium|midori)
+		chromium|chromium-dev|midori)
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="$browser"
 			;;
