@@ -29,7 +29,7 @@ To build from source, see the included INSTALL text document.
 * ![logo](http://sec-wall.gefira.pl/media/gfx/logo-fedora.png "fedora logo")Fedora: in the official repos.
 * ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo: in the Gentoo [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
 * ![logo](http://i1-news.softpedia-static.com/images/extra/LINUX/small/slw106news5.png "mint logo")Mint: in graysky's PPA, See instruction below.
-* ![logo](http://gitorious.org/system/group_avatars/opensuse-developers/thumb/Geeko_head_simple.png?1259921566 "open suse")OpenSUSE: packaged by [Overman79](http://download.opensuse.org/repositories/home:/Overman79:/Laptop).
+* ![logo](http://png-3.findicons.com/files/icons/2344/faenza/32/distributor_logo_opensuse.png "open suse")OpenSUSE: packaged by [Overman79](http://download.opensuse.org/repositories/home:/Overman79:/Laptop).
 * ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu: in graysky's PPA, See instruction below.
 * ![logo](http://s23.postimg.org/5pabe2o5z/void_logo_transparent.png "void logo")Void: in the Void [repos](https://github.com/xtraeme/xbps-packages/tree/master/srcpkgs/profile-sync-daemon).
 
