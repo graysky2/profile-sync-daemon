@@ -32,6 +32,7 @@ ALL_BROWSERS=(
 	firefox-trunk
 	google-chrome
 	google-chrome-beta
+	google-chrome-unstable
 	heftig-aurora
 	midori
 	opera
@@ -92,6 +93,9 @@ dep_check() {
 				return
 				;;
 			google-chrome-beta)
+				return
+				;;
+			google-chrome-unstable)
 				return
 				;;
 			heftig-aurora)
@@ -170,7 +174,7 @@ set_which() {
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="$browser"
 			;;
-		google-chrome|google-chrome-beta)
+		google-chrome|google-chrome-beta|google-chrome-unstable)
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="chrome"
 			;;

@@ -7,7 +7,7 @@ Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browse
 * Firefox (stable,beta,aurora)
 * Firefox-trunk (this is an Ubuntu-only browser: http://www.webupd8.org/2011/05/install-firefox-nightly-from-ubuntu-ppa.html)
 * Heftig's version of Aurora (this is an Arch Linux-only browser: https://bbs.archlinux.org/viewtopic.php?id=117157)
-* Google Chrome (stable and beta)
+* Google Chrome (stable, beta and dev)
 * Luakit
 * Midori
 * Opera and Opera-Next
