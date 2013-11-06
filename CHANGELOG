@@ -1,3 +1,7 @@
+06-Nov-2013
+v5.44
+Fixed typo in config file relating to google-chrome-unstable (brenix).
+
 25-Oct-2013
 v5.43
 Added support for google-chrome-dev (kiwnix).
