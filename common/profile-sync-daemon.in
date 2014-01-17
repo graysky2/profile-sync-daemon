@@ -12,15 +12,15 @@ export BLD="\e[01m" \
 	NRM="\e[00m"
 VERS="@VERSION@"
 
-# Setup check
-[[ -f /etc/psd.conf ]] && PSDCONF=${PSDCONF:-"/etc/psd.conf"}
+PSDCONF=${PSDCONF:-"/etc/psd.conf"}
 
-# nothing to do if there is no conf file
-if [[ ! -f $PSDCONF ]]; then
+# Setup check /etc/psd.conf
+if [[ -f /etc/psd.conf ]]; then
+	. $PSDCONF
+else
+	# nothing to do if there is no conf file
 	echo -e " Cannot find $PSDCONF so bailing. Reinstall package to use Profile-sync-daemon."
 	exit 1
-else
-	. $PSDCONF
 fi
 
 # all supported browsers
