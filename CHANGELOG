@@ -1,3 +1,7 @@
+17-Jan-2014
+v5.45.1
+Remove redundant check for /etc/psd.conf (TimofeyTitovets).
+
 03-Jan-2014
 v5.45
 RFC improve performance for CoW filesystems such as BTRFS (TimofeyTitovets).

@@ -19,7 +19,8 @@ if [[ -f /etc/psd.conf ]]; then
 	. $PSDCONF
 else
 	# nothing to do if there is no conf file
-	echo -e " Cannot find $PSDCONF so bailing. Reinstall package to use Profile-sync-daemon."
+	echo -e " Cannot find $PSDCONF so bailing."
+	echo -e " Reinstall package to use profile-sync-daemon."
 	exit 1
 fi
 
