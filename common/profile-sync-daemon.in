@@ -346,16 +346,21 @@ kill_browsers() {
 			set_which "$user" "$browser"
 
 			x=1
-			while [[ $x -le 5 ]]; do
+			while true; do
 				if [[ -n "$PSNAME" ]] &&
 					pgrep -u "$user" "$PSNAME" &>/dev/null
 				then
-					pkill -SIGTERM -u "$user" "$PSNAME"
+					if [[ $x -le 5 ]]; then
+						pkill -SIGTERM -u "$user" "$PSNAME"
+					else
+						pkill -SIGKILL -u "$user" "$PSNAME"
+					fi
+				else
+					break
 				fi
 				x=$(( $x + 1 ))
+				sleep .05
 			done
-			### Do we need a secondary, more powerful method of killing
-			### if the first fails?
 		done
 	done
 }
