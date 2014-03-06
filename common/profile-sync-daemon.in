@@ -345,8 +345,8 @@ kill_browsers() {
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
 
-			x=1
-			while true; do
+			local x=1
+			while [[ $x -le 60 ]]; do
 				if [[ -n "$PSNAME" ]] &&
 					pgrep -u "$user" "$PSNAME" &>/dev/null
 				then
