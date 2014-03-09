@@ -16,7 +16,20 @@ PSDCONF=${PSDCONF:-"/etc/psd.conf"}
 
 # Setup check /etc/psd.conf
 if [[ -f /etc/psd.conf ]]; then
-	. $PSDCONF
+	# Check what config not changed
+	# If changed using backup copy from /run/psd.conf
+	if [[ -f /run/psd.conf ]]; then
+		if [[ "$(md5sum /run/psd.conf | awk '{print $1}')" = "$(md5sum $PSDCONF | awk '{print $1}')" ]]; then
+			. $PSDCONF
+		else
+			echo -e " $PSDCONF changed, using backup /run/psd.conf."
+			PSDCONF=${PSDCONF:-"/run/psd.conf"}
+			. $PSDCONF
+		fi
+	else
+		. $PSDCONF
+		cp $PSDCONF /run/psd.conf
+	fi
 else
 	# nothing to do if there is no conf file
 	echo -e " Cannot find $PSDCONF so bailing."
@@ -427,7 +440,7 @@ parse_conf_file() {
 				fi
 			done
 		done
-	done
+	done
 }
 
 ungraceful_state_check() {
@@ -490,7 +503,7 @@ ungraceful_state_check() {
 					# all is well so continue
 					return
 				else
-					[[ -z $(mount | grep "$VOLATILE/$user-$browser$suffix") ]] && unmount -f "$DIR"
+					[[ -z $(mount | grep "$VOLATILE/$user-$browser$suffix") ]] && umount -l "$DIR"
 					NOW=$(date +%Y%m%d_%H%M%S)
 					if [[ -d "$BACKUP" ]]; then
 						cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
@@ -684,6 +697,7 @@ case "$1" in
 	unsync)
 		[[ -f $DAEMON_FILE ]] && do_sync && kill_browsers
 		do_unsync
+		[[ -f /run/psd.conf ]] && rm /run/psd.conf
 		;;
 	*)
 		echo -e "${RED}Profile-sync-daemon v$VERS${NRM}"
