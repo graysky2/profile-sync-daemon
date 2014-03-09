@@ -503,7 +503,8 @@ ungraceful_state_check() {
 					# all is well so continue
 					return
 				else
-					[[ -z $(mount | grep "$VOLATILE/$user-$browser$suffix") ]] && umount -l "$DIR"
+					[[ -z $(mount | grep "$VOLATILE/$user-$browser$suffix") ]] && 
+					umount -l "$DIR" && rm -rf "$DIR"
 					NOW=$(date +%Y%m%d_%H%M%S)
 					if [[ -d "$BACKUP" ]]; then
 						cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
@@ -672,7 +673,7 @@ do_unsync() {
 					# be sure to invoke a sync before an unsync
 					#
 					# restore original dirtree
-					[[ -d "$BACKUP" ]] && mv -f "$BACKUP" "$DIR" &&
+					[[ -d "$BACKUP" ]] && rm -rf "$DIR" && mv "$BACKUP" "$DIR" &&
 					[[ -d "$VOLATILE/$user-$browser$suffix" ]] && rm -rf "$VOLATILE/$user-$browser$suffix"
 				else
 					[[ ! -d "$homedir" ]] && echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
