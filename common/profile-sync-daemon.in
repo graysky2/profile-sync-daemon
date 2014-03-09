@@ -58,6 +58,11 @@ dep_check() {
 		exit 1; }
 	command -v awk >/dev/null 2>&1 || {
 		echo "I require awk but it's not installed. Aborting." >&2; exit 1; }
+	# Experimental feature for using unionfs
+	# he is no fail, if not exist.
+	[[ ! -z $EXP_UNIONFS ]] && command -v unionfs >/dev/null 2>&1 || {
+		EXP_UNIONFS="";
+		echo "I require unionfs-fuse but it's not installed. Work in default mode." >&2; }
 
 	# nothing to do if there are no users
 	if [[ -z "$USERS" ]]; then
@@ -422,7 +427,7 @@ parse_conf_file() {
 				fi
 			done
 		done
-	done
+	done
 }
 
 ungraceful_state_check() {
@@ -454,6 +459,42 @@ ungraceful_state_check() {
 					if [[ -d "$BACKUP" ]]; then
 						cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
 						mv "$BACKUP" "$DIR"
+					fi
+				fi
+			done
+		done
+	done
+}
+
+[[ ! -z $EXP_UNIONFS ]] && ungraceful_state_check() {
+	# if the machine was ungracefully shutdown then the backup will be
+	# on the filesystem and the link to tmpfs will be on the filesystem
+	# but the contents will be empty we need to simply remove the link
+	# and rotate the backup into place.
+
+	root_check
+	local browser user suffix
+	for user in $USERS; do
+		for browser in $BROWSERS; do
+			set_which "$user" "$browser"
+			for item in ${DIRArr[@]}; do
+				DIR="$item"
+				BACKUP="$item-backup"
+				[[ "$browser" = "firefox" ]] ||
+					[[ "$browser" = "firefox-trunk" ]] ||
+					[[ "$browser" = "heftig-aurora" ]] ||
+					[[ "$browser" = "seamonkey" ]] &&
+					suffix="-${item##*/}" ||
+					suffix=
+				if [[ -e "$DIR/.flagged" ]]; then
+					# all is well so continue
+					return
+				else
+					[[ -z $(mount | grep "$VOLATILE/$user-$browser$suffix") ]] && unmount -f "$DIR"
+					NOW=$(date +%Y%m%d_%H%M%S)
+					if [[ -d "$BACKUP" ]]; then
+						cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+						mv -f "$BACKUP" "$DIR"
 					fi
 				fi
 			done
@@ -511,6 +552,53 @@ do_sync() {
 	done
 }
 
+[[ ! -z $EXP_UNIONFS ]] && do_sync() {
+	root_check
+	touch "$DAEMON_FILE"
+
+	local browser user
+	for user in $USERS; do
+		for browser in $BROWSERS; do
+			set_which "$user" "$browser"
+			for item in ${DIRArr[@]}; do
+				DIR="$item"
+				BACKUP="$item-backup"
+				[[ "$browser" = "firefox" ]] || [[ "$browser" = "firefox-trunk" ]] ||
+					[[ "$browser" = "heftig-aurora" ]] || [[ "$browser" = "seamonkey" ]] &&
+					suffix="-${item##*/}" || suffix=
+				# make tmpfs container
+				if [[ -d $DIR ]]; then
+					[[ -r "$VOLATILE/$user-$browser$suffix" ]] ||
+						install -dm755 --owner=$user --group=$group "$VOLATILE/$user-$browser$suffix"
+					# backup target and link to tmpfs container
+					[[ -z $(mount | grep "$VOLATILE/$user-$browser$suffix") ]] &&
+					mv -f "$DIR" "$BACKUP"
+					# sync the tmpfs targets to the disc
+					if [[ -e $DIR/.flagged ]]; then
+						# delete options --delete-after (in /tmp saved only diff)
+						# I don't know, how fix them, and rsync delete needed files
+						rsync -aog --inplace --no-whole-file --exclude=.unionfs --exclude=.flagged "$DIR/" "$BACKUP/"
+					else
+						# mount unionfs
+						install -dm755 --owner=$user --group=$group "$DIR" "$VOLATILE/$user-$browser$suffix/"
+						[[ -d "$BACKUP" ]] || exit 1
+						[[ -d "$VOLATILE/$user-$browser$suffix/" ]] || exit 1
+						[[ -d "$DIR" ]] || exit 1
+						unionfs -o allow_other,hide_meta_files,auto_unmount,cow,auto_cache "$VOLATILE/$user-$browser$suffix/"=rw:"$BACKUP/"=ro "$DIR"
+						touch "$DIR/.flagged"
+					fi
+				else
+					if [[ ! -d "$homedir" ]] ; then
+						echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
+					elif [[ -d "$BACKUP" ]] ; then
+						echo -e "${RED}$DIR does not exist or is a broken symlink! Is $VOLATILE unmounted?${NRM}" >&2
+					fi
+				fi
+			done
+		done
+	done
+}
+
 do_unsync() {
 	root_check
 	rm -f "$DAEMON_FILE"
@@ -536,12 +624,45 @@ do_unsync() {
 					#
 					# restore original dirtree
 					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
-					[[ -d "$VOLATILE/$user-$browser$suffix" ]] &&
-						rm -rf "$VOLATILE/$user-$browser$suffix"
+					[[ -d "$VOLATILE/$user-$browser$suffix" ]] && rm -rf "$VOLATILE/$user-$browser$suffix"
 				else
 					if [[ ! -d "$homedir" ]] ; then
            echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
          fi
+				fi
+			done
+		done
+	done
+}
+
+[[ ! -z $EXP_UNIONFS ]] && do_unsync() {
+	root_check
+	rm -f "$DAEMON_FILE"
+
+	local browser user
+	for user in $USERS; do
+		for browser in $BROWSERS; do
+			set_which "$user" "$browser"
+			for item in ${DIRArr[@]}; do
+				DIR="$item"
+				BACKUP="$item-backup"
+				[[ "$browser" = "firefox" ]] ||
+					[[ "$browser" = "firefox-trunk" ]] ||
+					[[ "$browser" = "heftig-aurora" ]] ||
+					[[ "$browser" = "seamonkey" ]] &&
+					suffix="-${item##*/}" ||
+					suffix=
+				# check if user has browser profile
+				if [[ -z $(mount | grep "$VOLATILE/$user-$browser$suffix") ]]; then
+					umount -l "$DIR" &&
+					# this assumes that the backup is always updated so
+					# be sure to invoke a sync before an unsync
+					#
+					# restore original dirtree
+					[[ -d "$BACKUP" ]] && mv -f "$BACKUP" "$DIR" &&
+					[[ -d "$VOLATILE/$user-$browser$suffix" ]] && rm -rf "$VOLATILE/$user-$browser$suffix"
+				else
+					[[ ! -d "$homedir" ]] && echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
 				fi
 			done
 		done
@@ -589,6 +710,8 @@ case "$1" in
 			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}	Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}stop${NRM}${BLD}	Turn off daemon; remove symlinks and rotate tmpfs data back to disc."${NRM}
 		fi
+		[[ ! -z $EXP_UNIONFS ]] && echo &&
+		echo -e " ${BLD} ${NRM}${GRN}You use experimental features: EXP_UNIONFS${NRM}${BLD} "${NRM}
 		;;
 esac
 exit 0
