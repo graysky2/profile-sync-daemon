@@ -13,9 +13,17 @@ export BLD="\e[01m" \
 VERS="@VERSION@"
 
 PSDCONF=${PSDCONF:-"/etc/psd.conf"}
+# make it overrideable from the commandline / config
+DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}
 
 # Setup check /etc/psd.conf
 if [[ -f /etc/psd.conf ]]; then
+	# Backup config to */run and delete them if psd recive stop signal
+	# This using to avoid problem, with changed config file
+	# While psd run
+	. $PSDCONF
+	[[ -f "${DAEMON_FILE}.conf" ]] || cp "$PSDCONF" "${DAEMON_FILE}.conf"
+	PSDCONF=${PSDCONF:-"/run/psd.conf"}
 	. $PSDCONF
 else
 	# nothing to do if there is no conf file
@@ -46,9 +54,6 @@ ALL_BROWSERS=(
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
-
-# make it overrideable from the commandline / config
-DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}
 
 dep_check() {
 	# Function is used to insure all dependencies are installed and that
@@ -321,7 +326,7 @@ dup_check() {
 					#
 					# check that the LAST DIRECTORY in the full path is unique
 					unique_count=$(echo ${DIRArr[@]##*/} |
-						sed 's/ /\n/g' | sort | uniq | wc -l)
+						sed 's/ /\n/g' | sort -u | wc -l)
 					if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
 						return # no problems so do nothing
 					else
@@ -375,21 +380,21 @@ parse_conf_file() {
 	echo
 	if [[ -f /usr/lib/systemd/system/psd.service ]]; then
 		# running systemd
-    psd_state=$(systemctl is-active psd)
-    resync_state=$(systemctl is-active psd-resync.timer)
-    [[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
-    [[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
+		psd_state=$(systemctl is-active psd)
+		resync_state=$(systemctl is-active psd-resync.timer)
+		[[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
+		[[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
 
-    echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}."${NRM}
-    echo -e " ${BLD}Systemd resync service is currently ${resync_color}$resync_state${NRM}${BLD}."${NRM}
-  else
+		echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}."${NRM}
+		echo -e " ${BLD}Systemd resync service is currently ${resync_color}$resync_state${NRM}${BLD}."${NRM}
+	else
 		# using other init system + cron job for resync
 		[[ -x /etc/cron.hourly/psd-update ]] && resync_state="present" || resync_state="not present"
 		[[ "$resync_state" = "present" ]] && resync_color=${GRN} || resync_color=${RED}
-    echo -e " ${BLD}Daemon pid file is $([[ -f $DAEMON_FILE ]] && \
+		echo -e " ${BLD}Daemon pid file is $([[ -f $DAEMON_FILE ]] && \
 			echo -e ${GRN}present${NRM}${BLD} || echo -e ${RED}not present${NRM}${BLD})."${NRM}
 		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}."${NRM}
-  fi
+	fi
 	echo
 	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD} settings:"${NRM}
 	echo
@@ -513,8 +518,8 @@ do_sync() {
 
 do_unsync() {
 	root_check
-	rm -f "$DAEMON_FILE"
-
+	rm -f "$DAEMON_FILE" "${DAEMON_FILE}.conf"
+	
 	local browser user
 	for user in $USERS; do
 		for browser in $BROWSERS; do
@@ -540,8 +545,8 @@ do_unsync() {
 						rm -rf "$VOLATILE/$user-$browser$suffix"
 				else
 					if [[ ! -d "$homedir" ]] ; then
-           echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
-         fi
+						echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
+					fi
 				fi
 			done
 		done
