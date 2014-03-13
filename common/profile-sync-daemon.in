@@ -16,13 +16,13 @@ PSDCONF=${PSDCONF:-"/etc/psd.conf"}
 DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}
 
 # Setup check /etc/psd.conf
-#
+if [[ -f /etc/psd.conf ]]; then
+	. $PSDCONF
+fi
+
 # if psd is active, source the snapshot of /etc/psd.conf preferentially
-# else psd is inactive so use the live config file
 if [[ -f "${DAEMON_FILE}.conf" ]]; then
 	PSDCONF="${DAEMON_FILE}.conf"
-	. $PSDCONF
-elif [[ -f /etc/psd.conf ]]; then
 	. $PSDCONF
 else
 	# nothing to do if there is no conf file
