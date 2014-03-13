@@ -18,17 +18,17 @@ DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}
 # Setup check /etc/psd.conf
 if [[ -f /etc/psd.conf ]]; then
 	. $PSDCONF
+else
+	# nothing to do if there is no conf file
+	echo -e " Cannot find $PSDCONF so bailing."
+	echo -e " Reinstall package to use profile-sync-daemon."
+	exit 1
 fi
 
 # if psd is active, source the snapshot of /etc/psd.conf preferentially
 if [[ -f "${DAEMON_FILE}.conf" ]]; then
 	PSDCONF="${DAEMON_FILE}.conf"
 	. $PSDCONF
-else
-	# nothing to do if there is no conf file
-	echo -e " Cannot find $PSDCONF so bailing."
-	echo -e " Reinstall package to use profile-sync-daemon."
-	exit 1
 fi
 
 # all supported browsers
