@@ -1,3 +1,7 @@
+6-Mar-2014
+v5.45.2
+Minor tweaks for killing stuck processes (felixonmars).
+
 17-Jan-2014
 v5.45.1
 Remove redundant check for /etc/psd.conf (TimofeyTitovets).
