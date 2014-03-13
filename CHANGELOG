@@ -1,3 +1,7 @@
+13-Mar-2014
+v5.46
+Safegaurd against edits to /etc/psd.conf while psd is running (TimofeyTitvets).
+
 6-Mar-2014
 v5.45.2
 Minor tweaks for killing stuck processes (felixonmars).
