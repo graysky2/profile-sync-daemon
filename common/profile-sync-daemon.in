@@ -64,7 +64,7 @@ dep_check() {
 		echo "I require awk but it's not installed. Aborting." >&2; exit 1; }
 	# Experimental feature for using unionfs
 	# he is no fail, if not exist.
-	[[ ! -z $EXP_UNIONFS ]] && command -v unionfs >/dev/null 2>&1 || {
+	[[ ! -z "$EXP_UNIONFS" ]] && command -v unionfs >/dev/null 2>&1 || {
 		EXP_UNIONFS="";
 		echo "I require unionfs-fuse but it's not installed. Work in default mode." >&2; }
 
@@ -473,16 +473,20 @@ ungraceful_state_check() {
 
 do_sync() {
 	root_check
-	touch "$DAEMON_FILE"
-	
+
 	# make a snapshot of /etc/psd.conf and redefine its location to tmpfs while
 	# psd is running to keep any edits made to the live /etc/psd.conf from
 	# potentially orphaning the tmpfs copies thus preserving the data
 	[[ ! -f "${DAEMON_FILE}.conf" ]] && cp "$PSDCONF" "${DAEMON_FILE}.conf"
-	
+
 	# If user intall unionfs while psd run and EXP_UNIONFS enabled
 	# psd run not correctly (running as link mode, but work as unionfs).
-	[[ -z $EXP_UNIONFS ]] && echo EXP_UNIONFS="" >> "${DAEMON_FILE}.conf"
+	if [[ ! -f "$DAEMON_FILE" ]]; then
+		command -v unionfs >/dev/null 2>&1 ||
+		echo EXP_UNIONFS="" >> "${DAEMON_FILE}.conf"
+	fi
+	
+	touch "$DAEMON_FILE"
 
 	local browser user
 	for user in $USERS; do
