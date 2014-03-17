@@ -1,3 +1,7 @@
+17-Mar-2014
+v5.47
+Added support for epiphany.
+
 13-Mar-2014
 v5.46
 Safegaurd against edits to /etc/psd.conf while psd is running (TimofeyTitvets).

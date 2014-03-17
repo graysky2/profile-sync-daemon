@@ -36,6 +36,7 @@ ALL_BROWSERS=(
 	chromium
 	chromium-dev
 	conkeror.mozdev.org
+	epiphany
 	firefox
 	firefox-trunk
 	google-chrome
@@ -86,6 +87,9 @@ dep_check() {
 				return
 				;;
 			conkeror.mozdev.org)
+				return
+				;;
+			epiphany)
 				return
 				;;
 			firefox)
@@ -175,7 +179,7 @@ set_which() {
 			DIRArr[0]="$homedir/.$browser"
 			PSNAME="xulrunner"
 			;;
-		chromium|chromium-dev|midori)
+		chromium|chromium-dev|epiphany|midori)
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="$browser"
 			;;
