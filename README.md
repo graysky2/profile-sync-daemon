@@ -24,7 +24,7 @@ To build from source, see the included INSTALL text document.
 
 ##Installation from Distro Packages
 * ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch: in the [AUR](https://aur.archlinux.org/packages/profile-sync-daemon).
-* ![logo](http://chakraos.org/img/icon/chakra-kde_32.png "chakra logo")Chakra: in the [CCR](http://chakraos.org/ccr/packages.php?ID=5008).
+* ![logo](http://s18.postimg.org/w5jvz71mt/chakra.jpg "chakra logo")Chakra: in the [CCR](http://chakraos.org/ccr/packages.php?ID=5008).
 * ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian: in graysky's PPA, See instruction below.
 * ![logo](http://cloud.ohloh.net/attachments/14589/me_small.png "exherbo logo")Exherbo: in the Exherbo [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
 * ![logo](http://s9.postimg.org/p5f1tscxn/fedora.jpg "fedora logo")Fedora: in the official [repos](http://koji.fedoraproject.org/koji/packageinfo?packageID=16307).
