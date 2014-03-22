@@ -63,6 +63,11 @@ dep_check() {
 		exit 1; }
 	command -v awk >/dev/null 2>&1 || {
 		echo "I require awk but it's not installed. Aborting." >&2; exit 1; }
+	# Experimental feature for using unionfs
+	# he is no fail, if not exist.
+	[[ ! -z "$EXP_UNIONFS" ]] && command -v unionfs >/dev/null 2>&1 || {
+		EXP_UNIONFS="";
+		echo "I require unionfs-fuse but it's not installed. Work in default mode." >&2; }
 
 	# nothing to do if there are no users
 	if [[ -z "$USERS" ]]; then
@@ -407,6 +412,7 @@ parse_conf_file() {
 			set_which "$user" "$browser"
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
+				TMP="$VOLATILE/$user-$browser$suffix"
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
@@ -423,7 +429,7 @@ parse_conf_file() {
 					echo -en " ${BLD}sync target:"
 					echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR"${NRM}
 					echo -en " ${BLD}tmpfs dir:"
-					echo -e "$(tput cr)$(tput cuf 17) ${RED}$VOLATILE/$user-$browser$suffix"${NRM}
+					echo -e "$(tput cr)$(tput cuf 17) ${RED}$TMP"${NRM}
 					echo -en " ${BLD}profile size:"
 					echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
 					echo
@@ -471,12 +477,20 @@ ungraceful_state_check() {
 
 do_sync() {
 	root_check
-	touch "$DAEMON_FILE"
-	
+
 	# make a snapshot of /etc/psd.conf and redefine its location to tmpfs while
 	# psd is running to keep any edits made to the live /etc/psd.conf from
 	# potentially orphaning the tmpfs copies thus preserving the data
 	[[ ! -f "${DAEMON_FILE}.conf" ]] && cp "$PSDCONF" "${DAEMON_FILE}.conf"
+
+	# If user intall unionfs while psd run and EXP_UNIONFS enabled
+	# psd run not correctly (running as link mode, but work as unionfs).
+	if [[ ! -f "$DAEMON_FILE" ]]; then
+		command -v unionfs >/dev/null 2>&1 ||
+		echo EXP_UNIONFS="" >> "${DAEMON_FILE}.conf"
+	fi
+	
+	touch "$DAEMON_FILE"
 
 	local browser user
 	for user in $USERS; do
@@ -485,6 +499,8 @@ do_sync() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
+				TMP="$VOLATILE/$user-$browser$suffix"
+				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
@@ -493,11 +509,15 @@ do_sync() {
 					suffix=
 				# make tmpfs container
 				if [[ -d $DIR ]]; then
-					[[ -r "$VOLATILE/$user-$browser$suffix" ]] ||
-						install -dm755 --owner=$user --group=$group "$VOLATILE/$user-$browser$suffix"
+					[[ -r "$TMP" ]] ||
+						install -dm755 --owner=$user --group=$group "$TMP"
+					if [[ ! -z $EXP_UNIONFS ]]; then 
+						[[ -r "$TMPRW" ]] ||
+							install -dm755 --owner=$user --group=$group "$TMPRW"
+					fi
 
 					# backup target and link to tmpfs container
-					if [[ $(readlink "$DIR") != "$VOLATILE/$user-$browser$suffix" ]]; then
+					if [[ $(readlink "$DIR") != "$TMP" ]]; then
 						mv "$DIR" "$BACKUP"
 					fi
 
@@ -507,8 +527,12 @@ do_sync() {
 					else
 						# initial sync
 						# keep user from launching browser while rsync is active
-						rsync -aog --inplace --no-whole-file "$BACKUP/" "$VOLATILE/$user-$browser$suffix/"
-						ln -s "$VOLATILE/$user-$browser$suffix" "$DIR"
+						if [[ ! -z $EXP_UNIONFS ]]; then 
+							unionfs -o allow_other,hide_meta_files,cow,auto_cache "$TMPRW"=rw:"$BACKUP"=ro "$TMP"
+						else
+							rsync -aog --inplace --no-whole-file "$BACKUP/" "$TMP/"
+						fi
+						ln -s "$TMP" "$DIR"
 						chown -h $user:$group "$DIR"
 						touch "$DIR/.flagged"
 					fi
@@ -527,7 +551,7 @@ do_sync() {
 do_unsync() {
 	root_check
 	rm -f "$DAEMON_FILE" "${DAEMON_FILE}.conf"
-	
+
 	local browser user
 	for user in $USERS; do
 		for browser in $BROWSERS; do
@@ -535,6 +559,8 @@ do_unsync() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
+				TMP="$VOLATILE/$user-$browser$suffix"
+				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
@@ -549,9 +575,13 @@ do_unsync() {
 					#
 					# restore original dirtree
 					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
-					[[ -d "$VOLATILE/$user-$browser$suffix" ]] &&
-						rm -rf "$VOLATILE/$user-$browser$suffix"
-				else
+					if [[ ! -z $EXP_UNIONFS ]]; then
+						[[ -d "$TMP" ]] && \
+							umount -l "$TMP" && \
+							rm -rf "$TMP" "$TMPRW"
+					else
+						[[ -d "$TMP" ]] && rm -rf "$TMP"
+					fi
 					if [[ ! -d "$homedir" ]] ; then
 						echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
 					fi
@@ -602,6 +632,8 @@ case "$1" in
 			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}	Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}stop${NRM}${BLD}	Turn off daemon; remove symlinks and rotate tmpfs data back to disc."${NRM}
 		fi
+		[[ ! -z $EXP_UNIONFS ]] && echo &&
+		echo -e " ${BLD} ${NRM}${GRN}You use experimental features: EXP_UNIONFS${NRM}${BLD} "${NRM}
 		;;
 esac
 exit 0
