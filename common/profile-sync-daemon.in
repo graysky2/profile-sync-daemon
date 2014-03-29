@@ -394,7 +394,7 @@ parse_conf_file() {
 		# using other init system + cron job for resync
 		[[ -x /etc/cron.hourly/psd-update ]] && resync_state="present" || resync_state="not present"
 		[[ "$resync_state" = "present" ]] && resync_color=${GRN} || resync_color=${RED}
-		echo -e " ${BLD}Daemon pid file is $([[ -f $DAEMON_FILE ]] && \
+		echo -e " ${BLD}Daemon pid file is $([[ -f $DAEMON_FILE ]] &&
 			echo -e ${GRN}present${NRM}${BLD} || echo -e ${RED}not present${NRM}${BLD})."${NRM}
 		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}."${NRM}
 	fi
@@ -492,7 +492,7 @@ do_sync() {
 					suffix="-${item##*/}" ||
 					suffix=
 				# make tmpfs container
-				if [[ -d $DIR ]]; then
+				if [[ -d "$DIR" ]]; then
 					[[ -r "$VOLATILE/$user-$browser$suffix" ]] ||
 						install -dm755 --owner=$user --group=$group "$VOLATILE/$user-$browser$suffix"
 
@@ -502,7 +502,7 @@ do_sync() {
 					fi
 
 					# sync the tmpfs targets to the disc
-					if [[ -e $DIR/.flagged ]]; then
+					if [[ -e "$DIR"/.flagged ]]; then
 						rsync -aog --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
 					else
 						# initial sync
@@ -578,7 +578,7 @@ case "$1" in
 		do_unsync
 		;;
 	*)
-		echo -e "${RED}Profile-sync-daemon v$VERS${NRM}"
+		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}"
 		echo
 		echo -e " ${BLD}$0 ${NRM}${GRN}[option]${NRM}"
 		echo -e " ${BLD} ${NRM}${GRN}preview${NRM}${BLD}	Parse config file (${NRM}${BLU}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed."${NRM}
