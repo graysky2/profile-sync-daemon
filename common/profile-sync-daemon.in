@@ -170,7 +170,7 @@ set_which() {
 						# fully qualified path
 						DIRArr[index]="$homedir/.mozilla/firefox/$profileItem"
 					fi
-					index=$index+1
+					index=[$index+1]
 				done
 			fi
 			;;
@@ -315,7 +315,7 @@ kill_browsers() {
 				else
 					break
 				fi
-				x=$(( $x + 1 ))
+				x=$[$x+1]
 				sleep .05
 			done
 		done
@@ -396,12 +396,6 @@ ungraceful_state_check() {
 			for item in ${DIRArr[@]}; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] ||
-					[[ "$browser" = "firefox-trunk" ]] ||
-					[[ "$browser" = "heftig-aurora" ]] ||
-					[[ "$browser" = "seamonkey" ]] &&
-					suffix="-${item##*/}" ||
-					suffix=
 				if [[ -e "$DIR/.flagged" ]]; then
 					# all is well so continue
 					return
@@ -410,6 +404,12 @@ ungraceful_state_check() {
 					NOW=$(date +%Y%m%d_%H%M%S)
 					if [[ -d "$BACKUP" ]]; then
 						cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+						lines=`ls $BACKUP/../ | grep -backup-crashrecovery- | cat -n | awk '{print $1}'`
+                        lines=$[$lines-5]
+                        [ 0 -le "$lines" ] && \
+                        tmp=(`ls $BACKUP/../ | grep -backup-crashrecovery- | tail -n $lines`)
+                        rm -Rf ${tmp[@]} &
+                        unset tmp
 						mv "$BACKUP" "$DIR"
 					fi
 				fi
