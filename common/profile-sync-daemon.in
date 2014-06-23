@@ -46,6 +46,7 @@ ALL_BROWSERS=(
   icecat
 	midori
 	opera
+	opera-developer
 	opera-next
 	qupzilla
 	rekonq
@@ -123,6 +124,9 @@ dep_check() {
 			opera-next)
 				return
 				;;
+			opera-developer)
+				return
+				;;
 			qupzilla)
 				return
 				;;
@@ -191,7 +195,7 @@ set_which() {
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="chrome"
 			;;
-		opera|opera-next)
+		opera|opera-next|opera-developer)
 			DIRArr[0]="$homedir/.$browser"
 			PSNAME="$browser"
 			;;
