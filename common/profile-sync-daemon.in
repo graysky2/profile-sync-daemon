@@ -199,9 +199,13 @@ set_which() {
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="chrome"
 			;;
-		opera|opera-next|opera-developer)
+		opera|opera-next)
 			DIRArr[0]="$homedir/.$browser"
 			PSNAME="$browser"
+			;;
+		opera-developer)
+			DIRArr[0]="$homedir/.config/$browser"
+			PSNAME="opera"
 			;;
 		qupzilla)
 			#	http://blog.qupzilla.com/2013/03/qupzilla-140-released.html
@@ -374,7 +378,7 @@ dup_check() {
 				[[ "$browser" = "seamonkey" ]] ||
 				[[ "$browser" = "palemoon" ]]
 			then
-				if [[ -z ${DIRArr[@]} ]]; then
+				if [[ -z "${DIRArr[@]}" ]]; then
 					return # nothing to check
 				else
 					# browser is on system so check profiles
@@ -485,7 +489,7 @@ parse_conf_file() {
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
-				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null |
+				psize=$(du -Lh --max-depth=0 "$DIR" 2>/dev/null |
 					awk '{ print $1 }') # profile dir size
 				if [[ -d "$DIR" ]]; then
 					echo -en " ${BLD}browser/psname:"
