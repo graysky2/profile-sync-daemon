@@ -48,6 +48,7 @@ ALL_BROWSERS=(
 	opera
 	opera-developer
 	opera-next
+	palemoon
 	qupzilla
 	rekonq
 	seamonkey
@@ -137,6 +138,9 @@ dep_check() {
 				return
 				;;
 			luakit)
+				return
+				;;
+			palemoon)
 				return
 				;;
 			*)
@@ -314,6 +318,25 @@ set_which() {
 			DIRArr[0]="$homedir/.local/share/$browser"
 			PSNAME="$browser"
 			;;
+		palemoon)
+			if [[ -d $homedir/.moonchild\ productions/pale\ moon ]]; then
+				profileArr=( $(grep '[P,p]'ath= $homedir/.moonchild\ productions/pale\ moon/profiles.ini |
+					sed 's/[P,p]ath=//') )
+				index=0
+				PSNAME="$browser"
+				for profileItem in ${profileArr[@]}; do
+					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
+						# path is not relative
+						DIRArr[index]="$profileItem"
+					else
+						# we need to append the default path to give a
+						# fully qualified path
+						DIRArr[index]="$homedir/.moonchild productions/pale moon/$profileItem"
+					fi
+					index=$index+1
+				done
+			fi
+			;;
 		*)
 			# skip invalid browser entries
 			return
@@ -337,7 +360,7 @@ running_check() {
 }
 
 dup_check() {
-	# only for firefox and aurora
+	# only for firefox, icecat, seamonkey, palemoon, and aurora
 	# the LAST directory in the profile MUST be unique
 	# make sure there are no duplicates in ~/.mozilla/<browser>/profiles.ini
 	local browser user
@@ -348,7 +371,8 @@ dup_check() {
 				[[ "$browser" = "firefox-trunk" ]] ||
 				[[ "$browser" = "heftig-aurora" ]] ||
         [[ "$browser" = "icecat" ]] ||
-				[[ "$browser" = "seamonkey" ]]
+				[[ "$browser" = "seamonkey" ]] ||
+				[[ "$browser" = "palemoon" ]]
 			then
 				if [[ -z ${DIRArr[@]} ]]; then
 					return # nothing to check
@@ -365,6 +389,24 @@ dup_check() {
 						# clip of the 'heftig-' to give correct path
 						[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"
 						echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.mozilla/$browser/profiles.ini${NRM}${BLD} to use psd."${NRM}
+						exit 1
+					fi
+				fi
+			elif [[ "$browser" = "palemoon" ]]
+			then
+				if [[ -z "${DIRArr[@]}" ]]; then
+					return # nothing to check
+				else
+					# browser is on system so check profiles
+					#
+					# check that the LAST DIRECTORY in the full path is unique
+					unique_count=$(echo ${DIRArr[@]##*/} |
+						sed 's/ /\n/g' | sort -u | wc -l)
+					if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
+						return # no problems so do nothing
+					else
+						echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
+						echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.moonchild productions/pale moon/profiles.ini${NRM}${BLD} to use psd."${NRM}
 						exit 1
 					fi
 				fi
@@ -433,13 +475,14 @@ parse_conf_file() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			for item in ${DIRArr[@]}; do
+			for item in "${DIRArr[@]}"; do
 				DIR="$item"
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
           [[ "$browser" = "icecat" ]] ||
-					[[ "$browser" = "seamonkey" ]] &&
+					[[ "$browser" = "seamonkey" ]] ||
+					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
 				psize=$(du -Lh --max-depth=0 $DIR 2>/dev/null |
@@ -473,14 +516,15 @@ ungraceful_state_check() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			for item in ${DIRArr[@]}; do
+			for item in "${DIRArr[@]}"; do
 				DIR="$item"
 				BACKUP="$item-backup"
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
           [[ "$browser" = "icecat" ]] ||
-					[[ "$browser" = "seamonkey" ]] &&
+					[[ "$browser" = "seamonkey" ]] ||
+					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
 				if [[ -e "$DIR/.flagged" ]]; then
@@ -512,14 +556,15 @@ do_sync() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			for item in ${DIRArr[@]}; do
+			for item in "${DIRArr[@]}"; do
 				DIR="$item"
 				BACKUP="$item-backup"
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
           [[ "$browser" = "icecat" ]] ||
-					[[ "$browser" = "seamonkey" ]] &&
+					[[ "$browser" = "seamonkey" ]] ||
+					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
 				# make tmpfs container
@@ -563,14 +608,15 @@ do_unsync() {
 	for user in $USERS; do
 		for browser in $BROWSERS; do
 			set_which "$user" "$browser"
-			for item in ${DIRArr[@]}; do
+			for item in "${DIRArr[@]}"; do
 				DIR="$item"
 				BACKUP="$item-backup"
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
           [[ "$browser" = "icecat" ]] ||
-					[[ "$browser" = "seamonkey" ]] &&
+					[[ "$browser" = "seamonkey" ]] ||
+					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
 				# check if user has browser profile
