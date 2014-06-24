@@ -43,7 +43,8 @@ ALL_BROWSERS=(
 	google-chrome-beta
 	google-chrome-unstable
 	heftig-aurora
-  icecat
+	icecat
+	luakit
 	midori
 	opera
 	opera-developer
@@ -52,7 +53,6 @@ ALL_BROWSERS=(
 	qupzilla
 	rekonq
 	seamonkey
-	luakit
 	)
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
@@ -113,9 +113,9 @@ dep_check() {
 			heftig-aurora)
 				return
 				;;
-      icecat)
-        return
-        ;;
+			icecat)
+				return
+				;;
 			midori)
 				return
 				;;
@@ -374,7 +374,7 @@ dup_check() {
 			if [[ "$browser" = "firefox" ]] ||
 				[[ "$browser" = "firefox-trunk" ]] ||
 				[[ "$browser" = "heftig-aurora" ]] ||
-        [[ "$browser" = "icecat" ]] ||
+				[[ "$browser" = "icecat" ]] ||
 				[[ "$browser" = "seamonkey" ]] ||
 				[[ "$browser" = "palemoon" ]]
 			then
@@ -526,7 +526,7 @@ ungraceful_state_check() {
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
-          [[ "$browser" = "icecat" ]] ||
+					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
@@ -566,7 +566,7 @@ do_sync() {
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
-          [[ "$browser" = "icecat" ]] ||
+					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
@@ -618,7 +618,7 @@ do_unsync() {
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
-          [[ "$browser" = "icecat" ]] ||
+					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
