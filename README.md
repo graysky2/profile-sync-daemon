@@ -39,8 +39,8 @@ To build from source, see the included INSTALL text document.
 ###Debian Users
 To add the PPA (personal package archive) to your Debian (tested on squeeze) system, and to install psd, do the following as the root user:
 
-    echo "deb http://ppa.launchpad.net/graysky/utils/ubuntu saucy main" > /etc/apt/sources.list.d/graysky.list
-    echo "deb-src http://ppa.launchpad.net/graysky/utils/ubuntu saucy main" >> /etc/apt/sources.list.d/graysky.list
+    echo "deb http://ppa.launchpad.net/graysky/utils/ubuntu trusty main" > /etc/apt/sources.list.d/graysky.list
+    echo "deb-src http://ppa.launchpad.net/graysky/utils/ubuntu trusty main" >> /etc/apt/sources.list.d/graysky.list
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys FF7F9516
     gpg --keyserver wwwkeys.pgp.net --recv-keys C1C5C63BF0E0B4E7
     gpg --armor --export C1C5C63BF0E0B4E7 | apt-key add -
