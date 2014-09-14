@@ -583,11 +583,11 @@ do_sync() {
 
 					# sync the tmpfs targets to the disc
 					if [[ -e "$DIR"/.flagged ]]; then
-						rsync -aog --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
+						rsync -aogX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
 					else
 						# initial sync
 						# keep user from launching browser while rsync is active
-						rsync -aog --inplace --no-whole-file "$BACKUP/" "$VOLATILE/$user-$browser$suffix/"
+						rsync -aogX --inplace --no-whole-file "$BACKUP/" "$VOLATILE/$user-$browser$suffix/"
 						ln -s "$VOLATILE/$user-$browser$suffix" "$DIR"
 						chown -h $user:$group "$DIR"
 						touch "$DIR/.flagged"
