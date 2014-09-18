@@ -48,6 +48,7 @@ ALL_BROWSERS=(
 	midori
 	opera
 	opera-developer
+	opera-beta
 	opera-next
 	palemoon
 	qupzilla
@@ -123,6 +124,9 @@ dep_check() {
 				return
 				;;
 			opera-next)
+				return
+				;;
+			opera-beta)
 				return
 				;;
 			opera-developer)
@@ -203,9 +207,9 @@ set_which() {
 			DIRArr[0]="$homedir/.$browser"
 			PSNAME="$browser"
 			;;
-		opera-developer)
+		opera-developer|opera-beta)
 			DIRArr[0]="$homedir/.config/$browser"
-			PSNAME="opera"
+			PSNAME="$browser"
 			;;
 		qupzilla)
 			#	http://blog.qupzilla.com/2013/03/qupzilla-140-released.html

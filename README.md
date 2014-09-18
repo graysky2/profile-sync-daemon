@@ -12,7 +12,7 @@ Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browse
 * Icecat (GNU version of Firefox)
 * Luakit
 * Midori
-* Opera, Opera-Next and Opera-Developer
+* Opera, Opera-Beta and Opera-Developer
 * Palemoon
 * QupZilla
 * Rekonq
