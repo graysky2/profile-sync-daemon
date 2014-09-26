@@ -15,4 +15,3 @@ ExecStop=/usr/bin/profile-sync-daemon unsync
 
 [Install]
 WantedBy=multi-user.target
-Also=psd-resync.service psd-resync.timer
