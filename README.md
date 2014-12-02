@@ -37,13 +37,11 @@ To build from source, see the included INSTALL text document.
 * ![logo](http://s23.postimg.org/5pabe2o5z/void_logo_transparent.png "void logo")Void: in the Void [repos](https://github.com/xtraeme/xbps-packages/tree/master/srcpkgs/profile-sync-daemon).
 
 ###Debian Users
-To add the PPA (personal package archive) to your Debian (tested on squeeze) system, and to install psd, do the following as the root user:
+To add the PPA (personal package archive) to your Debian (tested on whezzy) system, and to install psd, do the following as the root user:
 
     echo "deb http://ppa.launchpad.net/graysky/utils/ubuntu trusty main" > /etc/apt/sources.list.d/graysky.list
     echo "deb-src http://ppa.launchpad.net/graysky/utils/ubuntu trusty main" >> /etc/apt/sources.list.d/graysky.list
-    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys FF7F9516
-    gpg --keyserver wwwkeys.pgp.net --recv-keys C1C5C63BF0E0B4E7
-    gpg --armor --export C1C5C63BF0E0B4E7 | apt-key add -
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F0E0B4E7
     apt-get update
     apt-get install profile-sync-daemon
 
