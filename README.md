@@ -48,6 +48,8 @@ To add the PPA (personal package archive) to your Debian (tested on whezzy) syst
 ###Fedora Users
 Since June of 2013, Profile-sync-daemon is in the official repo. [Reference](https://bugzilla.redhat.com/show_bug.cgi?id=968253).
 
+    sudo yum install profile-sync-daemon
+
 ###Mint Users
 To add the PPA (personal package archive) to your Mint system (tested on 14.1), and to install psd:
 
