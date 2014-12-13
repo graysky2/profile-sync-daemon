@@ -661,7 +661,7 @@ do_unsync() {
 					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
 					if [[ ! -z $USE_OVERLAYFS ]] && mountpoint -q "$TMP"; then
 						umount -l "$TMP" && \
-							rm -rf "$TMP $TMPRW" "$TMPWK"
+							rm -rf "$TMP" "$TMPRW" "$TMPWK"
 					fi
 					[[ -d "$TMP" ]] && rm -rf "$TMP"
 				else
