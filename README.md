@@ -32,6 +32,7 @@ To build from source, see the included INSTALL text document.
 * ![logo](http://s9.postimg.org/p5f1tscxn/fedora.jpg "fedora logo")Fedora: in the official [repos](http://koji.fedoraproject.org/koji/packageinfo?packageID=16307).
 * ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo: in the Gentoo [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
 * ![logo](http://i1-news.softpedia-static.com/images/extra/LINUX/small/slw106news5.png "mint logo")Mint: in graysky's PPA, See instruction below.
+* ![logo](http://s29.postimg.org/ofjg812er/nixos_logo_small.png "nixos logo")NixOS: Available through the `psd` service, See instruction below.
 * ![logo](http://s30.postimg.org/auetslwfh/opensuse.jpg "open suse")OpenSUSE: packaged by [Overman79](http://download.opensuse.org/repositories/home:/Overman79:/Laptop).
 * ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu: in graysky's PPA, See instruction below.
 * ![logo](http://s23.postimg.org/5pabe2o5z/void_logo_transparent.png "void logo")Void: in the Void [repos](https://github.com/xtraeme/xbps-packages/tree/master/srcpkgs/profile-sync-daemon).
@@ -56,6 +57,23 @@ To add the PPA (personal package archive) to your Mint system (tested on 14.1), 
     sudo add-apt-repository ppa:graysky/utils
     sudo apt-get update
     sudo apt-get install profile-sync-daemon
+
+###NixOS Users
+Currently, you need to be tracking `nixos-unstable`:
+
+    nix-channel --add http://nixos.org/channels/nixos-unstable nixos
+    nixos-rebuild switch --upgrade
+
+The NixOS module looks for a `services.psd` attribute set in your
+`configuration.nix` (run `nixos-help` for all options):
+
+      services.psd = {
+        enable = true;
+        users = [ "user42" "other_user" ];      # At least one is required
+        browsers = [ "firefox" "chromium" ];    # Leave blank to enable all
+      };
+
+Then rebuild your system configuration with `nixos-rebuild switch`.
 
 ###Ubuntu Users
 To add the PPA (personal package archive) to your Ubuntu system (packages available for Lucid and newer), and to install psd:
