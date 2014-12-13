@@ -63,12 +63,13 @@ dep_check() {
 	# Function is used to insure all dependencies are installed and that
 	# /etc/psd.conf is setup correctly
 	command -v rsync >/dev/null 2>&1 || {
-		echo "I require rsync but it's not installed. Aborting." >&2
-		exit 1; }
+		echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
 	command -v awk >/dev/null 2>&1 || {
-		echo "I require awk but it's not installed. Aborting." >&2; exit 1; }
-	[ ! -z USE_OVERLAYFS ] && modprobe overlay 2>&1 || {
-		echo "Overlayfs require => 3.18 kernel. Aborting." >&2; exit 1;}
+		echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
+	if [[ -n "$USE_OVERLAYFS" ]]; then
+		modprobe overlay &>/dev/null || {
+		echo -e " ${BLD}Overlayfs requires linux kernel >= 3.18. ${RED}Aborting!"${NRM} >&2; exit 1;}
+	fi
 
 	# nothing to do if there are no users
 	if [[ -z "$USERS" ]]; then
@@ -469,9 +470,9 @@ parse_conf_file() {
 		resync_state=$(systemctl is-active psd-resync.timer)
 		[[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
 		[[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
-
 		echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}."${NRM}
 		echo -e " ${BLD}Systemd resync service is currently ${resync_color}$resync_state${NRM}${BLD}."${NRM}
+
 	else
 		# using other init system + cron job for resync
 		[[ -x /etc/cron.hourly/psd-update ]] && resync_state="present" || resync_state="not present"
@@ -480,8 +481,9 @@ parse_conf_file() {
 			echo -e ${GRN}present${NRM}${BLD} || echo -e ${RED}not present${NRM}${BLD})."${NRM}
 		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}."${NRM}
 	fi
-	echo
-	echo -e "${BLD}Psd use overlayfs ${BLU}${USE_OVERLAYFS:=false}${NRM}${BLD}"${NRM}
+	[[ -n "$USE_OVERLAYFS" ]] &&
+		echo -e "${BLD} Overlayfs technology is currently ${GRN}active${NRM}${BLD}."${NRM} ||
+		 echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}."${NRM}
 	echo
 	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD} settings:"${NRM}
 	echo
@@ -589,7 +591,7 @@ do_sync() {
 					[[ -r "$TMP" ]] ||
 						install -dm755 --owner=$user --group=$group "$TMP"
 
-					if [[ ! -z $USE_OVERLAYFS ]]; then
+					if [[ -n "$USE_OVERLAYFS" ]]; then
 						[[ -r "$TMPRW" ]] ||
 							install -dm755 --owner=$user --group=$group "$TMPRW"
 						[[ -r "$TMPWK" ]] ||
@@ -606,7 +608,7 @@ do_sync() {
 						rsync -aogX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
 					else
 						# initial sync
-						if [[ ! -z $USE_OVERLAYFS ]]; then
+						if [[ -n "$USE_OVERLAYFS" ]]; then
 							mount -t overlay overlay -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
 						else
 							# keep user from launching browser while rsync is active
@@ -659,7 +661,7 @@ do_unsync() {
 					#
 					# restore original dirtree
 					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
-					if [[ ! -z $USE_OVERLAYFS ]] && mountpoint -q "$TMP"; then
+					if [[ -n "$USE_OVERLAYFS" ]] && mountpoint -q "$TMP"; then
 						umount -l "$TMP" && \
 							rm -rf "$TMP" "$TMPRW" "$TMPWK"
 					fi
