@@ -43,16 +43,17 @@ ALL_BROWSERS=(
 	google-chrome-beta
 	google-chrome-unstable
 	heftig-aurora
-  icecat
+	icecat
+	luakit
 	midori
 	opera
 	opera-developer
+	opera-beta
 	opera-next
 	palemoon
 	qupzilla
 	rekonq
 	seamonkey
-	luakit
 	)
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
@@ -62,10 +63,13 @@ dep_check() {
 	# Function is used to insure all dependencies are installed and that
 	# /etc/psd.conf is setup correctly
 	command -v rsync >/dev/null 2>&1 || {
-		echo "I require rsync but it's not installed. Aborting." >&2
-		exit 1; }
+		echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
 	command -v awk >/dev/null 2>&1 || {
-		echo "I require awk but it's not installed. Aborting." >&2; exit 1; }
+		echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
+	if [[ -n "$USE_OVERLAYFS" ]]; then
+		modprobe overlay &>/dev/null || {
+		echo -e " ${BLD}Overlayfs requires linux kernel >= 3.18. ${RED}Aborting!"${NRM} >&2; exit 1;}
+	fi
 
 	# nothing to do if there are no users
 	if [[ -z "$USERS" ]]; then
@@ -113,9 +117,9 @@ dep_check() {
 			heftig-aurora)
 				return
 				;;
-      icecat)
-        return
-        ;;
+			icecat)
+				return
+				;;
 			midori)
 				return
 				;;
@@ -123,6 +127,9 @@ dep_check() {
 				return
 				;;
 			opera-next)
+				return
+				;;
+			opera-beta)
 				return
 				;;
 			opera-developer)
@@ -200,12 +207,14 @@ set_which() {
 			PSNAME="chrome"
 			;;
 		opera|opera-next)
+			# version 26 moved the profile dir but keep this for older versions
 			DIRArr[0]="$homedir/.$browser"
+			DIRArr[1]="$homedir/.config/$browser"
 			PSNAME="$browser"
 			;;
-		opera-developer)
+		opera-developer|opera-beta)
 			DIRArr[0]="$homedir/.config/$browser"
-			PSNAME="opera"
+			PSNAME="$browser"
 			;;
 		qupzilla)
 			#	http://blog.qupzilla.com/2013/03/qupzilla-140-released.html
@@ -374,7 +383,7 @@ dup_check() {
 			if [[ "$browser" = "firefox" ]] ||
 				[[ "$browser" = "firefox-trunk" ]] ||
 				[[ "$browser" = "heftig-aurora" ]] ||
-        [[ "$browser" = "icecat" ]] ||
+				[[ "$browser" = "icecat" ]] ||
 				[[ "$browser" = "seamonkey" ]] ||
 				[[ "$browser" = "palemoon" ]]
 			then
@@ -461,9 +470,9 @@ parse_conf_file() {
 		resync_state=$(systemctl is-active psd-resync.timer)
 		[[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
 		[[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
-
 		echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}."${NRM}
 		echo -e " ${BLD}Systemd resync service is currently ${resync_color}$resync_state${NRM}${BLD}."${NRM}
+
 	else
 		# using other init system + cron job for resync
 		[[ -x /etc/cron.hourly/psd-update ]] && resync_state="present" || resync_state="not present"
@@ -472,6 +481,9 @@ parse_conf_file() {
 			echo -e ${GRN}present${NRM}${BLD} || echo -e ${RED}not present${NRM}${BLD})."${NRM}
 		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}."${NRM}
 	fi
+	[[ -n "$USE_OVERLAYFS" ]] &&
+		echo -e "${BLD} Overlayfs technology is currently ${GRN}active${NRM}${BLD}."${NRM} ||
+		 echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}."${NRM}
 	echo
 	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD} settings:"${NRM}
 	echo
@@ -526,7 +538,7 @@ ungraceful_state_check() {
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
-          [[ "$browser" = "icecat" ]] ||
+					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
@@ -550,7 +562,7 @@ ungraceful_state_check() {
 do_sync() {
 	root_check
 	touch "$DAEMON_FILE"
-	
+
 	# make a snapshot of /etc/psd.conf and redefine its location to tmpfs while
 	# psd is running to keep any edits made to the live /etc/psd.conf from
 	# potentially orphaning the tmpfs copies thus preserving the data
@@ -563,32 +575,47 @@ do_sync() {
 			for item in "${DIRArr[@]}"; do
 				DIR="$item"
 				BACKUP="$item-backup"
+				TMP="$VOLATILE/$user-$browser$suffix"
+				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
+				TMPWK="$VOLATILE/.$user-$browser${suffix}"
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
-          [[ "$browser" = "icecat" ]] ||
+					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
 				# make tmpfs container
 				if [[ -d "$DIR" ]]; then
-					[[ -r "$VOLATILE/$user-$browser$suffix" ]] ||
-						install -dm755 --owner=$user --group=$group "$VOLATILE/$user-$browser$suffix"
+					[[ -r "$TMP" ]] ||
+						install -dm755 --owner=$user --group=$group "$TMP"
+
+					if [[ -n "$USE_OVERLAYFS" ]]; then
+						[[ -r "$TMPRW" ]] ||
+							install -dm755 --owner=$user --group=$group "$TMPRW"
+						[[ -r "$TMPWK" ]] ||
+							install -dm755 --owner=$user --group=$group "$TMPWK"
+					fi
 
 					# backup target and link to tmpfs container
-					if [[ $(readlink "$DIR") != "$VOLATILE/$user-$browser$suffix" ]]; then
+					if [[ $(readlink "$DIR") != "$TMP" ]]; then
 						mv "$DIR" "$BACKUP"
 					fi
 
 					# sync the tmpfs targets to the disc
 					if [[ -e "$DIR"/.flagged ]]; then
-						rsync -aog --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
+						rsync -aogX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
 					else
 						# initial sync
-						# keep user from launching browser while rsync is active
-						rsync -aog --inplace --no-whole-file "$BACKUP/" "$VOLATILE/$user-$browser$suffix/"
-						ln -s "$VOLATILE/$user-$browser$suffix" "$DIR"
+						if [[ -n "$USE_OVERLAYFS" ]]; then
+							mount -t overlay overlay -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
+						else
+							# keep user from launching browser while rsync is active
+							rsync -aogX --inplace --no-whole-file "$BACKUP/" "$TMP"
+						fi
+
+						ln -s "$TMP" "$DIR"
 						chown -h $user:$group "$DIR"
 						touch "$DIR/.flagged"
 					fi
@@ -607,7 +634,7 @@ do_sync() {
 do_unsync() {
 	root_check
 	rm -f "$DAEMON_FILE" "${DAEMON_FILE}.conf"
-	
+
 	local browser user
 	for user in $USERS; do
 		for browser in $BROWSERS; do
@@ -615,10 +642,13 @@ do_unsync() {
 			for item in "${DIRArr[@]}"; do
 				DIR="$item"
 				BACKUP="$item-backup"
+				TMP="$VOLATILE/$user-$browser$suffix"
+				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
+				TMPWK="$VOLATILE/.$user-$browser${suffix}"
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
-          [[ "$browser" = "icecat" ]] ||
+					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
@@ -631,8 +661,11 @@ do_unsync() {
 					#
 					# restore original dirtree
 					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
-					[[ -d "$VOLATILE/$user-$browser$suffix" ]] &&
-						rm -rf "$VOLATILE/$user-$browser$suffix"
+					if [[ -n "$USE_OVERLAYFS" ]] && mountpoint -q "$TMP"; then
+						umount -l "$TMP" && \
+							rm -rf "$TMP" "$TMPRW" "$TMPWK"
+					fi
+					[[ -d "$TMP" ]] && rm -rf "$TMP"
 				else
 					if [[ ! -d "$homedir" ]] ; then
 						echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
