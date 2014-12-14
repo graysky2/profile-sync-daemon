@@ -195,7 +195,7 @@ For a list of distro provided packages, see the project page linked below.
 .SH FAQ
 Q1: What is overlayfs and why do I want to use it?
 .PP
-A1: Overlayfs is a simple union file-system mainlined in the Linux kernel version 3.18.0. Starting with psd version 5.54, overlayfs can be used to reduce the memory footprint of psd's tempfs space and to greatly speed up sync and unsync operations, even on an SSD. Edit /etc/psd.conf and enable the USE_OVERLAYFS option to do so.
+A1: Overlayfs is a simple union file-system mainlined in the Linux kernel version 3.18.0. Starting with psd version 5.54, overlayfs can be used to reduce the memory footprint of psd's tempfs space and to speed up sync and unsync operations. Edit /etc/psd.conf and enable the USE_OVERLAYFS option to do so.
 .PP
 Q2: My system crashed and didn't sync back. What do I do?
 .PP
