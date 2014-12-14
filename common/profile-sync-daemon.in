@@ -60,8 +60,7 @@ BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
 
 dep_check() {
-	# Function is used to insure all dependencies are installed and that
-	# /etc/psd.conf is setup correctly
+	# checks for dependencies and that /etc/psd.conf is setup correctly
 	command -v rsync >/dev/null 2>&1 || {
 		echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
 	command -v awk >/dev/null 2>&1 || {
@@ -79,8 +78,8 @@ dep_check() {
 
 	for user in $(echo "$USERS"); do
 		if [[ -z $(getent passwd $user) ]]; then
-			# user defined a bad user in the USERS array so quit
-			echo -e " ${BLD}${RED}$user${NRM}${BLD} is not a valid user on this system.  Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
+			# bad user in the USERS array so quit
+			echo -e " ${BLD}${RED}$user${NRM}${BLD} is not a valid user. Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
 			exit 1
 		fi
 	done
@@ -152,7 +151,7 @@ dep_check() {
 				;;
 			*)
 				# user defined an invalid browser
-				echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser.  Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
+				echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser. Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
 				exit 1
 		esac
 	done
@@ -462,7 +461,6 @@ parse_conf_file() {
 	else
 		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $(sed 's| \\.*$||' /etc/issue | head -n 1)."${NRM}
 	fi
-
 	echo
 	if [[ -f /usr/lib/systemd/system/psd.service ]]; then
 		# running systemd
@@ -472,7 +470,6 @@ parse_conf_file() {
 		[[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
 		echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}."${NRM}
 		echo -e " ${BLD}Systemd resync service is currently ${resync_color}$resync_state${NRM}${BLD}."${NRM}
-
 	else
 		# using other init system + cron job for resync
 		[[ -x /etc/cron.hourly/psd-update ]] && resync_state="present" || resync_state="not present"
@@ -526,7 +523,6 @@ ungraceful_state_check() {
 	# on the filesystem and the link to tmpfs will be on the filesystem
 	# but the contents will be empty we need to simply remove the link
 	# and rotate the backup into place
-
 	root_check
 	local browser user suffix
 	for user in $USERS; do
