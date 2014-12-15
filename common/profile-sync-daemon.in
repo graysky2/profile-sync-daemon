@@ -514,7 +514,7 @@ parse_conf_file() {
 					echo -e "$(tput cr)$(tput cuf 17) ${RED}$VOLATILE/$user-$browser$suffix"${NRM}
 					echo -en " ${BLD}profile size:"
 					echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
-					if [[ -n "USE_OVERLAYFS" ]]; then
+					if [[ -n "$USE_OVERLAYFS" ]]; then
 						rwsize=$(du -Lh --max-depth=0 "$TMPRW" 2>/dev/null |
 						awk '{ print $1 }')
 						echo -en " ${BLD}overlayfs size:"
