@@ -490,6 +490,7 @@ parse_conf_file() {
 			set_which "$user" "$browser"
 			for item in "${DIRArr[@]}"; do
 				DIR="$item"
+				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
@@ -498,8 +499,10 @@ parse_conf_file() {
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
+				
+				# profile dir size
 				psize=$(du -Lh --max-depth=0 "$DIR" 2>/dev/null |
-					awk '{ print $1 }') # profile dir size
+					awk '{ print $1 }')
 				if [[ -d "$DIR" ]]; then
 					echo -en " ${BLD}browser/psname:"
 					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
@@ -511,6 +514,12 @@ parse_conf_file() {
 					echo -e "$(tput cr)$(tput cuf 17) ${RED}$VOLATILE/$user-$browser$suffix"${NRM}
 					echo -en " ${BLD}profile size:"
 					echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
+					if [[ -n "USE_OVERLAYFS" ]]; then
+						rwsize=$(du -Lh --max-depth=0 "$TMPRW" 2>/dev/null |
+						awk '{ print $1 }')
+						echo -en " ${BLD}overlayfs size:"
+						echo -e "$(tput cr)$(tput cuf 17) $rwsize"${NRM}
+					fi
 					echo
 				fi
 			done
@@ -658,7 +667,7 @@ do_unsync() {
 					# restore original dirtree
 					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
 					if [[ -n "$USE_OVERLAYFS" ]] && mountpoint -q "$TMP"; then
-						umount -l "$TMP" && \
+						umount -l "$TMP" &&
 							rm -rf "$TMP" "$TMPRW" "$TMPWK"
 					fi
 					[[ -d "$TMP" ]] && rm -rf "$TMP"
