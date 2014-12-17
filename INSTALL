@@ -57,6 +57,12 @@ USE A DISTRO PROVIDED PACKAGE
  ebuild:
  http://packages.gentoo.org/package/www-misc/profile-sync-daemon
 
+ NIXOS
+ NixOS users can add the following to their configuration.nix:
+ services.psd = { enable = true; users = [ "user1" "user2" ]; };
+ And then rebuild with: nixos-rebuild switch
+ Only available on NixOS Unstable.
+
  OPENSUSE
  OpenSUSE users are free to make use of a user supported repo hosting
  the package:
