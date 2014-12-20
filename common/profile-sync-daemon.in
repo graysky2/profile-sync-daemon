@@ -77,7 +77,9 @@ dep_check() {
 		modprobe overlay &>/dev/null || {
 		echo -e " ${BLD}Overlayfs requires linux kernel >= 3.18. ${RED}Aborting!"${NRM} >&2; exit 1;}
 	fi
+}
 
+config_check() {
 	# nothing to do if there are no users
 	if [[ -z "$USERS" ]]; then
 		echo -e " ${BLD}Must define at least one user in ${NRM}${BLU}$PSDCONF"${NRM}
@@ -548,7 +550,6 @@ ungraceful_state_check() {
 	# on the filesystem and the link to tmpfs will be on the filesystem
 	# but the contents will be empty we need to simply remove the link
 	# and rotate the backup into place
-	root_check
 	local browser user suffix
 	for user in $USERS; do
 		for browser in $BROWSERS; do
@@ -581,7 +582,6 @@ ungraceful_state_check() {
 }
 
 do_sync() {
-	root_check
 	touch "$DAEMON_FILE"
 
 	# make a snapshot of /etc/psd.conf and redefine its location to tmpfs while
@@ -653,7 +653,6 @@ do_sync() {
 }
 
 do_unsync() {
-	root_check
 	rm -f "$DAEMON_FILE" "${DAEMON_FILE}.conf"
 
 	local browser user
@@ -699,18 +698,18 @@ do_unsync() {
 
 case "$1" in
 	p|P|Parse|parse|Preview|preview|debug)
-		dep_check && dup_check && parse_conf_file
+		dep_check && config_check && dup_check && parse_conf_file
 		;;
 	sync)
-		[[ ! -f $DAEMON_FILE ]] && dep_check && dup_check &&
-			running_check && ungraceful_state_check
+		[[ ! -f $DAEMON_FILE ]] && root_check && dep_check && config_check && 
+		dup_check && running_check && ungraceful_state_check
 		do_sync
 		;;
 	resync)
-		[[ -f $DAEMON_FILE ]] && do_sync
+		[[ -f $DAEMON_FILE ]] && root_check && do_sync
 		;;
 	unsync)
-		[[ -f $DAEMON_FILE ]] && do_sync && kill_browsers
+		[[ -f $DAEMON_FILE ]] && root_check && do_sync && kill_browsers
 		do_unsync
 		;;
 	*)
