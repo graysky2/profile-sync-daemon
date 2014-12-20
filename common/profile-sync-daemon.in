@@ -456,6 +456,7 @@ kill_browsers() {
 }
 
 parse_conf_file() {
+	# which distro is running
 	if [[ -z $(sed 's| \\.*$||' /etc/issue | head -n 1) ]]; then
 		echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM}
 	else
@@ -478,9 +479,20 @@ parse_conf_file() {
 			echo -e ${GRN}present${NRM}${BLD} || echo -e ${RED}not present${NRM}${BLD})."${NRM}
 		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}."${NRM}
 	fi
-	[[ -n "$USE_OVERLAYFS" ]] &&
-		echo -e "${BLD} Overlayfs technology is currently ${GRN}active${NRM}${BLD}."${NRM} ||
-		 echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}."${NRM}
+	
+	# inspect the value set in /etc/psd.conf and make sure the user's intent is
+	# to actually use this feature and standardize the setting for use further
+	case "${USE_OVERLAYFS,,}" in
+		y|yes|true|t|on|1|enabled|enable|use)
+			USE_OVERLAYFS=1
+			;;
+		*)
+			USE_OVERLAYFS=0
+			;;
+	esac
+	[[ $USE_OVERLAYFS -eq 1 ]] &&
+	echo -e "${BLD} Overlayfs technology is currently ${GRN}active${NRM}${BLD}."${NRM} ||
+		echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}."${NRM}
 	echo
 	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD} settings:"${NRM}
 	echo
