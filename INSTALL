@@ -1,5 +1,5 @@
 DEPENDENCIES
- bash
+ bash >=4.0
  rsync
 
 BUILDING
