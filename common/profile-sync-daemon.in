@@ -33,28 +33,28 @@ fi
 
 # all supported browsers
 ALL_BROWSERS=(
-	chromium
-	chromium-dev
-	conkeror.mozdev.org
-	epiphany
-	firefox
-	firefox-trunk
-	google-chrome
-	google-chrome-beta
-	google-chrome-unstable
-	heftig-aurora
-	icecat
-	luakit
-	midori
-	opera
-	opera-developer
-	opera-beta
-	opera-next
-	palemoon
-	qupzilla
-	rekonq
-	seamonkey
-	)
+chromium
+chromium-dev
+conkeror.mozdev.org
+epiphany
+firefox
+firefox-trunk
+google-chrome
+google-chrome-beta
+google-chrome-unstable
+heftig-aurora
+icecat
+luakit
+midori
+opera
+opera-developer
+opera-beta
+opera-next
+palemoon
+qupzilla
+rekonq
+seamonkey
+)
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
@@ -70,9 +70,9 @@ esac
 dep_check() {
 	# checks for dependencies and that /etc/psd.conf is setup correctly
 	command -v rsync >/dev/null 2>&1 || {
-		echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
+	echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
 	command -v awk >/dev/null 2>&1 || {
-		echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
+	echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
 	if [[ $OLFS -eq 1 ]]; then
 		modprobe overlay &>/dev/null || {
 		echo -e " ${BLD}Overlayfs requires linux kernel >= 3.18. ${RED}Aborting!"${NRM} >&2; exit 1;}
@@ -241,7 +241,7 @@ set_which() {
 		firefox)
 			if [[ -d $homedir/.mozilla/firefox ]]; then
 				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox/profiles.ini |
-					sed 's/[P,p]ath=//') )
+				sed 's/[P,p]ath=//') )
 				index=0
 				PSNAME="$browser"
 				for profileItem in ${profileArr[@]}; do
@@ -260,7 +260,7 @@ set_which() {
 		firefox-trunk)
 			if [[ -d $homedir/.mozilla/firefox-trunk ]]; then
 				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox-trunk/profiles.ini |
-					sed 's/[P,p]ath=//') )
+				sed 's/[P,p]ath=//') )
 				index=0
 				PSNAME="$browser"
 				for profileItem in ${profileArr[@]}; do
@@ -280,7 +280,7 @@ set_which() {
 			# https://bbs.archlinux.org/viewtopic.php?id=117157
 			if [[ -d $homedir/.mozilla/aurora ]]; then
 				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/aurora/profiles.ini |
-					sed 's/[P,p]ath=//') )
+				sed 's/[P,p]ath=//') )
 				index=0
 				PSNAME="aurora"
 				for profileItem in ${profileArr[@]}; do
@@ -299,7 +299,7 @@ set_which() {
 		icecat)
 			if [[ -d $homedir/.mozilla/icecat ]]; then
 				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/icecat/profiles.ini |
-					sed 's/[P,p]ath=//') )
+				sed 's/[P,p]ath=//') )
 				index=0
 				PSNAME="$browser"
 				for profileItem in ${profileArr[@]}; do
@@ -318,7 +318,7 @@ set_which() {
 		seamonkey)
 			if [[ -d $homedir/.mozilla/seamonkey ]]; then
 				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/seamonkey/profiles.ini |
-					sed 's/[P,p]ath=//') )
+				sed 's/[P,p]ath=//') )
 				index=0
 				PSNAME="$browser"
 				for profileItem in ${profileArr[@]}; do
@@ -341,7 +341,7 @@ set_which() {
 		palemoon)
 			if [[ -d $homedir/.moonchild\ productions/pale\ moon ]]; then
 				profileArr=( $(grep '[P,p]'ath= $homedir/.moonchild\ productions/pale\ moon/profiles.ini |
-					sed 's/[P,p]ath=//') )
+				sed 's/[P,p]ath=//') )
 				index=0
 				PSNAME="$browser"
 				for profileItem in ${profileArr[@]}; do
@@ -372,11 +372,11 @@ running_check() {
 			set_which "$user" "$browser"
 			if [[ -n "$PSNAME" ]] &&
 				pgrep -u "$user" "$PSNAME" &>/dev/null; then
-				echo "Refusing to start; $browser is running by $user!"
-				exit 1
-			fi
-		done
+			echo "Refusing to start; $browser is running by $user!"
+			exit 1
+		fi
 	done
+done
 }
 
 dup_check() {
@@ -393,50 +393,50 @@ dup_check() {
 				[[ "$browser" = "icecat" ]] ||
 				[[ "$browser" = "seamonkey" ]] ||
 				[[ "$browser" = "palemoon" ]]
-			then
-				if [[ -z "${DIRArr[@]}" ]]; then
-					# nothing to check
+		then
+			if [[ -z "${DIRArr[@]}" ]]; then
+				# nothing to check
+				return
+			else
+				# browser is on system so check profiles
+				#
+				# check that the LAST DIRECTORY in the full path is unique
+				unique_count=$(echo ${DIRArr[@]##*/} |
+				sed 's/ /\n/g' | sort -u | wc -l)
+				if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
+					# no problems so do nothing
 					return
 				else
-					# browser is on system so check profiles
-					#
-					# check that the LAST DIRECTORY in the full path is unique
-					unique_count=$(echo ${DIRArr[@]##*/} |
-						sed 's/ /\n/g' | sort -u | wc -l)
-					if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
-						# no problems so do nothing
-						return
-					else
-						echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
-						# clip of the 'heftig-' to give correct path
-						[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"
-						echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.mozilla/$browser/profiles.ini${NRM}${BLD} to use psd."${NRM}
-						exit 1
-					fi
-				fi
-			elif [[ "$browser" = "palemoon" ]]
-			then
-				if [[ -z "${DIRArr[@]}" ]]; then
-					# nothing to check
-					return
-				else
-					# browser is on system so check profiles
-					#
-					# check that the LAST DIRECTORY in the full path is unique
-					unique_count=$(echo ${DIRArr[@]##*/} |
-						sed 's/ /\n/g' | sort -u | wc -l)
-					if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
-						# no problems so do nothing
-						return
-					else
-						echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
-						echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.moonchild productions/pale moon/profiles.ini${NRM}${BLD} to use psd."${NRM}
-						exit 1
-					fi
+					echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
+					# clip of the 'heftig-' to give correct path
+					[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"
+					echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.mozilla/$browser/profiles.ini${NRM}${BLD} to use psd."${NRM}
+					exit 1
 				fi
 			fi
-		done
+		elif [[ "$browser" = "palemoon" ]]
+		then
+			if [[ -z "${DIRArr[@]}" ]]; then
+				# nothing to check
+				return
+			else
+				# browser is on system so check profiles
+				#
+				# check that the LAST DIRECTORY in the full path is unique
+				unique_count=$(echo ${DIRArr[@]##*/} |
+				sed 's/ /\n/g' | sort -u | wc -l)
+				if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
+					# no problems so do nothing
+					return
+				else
+					echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
+					echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.moonchild productions/pale moon/profiles.ini${NRM}${BLD} to use psd."${NRM}
+					exit 1
+				fi
+			fi
+		fi
 	done
+done
 }
 
 kill_browsers() {
@@ -451,20 +451,20 @@ kill_browsers() {
 			while [[ $x -le 60 ]]; do
 				if [[ -n "$PSNAME" ]] &&
 					pgrep -u "$user" "$PSNAME" &>/dev/null
-				then
-					if [[ $x -le 5 ]]; then
-						pkill -SIGTERM -u "$user" "$PSNAME"
-					else
-						pkill -SIGKILL -u "$user" "$PSNAME"
-					fi
+			then
+				if [[ $x -le 5 ]]; then
+					pkill -SIGTERM -u "$user" "$PSNAME"
 				else
-					break
+					pkill -SIGKILL -u "$user" "$PSNAME"
 				fi
-				x=$(( $x + 1 ))
-				sleep .05
-			done
+			else
+				break
+			fi
+			x=$(( $x + 1 ))
+			sleep .05
 		done
 	done
+done
 }
 
 parse_conf_file() {
@@ -491,11 +491,11 @@ parse_conf_file() {
 			echo -e ${GRN}present${NRM}${BLD} || echo -e ${RED}not present${NRM}${BLD})."${NRM}
 		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}."${NRM}
 	fi
-	
+
 	# inspect the value set in /etc/psd.conf and make sure the user's intent is
 	# to actually use this feature and standardize the setting for use further
 	[[ $OLFS -eq 1 ]] &&
-	echo -e "${BLD} Overlayfs technology is currently ${GRN}active${NRM}${BLD}."${NRM} ||
+		echo -e "${BLD} Overlayfs technology is currently ${GRN}active${NRM}${BLD}."${NRM} ||
 		echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}."${NRM}
 	echo
 	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD} settings:"${NRM}
@@ -510,15 +510,15 @@ parse_conf_file() {
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
-          [[ "$browser" = "icecat" ]] ||
+					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
-				
+
 				# profile dir size
 				psize=$(du -Lh --max-depth=0 "$DIR" 2>/dev/null |
-					awk '{ print $1 }')
+				awk '{ print $1 }')
 				if [[ -d "$DIR" ]]; then
 					echo -en " ${BLD}browser/psname:"
 					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
@@ -643,9 +643,9 @@ do_sync() {
 				else
 					if [[ ! -d "$homedir" ]] ; then
 						echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
-         elif [[ -d "$BACKUP" ]] ; then
-           echo -e "${RED}$DIR does not exist or is a broken symlink! Is $VOLATILE unmounted?${NRM}" >&2
-         fi
+					elif [[ -d "$BACKUP" ]] ; then
+						echo -e "${RED}$DIR does not exist or is a broken symlink! Is $VOLATILE unmounted?${NRM}" >&2
+					fi
 				fi
 			done
 		done
