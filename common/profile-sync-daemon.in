@@ -395,7 +395,8 @@ dup_check() {
 				[[ "$browser" = "palemoon" ]]
 			then
 				if [[ -z "${DIRArr[@]}" ]]; then
-					return # nothing to check
+					# nothing to check
+					return
 				else
 					# browser is on system so check profiles
 					#
@@ -403,7 +404,8 @@ dup_check() {
 					unique_count=$(echo ${DIRArr[@]##*/} |
 						sed 's/ /\n/g' | sort -u | wc -l)
 					if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
-						return # no problems so do nothing
+						# no problems so do nothing
+						return
 					else
 						echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
 						# clip of the 'heftig-' to give correct path
@@ -415,7 +417,8 @@ dup_check() {
 			elif [[ "$browser" = "palemoon" ]]
 			then
 				if [[ -z "${DIRArr[@]}" ]]; then
-					return # nothing to check
+					# nothing to check
+					return
 				else
 					# browser is on system so check profiles
 					#
@@ -423,7 +426,8 @@ dup_check() {
 					unique_count=$(echo ${DIRArr[@]##*/} |
 						sed 's/ /\n/g' | sort -u | wc -l)
 					if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
-						return # no problems so do nothing
+						# no problems so do nothing
+						return
 					else
 						echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
 						echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.moonchild productions/pale moon/profiles.ini${NRM}${BLD} to use psd."${NRM}
