@@ -493,9 +493,6 @@ parse() {
 			echo -e ${GRN}present${NRM}${BLD} || echo -e ${RED}not present${NRM}${BLD})."${NRM}
 		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}."${NRM}
 	fi
-
-	# inspect the value set in /etc/psd.conf and make sure the user's intent is
-	# to actually use this feature and standardize the setting for use further
 	[[ $OLFS -eq 1 ]] &&
 		echo -e "${BLD} Overlayfs technology is currently ${GRN}active${NRM}${BLD}."${NRM} ||
 		echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}."${NRM}
