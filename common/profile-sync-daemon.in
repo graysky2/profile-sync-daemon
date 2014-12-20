@@ -60,10 +60,10 @@ BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
 case "${USE_OVERLAYFS,,}" in
 	y|yes|true|t|on|1|enabled|enable|use)
-		USE_OVERLAYFS=1
+		OLFS=1
 		;;
 	*)
-		USE_OVERLAYFS=0
+		OLFS=0
 		;;
 esac
 
@@ -73,7 +73,7 @@ dep_check() {
 		echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
 	command -v awk >/dev/null 2>&1 || {
 		echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
-	if [[ -n "$USE_OVERLAYFS" ]]; then
+	if [[ $OLFS -eq 1 ]]; then
 		modprobe overlay &>/dev/null || {
 		echo -e " ${BLD}Overlayfs requires linux kernel >= 3.18. ${RED}Aborting!"${NRM} >&2; exit 1;}
 	fi
@@ -490,7 +490,7 @@ parse_conf_file() {
 	
 	# inspect the value set in /etc/psd.conf and make sure the user's intent is
 	# to actually use this feature and standardize the setting for use further
-	[[ $USE_OVERLAYFS -eq 1 ]] &&
+	[[ $OLFS -eq 1 ]] &&
 	echo -e "${BLD} Overlayfs technology is currently ${GRN}active${NRM}${BLD}."${NRM} ||
 		echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}."${NRM}
 	echo
@@ -526,7 +526,7 @@ parse_conf_file() {
 					echo -e "$(tput cr)$(tput cuf 17) ${RED}$VOLATILE/$user-$browser$suffix"${NRM}
 					echo -en " ${BLD}profile size:"
 					echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
-					if [[ -n "$USE_OVERLAYFS" ]]; then
+					if [[ $OLFS -eq 1 ]]; then
 						rwsize=$(du -Lh --max-depth=0 "$TMPRW" 2>/dev/null |
 						awk '{ print $1 }')
 						echo -en " ${BLD}overlayfs size:"
@@ -608,7 +608,7 @@ do_sync() {
 					[[ -r "$TMP" ]] ||
 						install -dm755 --owner=$user --group=$group "$TMP"
 
-					if [[ -n "$USE_OVERLAYFS" ]]; then
+					if [[ $OLFS -eq 1 ]]; then
 						[[ -r "$TMPRW" ]] ||
 							install -dm755 --owner=$user --group=$group "$TMPRW"
 						[[ -r "$TMPWK" ]] ||
@@ -625,7 +625,7 @@ do_sync() {
 						rsync -aogX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
 					else
 						# initial sync
-						if [[ -n "$USE_OVERLAYFS" ]]; then
+						if [[ $OLFS -eq 1 ]]; then
 							mount -t overlay overlay -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
 						else
 							# keep user from launching browser while rsync is active
@@ -678,7 +678,7 @@ do_unsync() {
 					#
 					# restore original dirtree
 					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
-					if [[ -n "$USE_OVERLAYFS" ]] && mountpoint -q "$TMP"; then
+					if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
 						umount -l "$TMP" &&
 							rm -rf "$TMP" "$TMPRW" "$TMPWK"
 					fi
