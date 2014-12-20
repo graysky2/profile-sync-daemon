@@ -5,11 +5,11 @@
 # Inspired by some code originally written by Colin Verot
 #
 
-export BLD="\e[01m" \
-	RED="\e[01;31m" \
-	GRN="\e[01;32m" \
-	BLU="\e[01;34m" \
-	NRM="\e[00m"
+BLD="\e[01m" \
+RED="\e[01;31m" \
+GRN="\e[01;32m" \
+BLU="\e[01;34m" \
+NRM="\e[00m"
 VERS="@VERSION@"
 
 PSDCONF=${PSDCONF:-"/etc/psd.conf"}
@@ -58,6 +58,14 @@ ALL_BROWSERS=(
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
+case "${USE_OVERLAYFS,,}" in
+	y|yes|true|t|on|1|enabled|enable|use)
+		USE_OVERLAYFS=1
+		;;
+	*)
+		USE_OVERLAYFS=0
+		;;
+esac
 
 dep_check() {
 	# checks for dependencies and that /etc/psd.conf is setup correctly
@@ -482,14 +490,6 @@ parse_conf_file() {
 	
 	# inspect the value set in /etc/psd.conf and make sure the user's intent is
 	# to actually use this feature and standardize the setting for use further
-	case "${USE_OVERLAYFS,,}" in
-		y|yes|true|t|on|1|enabled|enable|use)
-			USE_OVERLAYFS=1
-			;;
-		*)
-			USE_OVERLAYFS=0
-			;;
-	esac
 	[[ $USE_OVERLAYFS -eq 1 ]] &&
 	echo -e "${BLD} Overlayfs technology is currently ${GRN}active${NRM}${BLD}."${NRM} ||
 		echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}."${NRM}
