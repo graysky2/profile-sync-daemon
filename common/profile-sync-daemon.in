@@ -469,7 +469,7 @@ kill_browsers() {
 done
 }
 
-parse_conf_file() {
+parse() {
 	# which distro is running
 	if [[ -z $(sed 's| \\.*$||' /etc/issue | head -n 1) ]]; then
 		echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM}
@@ -698,7 +698,7 @@ do_unsync() {
 
 case "$1" in
 	p|P|Parse|parse|Preview|preview|debug)
-		dep_check && config_check && dup_check && parse_conf_file
+		dep_check && config_check && dup_check && parse
 		;;
 	sync)
 		[[ ! -f $DAEMON_FILE ]] && root_check && dep_check && config_check && 
