@@ -75,7 +75,8 @@ dep_check() {
 	echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
 	if [[ $OLFS -eq 1 ]]; then
 		modprobe overlay &>/dev/null || {
-		echo -e " ${BLD}Overlayfs requires linux kernel >= 3.18. ${RED}Aborting!"${NRM} >&2; exit 1;}
+		echo -e " ${BLD}Overlayfs requires linux kernel >= 3.18."
+		echo -e " ${BLD}Please modprobe overlay and try again if running a supported kernel. ${RED}Aborting!"${NRM} >&2; exit 1;}
 	fi
 }
 
