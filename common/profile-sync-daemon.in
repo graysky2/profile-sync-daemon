@@ -179,6 +179,42 @@ root_check() {
 	fi
 }
 
+ungraceful_state_check() {
+	# if the machine was ungracefully shutdown then the backup will be
+	# on the filesystem and the link to tmpfs will be on the filesystem
+	# but the contents will be empty we need to simply remove the link
+	# and rotate the backup into place
+	local browser user suffix
+	for user in $USERS; do
+		for browser in $BROWSERS; do
+			set_which "$user" "$browser"
+			for item in "${DIRArr[@]}"; do
+				DIR="$item"
+				BACKUP="$item-backup"
+				[[ "$browser" = "firefox" ]] ||
+					[[ "$browser" = "firefox-trunk" ]] ||
+					[[ "$browser" = "heftig-aurora" ]] ||
+					[[ "$browser" = "icecat" ]] ||
+					[[ "$browser" = "seamonkey" ]] ||
+					[[ "$browser" = "palemoon" ]] &&
+					suffix="-${item##*/}" ||
+					suffix=
+				if [[ -e "$DIR/.flagged" ]]; then
+					# all is well so continue
+					return
+				else
+					[[ -h "$DIR" ]] && unlink "$DIR"
+					NOW=$(date +%Y%m%d_%H%M%S)
+					if [[ -d "$BACKUP" ]]; then
+						cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+						mv "$BACKUP" "$DIR"
+					fi
+				fi
+			done
+		done
+	done
+}
+
 set_which() {
 	### Arrays
 	# profileArr is transient used to store profile paths parsed from
@@ -469,115 +505,6 @@ kill_browsers() {
 done
 }
 
-parse() {
-	# which distro is running
-	if [[ -z $(sed 's| \\.*$||' /etc/issue | head -n 1) ]]; then
-		echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM}
-	else
-		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $(sed 's| \\.*$||' /etc/issue | head -n 1)."${NRM}
-	fi
-	echo
-	if [[ -f /usr/lib/systemd/system/psd.service ]]; then
-		# running systemd
-		psd_state=$(systemctl is-active psd)
-		resync_state=$(systemctl is-active psd-resync.timer)
-		[[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
-		[[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
-		echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}."${NRM}
-		echo -e " ${BLD}Systemd resync service is currently ${resync_color}$resync_state${NRM}${BLD}."${NRM}
-	else
-		# using other init system + cron job for resync
-		[[ -x /etc/cron.hourly/psd-update ]] && resync_state="present" || resync_state="not present"
-		[[ "$resync_state" = "present" ]] && resync_color=${GRN} || resync_color=${RED}
-		echo -e " ${BLD}Daemon pid file is $([[ -f $DAEMON_FILE ]] &&
-			echo -e ${GRN}present${NRM}${BLD} || echo -e ${RED}not present${NRM}${BLD})."${NRM}
-		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}."${NRM}
-	fi
-	[[ $OLFS -eq 1 ]] &&
-		echo -e "${BLD} Overlayfs technology is currently ${GRN}active${NRM}${BLD}."${NRM} ||
-		echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}."${NRM}
-	echo
-	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD} settings:"${NRM}
-	echo
-	local browser user
-	for user in $USERS; do
-		for browser in $BROWSERS; do
-			set_which "$user" "$browser"
-			for item in "${DIRArr[@]}"; do
-				DIR="$item"
-				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
-				[[ "$browser" = "firefox" ]] ||
-					[[ "$browser" = "firefox-trunk" ]] ||
-					[[ "$browser" = "heftig-aurora" ]] ||
-					[[ "$browser" = "icecat" ]] ||
-					[[ "$browser" = "seamonkey" ]] ||
-					[[ "$browser" = "palemoon" ]] &&
-					suffix="-${item##*/}" ||
-					suffix=
-
-				# profile dir size
-				psize=$(du -Lh --max-depth=0 "$DIR" 2>/dev/null |
-				awk '{ print $1 }')
-				if [[ -d "$DIR" ]]; then
-					echo -en " ${BLD}browser/psname:"
-					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
-					echo -en " ${BLD}owner/group id:"
-					echo -e "$(tput cr)$(tput cuf 17) $user/$group"${NRM}
-					echo -en " ${BLD}sync target:"
-					echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR"${NRM}
-					echo -en " ${BLD}tmpfs dir:"
-					echo -e "$(tput cr)$(tput cuf 17) ${RED}$VOLATILE/$user-$browser$suffix"${NRM}
-					echo -en " ${BLD}profile size:"
-					echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
-					if [[ $OLFS -eq 1 ]]; then
-						rwsize=$(du -Lh --max-depth=0 "$TMPRW" 2>/dev/null |
-						awk '{ print $1 }')
-						echo -en " ${BLD}overlayfs size:"
-						echo -e "$(tput cr)$(tput cuf 17) $rwsize"${NRM}
-					fi
-					echo
-				fi
-			done
-		done
-	done
-}
-
-ungraceful_state_check() {
-	# if the machine was ungracefully shutdown then the backup will be
-	# on the filesystem and the link to tmpfs will be on the filesystem
-	# but the contents will be empty we need to simply remove the link
-	# and rotate the backup into place
-	local browser user suffix
-	for user in $USERS; do
-		for browser in $BROWSERS; do
-			set_which "$user" "$browser"
-			for item in "${DIRArr[@]}"; do
-				DIR="$item"
-				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] ||
-					[[ "$browser" = "firefox-trunk" ]] ||
-					[[ "$browser" = "heftig-aurora" ]] ||
-					[[ "$browser" = "icecat" ]] ||
-					[[ "$browser" = "seamonkey" ]] ||
-					[[ "$browser" = "palemoon" ]] &&
-					suffix="-${item##*/}" ||
-					suffix=
-				if [[ -e "$DIR/.flagged" ]]; then
-					# all is well so continue
-					return
-				else
-					[[ -h "$DIR" ]] && unlink "$DIR"
-					NOW=$(date +%Y%m%d_%H%M%S)
-					if [[ -d "$BACKUP" ]]; then
-						cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
-						mv "$BACKUP" "$DIR"
-					fi
-				fi
-			done
-		done
-	done
-}
-
 do_sync() {
 	touch "$DAEMON_FILE"
 
@@ -687,6 +614,76 @@ do_unsync() {
 					if [[ ! -d "$homedir" ]] ; then
 						echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
 					fi
+				fi
+			done
+		done
+	done
+}
+
+parse() {
+	# which distro is running
+	if [[ -z $(sed 's| \\.*$||' /etc/issue | head -n 1) ]]; then
+		echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM}
+	else
+		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $(sed 's| \\.*$||' /etc/issue | head -n 1)."${NRM}
+	fi
+	echo
+	if [[ -f /usr/lib/systemd/system/psd.service ]]; then
+		# running systemd
+		psd_state=$(systemctl is-active psd)
+		resync_state=$(systemctl is-active psd-resync.timer)
+		[[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
+		[[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
+		echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}."${NRM}
+		echo -e " ${BLD}Systemd resync service is currently ${resync_color}$resync_state${NRM}${BLD}."${NRM}
+	else
+		# using other init system + cron job for resync
+		[[ -x /etc/cron.hourly/psd-update ]] && resync_state="present" || resync_state="not present"
+		[[ "$resync_state" = "present" ]] && resync_color=${GRN} || resync_color=${RED}
+		echo -e " ${BLD}Daemon pid file is $([[ -f $DAEMON_FILE ]] &&
+			echo -e ${GRN}present${NRM}${BLD} || echo -e ${RED}not present${NRM}${BLD})."${NRM}
+		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}."${NRM}
+	fi
+	[[ $OLFS -eq 1 ]] &&
+		echo -e "${BLD} Overlayfs technology is currently ${GRN}active${NRM}${BLD}."${NRM} ||
+		echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}."${NRM}
+	echo
+	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD} settings:"${NRM}
+	echo
+	local browser user
+	for user in $USERS; do
+		for browser in $BROWSERS; do
+			set_which "$user" "$browser"
+			for item in "${DIRArr[@]}"; do
+				DIR="$item"
+				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
+				[[ "$browser" = "firefox" ]] ||
+					[[ "$browser" = "firefox-trunk" ]] ||
+					[[ "$browser" = "heftig-aurora" ]] ||
+					[[ "$browser" = "icecat" ]] ||
+					[[ "$browser" = "seamonkey" ]] ||
+					[[ "$browser" = "palemoon" ]] &&
+					suffix="-${item##*/}" ||
+					suffix=
+				# profile dir size
+				psize=$(du -Lh --max-depth=0 "$DIR" 2>/dev/null | awk '{ print $1 }')
+				if [[ -d "$DIR" ]]; then
+					echo -en " ${BLD}browser/psname:"
+					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
+					echo -en " ${BLD}owner/group id:"
+					echo -e "$(tput cr)$(tput cuf 17) $user/$group"${NRM}
+					echo -en " ${BLD}sync target:"
+					echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR"${NRM}
+					echo -en " ${BLD}tmpfs dir:"
+					echo -e "$(tput cr)$(tput cuf 17) ${RED}$VOLATILE/$user-$browser$suffix"${NRM}
+					echo -en " ${BLD}profile size:"
+					echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
+					if [[ $OLFS -eq 1 ]]; then
+						rwsize=$(du -Lh --max-depth=0 "$TMPRW" 2>/dev/null | awk '{ print $1 }')
+						echo -en " ${BLD}overlayfs size:"
+						echo -e "$(tput cr)$(tput cuf 17) $rwsize"${NRM}
+					fi
+					echo
 				fi
 			done
 		done
