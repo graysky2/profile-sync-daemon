@@ -75,8 +75,11 @@ dep_check() {
 	echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
 	if [[ $OLFS -eq 1 ]]; then
 		modprobe overlay &>/dev/null || {
-		echo -e " ${BLD}Overlayfs requires linux kernel >= 3.18."
-		echo -e " ${BLD}Please modprobe overlay and try again if running a supported kernel. ${RED}Aborting!"${NRM} >&2; exit 1;}
+		youare=$(logname)
+		echo -e " ${BLD}The overlay module needs to be loaded to use psd in overlayfs mode."${NRM}
+		echo -e " ${BLD}User $youare does not have permission to run: ${BLU}$(which modprobe) overlay${NRM}${BLD}"
+		echo -e " ${BLD}Load it manually and try again or remove the option from ${BLU}$PSDCONF${NRM}${BLD}."${NRM}
+		echo -e " ${BLD}Note that a kernel version >=3.18.0 is required for overlayfs mode. ${RED}Aborting!"${NRM} >&2; exit 1;}
 	fi
 }
 
