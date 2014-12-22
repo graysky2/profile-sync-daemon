@@ -14,6 +14,9 @@ MANDIR = $(PREFIX)/share/man/man1
 # set to anything except 0 to enable manpage compression
 COMPRESS_MAN = 1
 
+# set to anything except 0 to install a NixOS-specific man page
+NIXOS_MAN = 0
+
 RM = rm
 SED = sed
 INSTALL = install -p
@@ -40,6 +43,11 @@ install-man:
 	$(Q)echo -e '\033[1;32mInstalling manpage...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(MANDIR)"
 	$(INSTALL_DATA) doc/psd.1 "$(DESTDIR)$(MANDIR)/psd.1"
+ifneq ($(NIXOS_MAN),0)
+	$(SED) -e 's/^.SH SETUP/@@@PLACEHOLDER/' \
+		-e '/@@@PLACEHOLDER/,/^.SH RUNNING PSD/{//!d}' \
+		-e '/@@@PLACEHOLDER/{ r doc/nixos.1' -e  'd}' doc/psd.1 > "$(DESTDIR)$(MANDIR)/psd.1"
+endif
 ifneq ($(COMPRESS_MAN),0)
 	gzip -9 "$(DESTDIR)$(MANDIR)/psd.1"
 	ln -s psd.1.gz "$(DESTDIR)$(MANDIR)/$(PN).1.gz"

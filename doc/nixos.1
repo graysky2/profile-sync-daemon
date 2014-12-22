@@ -1,0 +1,20 @@
+.SH SETUP UNDER NIXOS
+Users of NixOS <14.12 (currently unreleased) MUST but tracking nixos-unstable; this will change once version 14.12 is finalized:
+.PP
+.nf
+.fam C
+ nix-channel --add http://nixos.org/channels/nixos-unstable nixos
+ nixos-rebuild switch --upgrade
+
+.fam T
+.fi
+The NixOS module looks for a services.psd attribute set in /etc/nixos/configuration.nix (run nixos-help for all options). As with any modification of this file, rebuild the system configuration with nixos-rebuild switch.
+.PP
+.nf
+.fam C
+ services.psd = {
+  enable = true;
+        users = [ "facade" "debbie" ]; # At least one users is required
+        browsers = [ "chromium" "firefox" ]; # Leave blank to enable all supported browsers
+        use_overlayfs = true; # set to true to enable overlayfs or set to false to use the default sync mode
+ };
