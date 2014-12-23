@@ -625,12 +625,26 @@ do_unsync() {
 }
 
 parse() {
-	# which distro is running
-	if [[ -z $(sed 's| \\.*$||' /etc/issue | head -n 1) ]]; then
-		echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM}
+	# get distro name
+	# first try os-release
+	if [[ -f /etc/os-release ]]; then
+		source /etc/os-release
+		if [[ -n "$PRETTY_NAME" ]]; then
+			distro="$PRETTY_NAME"
+		elif [[ -n "$NAME" ]]; then
+			distro="$NAME"
+		fi
 	else
-		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $(sed 's| \\.*$||' /etc/issue | head -n 1)."${NRM}
+		# if not os-release try issue
+		if [[ -n $(sed 's| \\.*$||' /etc/issue | head -n 1) ]]; then
+			distro="$(sed 's| \\.*$||' /etc/issue | head -n 1)"
+		else
+			# fuck it
+			distro=
+		fi
 	fi
+	[[ -z "$distro" ]] &&	echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM} ||
+		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $distro"
 	echo
 	if [[ -f /usr/lib/systemd/system/psd.service ]]; then
 		# running systemd
