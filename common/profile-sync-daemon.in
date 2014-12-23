@@ -524,9 +524,6 @@ do_sync() {
 			for item in "${DIRArr[@]}"; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				TMP="$VOLATILE/$user-$browser$suffix"
-				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
-				TMPWK="$VOLATILE/.$user-$browser${suffix}"
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
@@ -535,6 +532,10 @@ do_sync() {
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
+				TMP="$VOLATILE/$user-$browser$suffix"
+				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
+				TMPWK="$VOLATILE/.$user-$browser${suffix}"
+				
 				# make tmpfs container
 				if [[ -d "$DIR" ]]; then
 					[[ -r "$TMP" ]] ||
@@ -558,7 +559,7 @@ do_sync() {
 					else
 						# initial sync
 						if [[ $OLFS -eq 1 ]]; then
-							mount -t overlay overlay -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
+							mount -t overlay overlaid -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
 						else
 							# keep user from launching browser while rsync is active
 							rsync -aogX --inplace --no-whole-file "$BACKUP/" "$TMP"
@@ -590,9 +591,6 @@ do_unsync() {
 			for item in "${DIRArr[@]}"; do
 				DIR="$item"
 				BACKUP="$item-backup"
-				TMP="$VOLATILE/$user-$browser$suffix"
-				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
-				TMPWK="$VOLATILE/.$user-$browser${suffix}"
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
@@ -601,6 +599,10 @@ do_unsync() {
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
+				
+				TMP="$VOLATILE/$user-$browser$suffix"
+				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
+				TMPWK="$VOLATILE/.$user-$browser${suffix}"
 				# check if user has browser profile
 				if [[ -h "$DIR" ]]; then
 					unlink "$DIR"
@@ -674,7 +676,6 @@ parse() {
 			set_which "$user" "$browser"
 			for item in "${DIRArr[@]}"; do
 				DIR="$item"
-				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
@@ -683,6 +684,7 @@ parse() {
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
+				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 				# profile dir size
 				psize=$(du -Lh --max-depth=0 "$DIR" 2>/dev/null | awk '{ print $1 }')
 				if [[ -d "$DIR" ]]; then
