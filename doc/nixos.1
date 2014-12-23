@@ -1,5 +1,5 @@
 .SH SETUP UNDER NIXOS
-Users of NixOS <14.12 (currently unreleased) MUST but tracking nixos-unstable; this will change once version 14.12 is finalized:
+Users of NixOS <14.12 (currently unreleased) MUST be tracking nixos-unstable; this will change once version 14.12 is finalized:
 .PP
 .nf
 .fam C
@@ -14,7 +14,7 @@ The NixOS module looks for a services.psd attribute set in /etc/nixos/configurat
 .fam C
  services.psd = {
   enable = true;
-        users = [ "facade" "debbie" ]; # At least one users is required
+        users = [ "facade" "debbie" ]; # At least one user is required
         browsers = [ "chromium" "firefox" ]; # Leave blank to enable all supported browsers
-        use_overlayfs = true; # set to true to enable overlayfs or set to false to use the default sync mode
+        useOverlayFS = true; # set to true to enable overlayfs or set to false to use the default sync mode
  };
