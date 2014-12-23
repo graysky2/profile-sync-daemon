@@ -69,10 +69,13 @@ case "${USE_OVERLAYFS,,}" in
 		;;
 esac
 
+# deterime is we are using overlayfs (v22 and below) or overlay (v23 and above)
+# overlay FS v23 and later requires both an upper and a work directory, both on
+# the same filesystem, but not part of the same subtree.
+
 if [[ $OLFS -eq 1 ]]; then
-	#deterime is we are using overlayfs (v22 and below) or overlay (v23 and above)
-	[[ $(grep -F overlay /proc/filesystems) ]] && OLFSVER=23
-	[[ $(grep -F overlayfs /proc/filesystems) ]] && OLFSVER=22
+	[[ $(grep -ciF overlay /proc/filesystems) -eq 1 ]] && OLFSVER=23
+	[[ $(grep -ciF overlayfs /proc/filesystems) -eq 1 ]] && OLFSVER=22
 fi
 
 dep_check() {
@@ -82,12 +85,11 @@ dep_check() {
 	command -v awk >/dev/null 2>&1 || {
 	echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
 	if [[ $OLFS -eq 1 ]]; then
-		grep overlay /proc/filesystem &>/dev/null || {
+		grep overlay /proc/filesystems &>/dev/null || {
 		youare=$(logname)
 		echo -e " ${BLD}Depending on your distro, either the ${BLU}overlay${NRM}${BLD} or ${BLU}overlayfs${NRM}${BLD} module needs to be loaded"${NRM}
-		echo -e " ${BLD}to use psd's in overlay mode."${NRM}
-		echo -e " ${BLD}Load it correct module for your distro manually and try again or remove the option"${NRM}
-		echo -e " ${BLD}from ${BLU}$PSDCONF${NRM}${BLD}. ${RED}Aborting!"${NRM} >&2; exit 1;}
+		echo -e " ${BLD}to use psd's in overlay mode. Load the correct module for your distro manually and"${NRM}
+		echo -e " ${BLD}try again or remove the option from ${BLU}$PSDCONF${NRM}${BLD}. ${RED}Aborting!"${NRM} >&2; exit 1;}
 	fi
 }
 
@@ -543,18 +545,20 @@ do_sync() {
 				TMP="$VOLATILE/$user-$browser$suffix"
 				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 				TMPWK="$VOLATILE/.$user-$browser${suffix}"
-				
+
 				# make tmpfs container
 				if [[ -d "$DIR" ]]; then
 					[[ -r "$TMP" ]] ||
 						install -dm755 --owner=$user --group=$group "$TMP"
 
 					if [[ $OLFS -eq 1 ]]; then
-						[[ -r "$TMPRW" ]] ||
-							install -dm755 --owner=$user --group=$group "$TMPRW"
-						[[ -r "$TMPWK" ]] ||
-							install -dm755 --owner=$user --group=$group "$TMPWK"
+						if [[ $OLFSVER -eq 23 ]]; then
+						[[ -r "$TMPRW" ]] || install -dm755 --owner=$user --group=$group "$TMPRW"
+						[[ -r "$TMPWK" ]] || install -dm755 --owner=$user --group=$group "$TMPWK"
+					elif [[ $OLFSVER -eq 22 ]]; then
+						[[ -r "$TMPRW" ]] || install -dm755 --owner=$user --group=$group "$TMPRW"
 					fi
+				fi
 
 					# backup target and link to tmpfs container
 					if [[ $(readlink "$DIR") != "$TMP" ]]; then
@@ -567,7 +571,11 @@ do_sync() {
 					else
 						# initial sync
 						if [[ $OLFS -eq 1 ]]; then
-							mount -t overlay overlaid -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
+							if [[ $OLFSVER -eq 23 ]]; then
+								mount -t overlay overlaid -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
+							elif [[ $OLFSVER -eq 22 ]]; then
+								mount -t overlayfs overlaid -olowerdir="$BACKUP",upperdir="$TMPRW" "$TMP"
+							fi
 						else
 							# keep user from launching browser while rsync is active
 							rsync -aogX --inplace --no-whole-file "$BACKUP/" "$TMP"
@@ -607,7 +615,7 @@ do_unsync() {
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
-				
+
 				TMP="$VOLATILE/$user-$browser$suffix"
 				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 				TMPWK="$VOLATILE/.$user-$browser${suffix}"
@@ -673,8 +681,8 @@ parse() {
 		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}."${NRM}
 	fi
 	[[ $OLFS -eq 1 ]] &&
-		echo -e "${BLD} Overlayfs technology is currently ${GRN}active${NRM}${BLD}."${NRM} ||
-		echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}."${NRM}
+		echo -e "${BLD} Overlayfs is currently ${GRN}active${NRM}${BLD} @ v$OLFSVER."${NRM} ||
+		echo -e "${BLD} Overlayfs is currently ${RED}inactive${NRM}${BLD}."${NRM}
 	echo
 	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD} settings:"${NRM}
 	echo
