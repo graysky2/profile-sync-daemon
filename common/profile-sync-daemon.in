@@ -681,8 +681,8 @@ parse() {
 		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}."${NRM}
 	fi
 	[[ $OLFS -eq 1 ]] &&
-		echo -e "${BLD} Overlayfs is currently ${GRN}active${NRM}${BLD} @ v$OLFSVER."${NRM} ||
-		echo -e "${BLD} Overlayfs is currently ${RED}inactive${NRM}${BLD}."${NRM}
+		echo -e "${BLD} Overlayfs v$OLFSVER is currently ${GRN}active${NRM}${BLD}."${NRM} ||
+		echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}."${NRM}
 	echo
 	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD} settings:"${NRM}
 	echo
