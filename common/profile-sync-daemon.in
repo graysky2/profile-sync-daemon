@@ -58,6 +58,8 @@ seamonkey
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
+
+# simple function to determine user intent rather than using an empty string
 case "${USE_OVERLAYFS,,}" in
 	y|yes|true|t|on|1|enabled|enable|use)
 		OLFS=1
@@ -66,6 +68,12 @@ case "${USE_OVERLAYFS,,}" in
 		OLFS=0
 		;;
 esac
+
+if [[ $OLFS -eq 1 ]]; then
+	#deterime is we are using overlayfs (v22 and below) or overlay (v23 and above)
+	[[ $(grep -F overlay /proc/filesystems) ]] && OLFSVER=23
+	[[ $(grep -F overlayfs /proc/filesystems) ]] && OLFSVER=22
+fi
 
 dep_check() {
 	# checks for dependencies and that /etc/psd.conf is setup correctly
