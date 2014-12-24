@@ -548,8 +548,7 @@ do_sync() {
 
 				# make tmpfs container
 				if [[ -d "$DIR" ]]; then
-					[[ -r "$TMP" ]] ||
-						install -dm755 --owner=$user --group=$group "$TMP"
+					[[ -r "$TMP" ]] || install -dm755 --owner=$user --group=$group "$TMP"
 
 					if [[ $OLFS -eq 1 ]]; then
 						if [[ $OLFSVER -eq 23 ]]; then
@@ -662,7 +661,7 @@ parse() {
 		fi
 	fi
 	[[ -z "$distro" ]] &&	echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM} ||
-		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $distro"
+		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $distro"${NRM}
 	echo
 	if [[ -f /usr/lib/systemd/system/psd.service ]]; then
 		# running systemd
