@@ -10,6 +10,7 @@ Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browse
 * Google Chrome (stable, beta, and dev)
 * Heftig's version of Aurora (this is an Arch Linux-only browser: https://bbs.archlinux.org/viewtopic.php?id=117157)
 * Icecat (GNU version of Firefox)
+* Iceweasel (Debian version of Firefox)
 * Luakit
 * Midori
 * Opera, Opera-Beta and Opera-Developer
