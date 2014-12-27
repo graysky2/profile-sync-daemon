@@ -71,6 +71,7 @@ The NixOS module looks for a `services.psd` attribute set in your
         enable = true;
         users = [ "user42" "other_user" ];      # At least one is required
         browsers = [ "firefox" "chromium" ];    # Leave blank to enable all
+        useOverlayFS = true; # set to true to enable overlayfs or set to false to use the default sync mode
       };
 
 Then rebuild your system configuration with `nixos-rebuild switch`.
