@@ -38,7 +38,7 @@ To build from source, see the included INSTALL text document.
 * ![logo](http://s23.postimg.org/5pabe2o5z/void_logo_transparent.png "void logo")Void: in the Void [repos](https://github.com/xtraeme/xbps-packages/tree/master/srcpkgs/profile-sync-daemon).
 
 ###Debian Users
-To add the PPA (personal package archive) to your Debian (tested on wheezy) system, and to install psd, do the following as the root user:
+Tested on Debian 7.7 (wheezy) and 8.0 (jessie). To add the PPA (personal package archive) to your Debian system; do the following as the root user:
 
     echo "deb http://ppa.launchpad.net/graysky/utils/ubuntu trusty main" > /etc/apt/sources.list.d/graysky.list
     echo "deb-src http://ppa.launchpad.net/graysky/utils/ubuntu trusty main" >> /etc/apt/sources.list.d/graysky.list
