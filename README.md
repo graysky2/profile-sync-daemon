@@ -33,7 +33,7 @@ To build from source, see the included INSTALL text document.
 * ![logo](http://s9.postimg.org/p5f1tscxn/fedora.jpg "fedora logo")Fedora: in the official [repos](http://koji.fedoraproject.org/koji/packageinfo?packageID=16307).
 * ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo: in the Gentoo [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
 * ![logo](http://i1-news.softpedia-static.com/images/extra/LINUX/small/slw106news5.png "mint logo")Mint: in [graysky's PPA](https://github.com/graysky2/profile-sync-daemon#mint-users).
-* ![logo](http://s29.postimg.org/ofjg812er/nixos_logo_small.png "nixos logo")NixOS: Available through the `psd` service, See instruction below.
+* ![logo](http://s29.postimg.org/ofjg812er/nixos_logo_small.png "nixos logo")NixOS: Available through the [psd service](https://github.com/graysky2/profile-sync-daemon#nixos-users).
 * ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu: in [graysky's PPA](https://github.com/graysky2/profile-sync-daemon#ubuntu-users).
 * ![logo](http://s23.postimg.org/5pabe2o5z/void_logo_transparent.png "void logo")Void: in the Void [repos](https://github.com/xtraeme/xbps-packages/tree/master/srcpkgs/profile-sync-daemon).
 
