@@ -34,7 +34,6 @@ To build from source, see the included INSTALL text document.
 * ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo: in the Gentoo [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
 * ![logo](http://i1-news.softpedia-static.com/images/extra/LINUX/small/slw106news5.png "mint logo")Mint: in graysky's PPA, See instruction below.
 * ![logo](http://s29.postimg.org/ofjg812er/nixos_logo_small.png "nixos logo")NixOS: Available through the `psd` service, See instruction below.
-* ![logo](http://s30.postimg.org/auetslwfh/opensuse.jpg "open suse")OpenSUSE: packaged by [Overman79](http://download.opensuse.org/repositories/home:/Overman79:/Laptop).
 * ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu: in graysky's PPA, See instruction below.
 * ![logo](http://s23.postimg.org/5pabe2o5z/void_logo_transparent.png "void logo")Void: in the Void [repos](https://github.com/xtraeme/xbps-packages/tree/master/srcpkgs/profile-sync-daemon).
 
