@@ -21,9 +21,9 @@ BUILDING
 	# make install-upstart-all
 
  As of v5.29, systemd installations no longer install the deprecated
- cron script instead using a systemd timer instead. Users may override
- and install the deprecated cron script by running:
- `make install-cron` then `make install-systemd-all` if desired.
+ cron script instead using a systemd timer. Users may override and
+ install the deprecated cron script by running: `make install-cron`
+ then `make install-systemd-all` if desired.
 
  Note that the cron script is only deprecated for systemd installs;
  it is still recommended for users of both upstart or openrc.
@@ -78,11 +78,6 @@ USE A DISTRO PROVIDED PACKAGE
  };
 
  Finally, rebuild with: the nixos-rebuild switch.
-
- OPENSUSE
- OpenSUSE users are free to make use of a user supported repo hosting
- the package:
- http://download.opensuse.org/repositories/home:/Overman79:/Laptop
 
  VOID LINUX
  Void users can download the package directly from the official repos.
