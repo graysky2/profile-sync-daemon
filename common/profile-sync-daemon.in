@@ -78,6 +78,28 @@ if [[ $OLFS -eq 1 ]]; then
 	[[ $(grep -ciF overlayfs /proc/filesystems) -eq 1 ]] && OLFSVER=22
 fi
 
+# get distro name
+# first try os-release
+if [[ -f /etc/os-release ]]; then
+	source /etc/os-release
+	if [[ -n "$PRETTY_NAME" ]]; then
+		distro="$PRETTY_NAME"
+	elif [[ -n "$NAME" ]]; then
+		distro="$NAME"
+	fi
+else
+	# if not os-release try issue
+	if [[ -n $(sed 's| \\.*$||' /etc/issue | head -n 1) ]]; then
+		distro="$(sed 's| \\.*$||' /etc/issue | head -n 1)"
+	else
+		# fuck it
+		distro=
+	fi
+fi
+[[ -z "$distro" ]] &&	echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM} ||
+	echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $distro"${NRM}
+echo
+
 dep_check() {
 	# checks for dependencies and that /etc/psd.conf is setup correctly
 	command -v rsync >/dev/null 2>&1 || {
@@ -552,12 +574,12 @@ do_sync() {
 
 					if [[ $OLFS -eq 1 ]]; then
 						if [[ $OLFSVER -eq 23 ]]; then
-						[[ -r "$TMPRW" ]] || install -dm755 --owner=$user --group=$group "$TMPRW"
-						[[ -r "$TMPWK" ]] || install -dm755 --owner=$user --group=$group "$TMPWK"
-					elif [[ $OLFSVER -eq 22 ]]; then
-						[[ -r "$TMPRW" ]] || install -dm755 --owner=$user --group=$group "$TMPRW"
+							[[ -r "$TMPRW" ]] || install -dm755 --owner=$user --group=$group "$TMPRW"
+							[[ -r "$TMPWK" ]] || install -dm755 --owner=$user --group=$group "$TMPWK"
+						elif [[ $OLFSVER -eq 22 ]]; then
+							[[ -r "$TMPRW" ]] || install -dm755 --owner=$user --group=$group "$TMPRW"
+						fi
 					fi
-				fi
 
 					# backup target and link to tmpfs container
 					if [[ $(readlink "$DIR") != "$TMP" ]]; then
@@ -642,27 +664,6 @@ do_unsync() {
 }
 
 parse() {
-	# get distro name
-	# first try os-release
-	if [[ -f /etc/os-release ]]; then
-		source /etc/os-release
-		if [[ -n "$PRETTY_NAME" ]]; then
-			distro="$PRETTY_NAME"
-		elif [[ -n "$NAME" ]]; then
-			distro="$NAME"
-		fi
-	else
-		# if not os-release try issue
-		if [[ -n $(sed 's| \\.*$||' /etc/issue | head -n 1) ]]; then
-			distro="$(sed 's| \\.*$||' /etc/issue | head -n 1)"
-		else
-			# fuck it
-			distro=
-		fi
-	fi
-	[[ -z "$distro" ]] &&	echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM} ||
-		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $distro"${NRM}
-	echo
 	if [[ -f /usr/lib/systemd/system/psd.service ]]; then
 		# running systemd
 		psd_state=$(systemctl is-active psd)
@@ -742,8 +743,6 @@ case "$1" in
 		do_unsync
 		;;
 	*)
-		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}"
-		echo
 		echo -e " ${BLD}$0 ${NRM}${GRN}[option]${NRM}"
 		echo -e " ${BLD} ${NRM}${GRN}preview${NRM}${BLD}	Parse config file (${NRM}${BLU}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed."${NRM}
 		echo -e " ${BLD} ${NRM}${GRN}resync${NRM}${BLD}	Synchronize the tmpfs and media bound copy. Must be run as root user."${NRM}
