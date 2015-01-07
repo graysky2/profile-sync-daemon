@@ -50,6 +50,7 @@ opera
 opera-developer
 opera-beta
 opera-next
+otter-browser
 palemoon
 qupzilla
 rekonq
@@ -183,6 +184,9 @@ config_check() {
 			qupzilla)
 				return
 				;;
+			otter-browser)
+				return
+				;;
 			rekonq)
 				return
 				;;
@@ -295,6 +299,10 @@ set_which() {
 			;;
 		opera-developer|opera-beta)
 			DIRArr[0]="$homedir/.config/$browser"
+			PSNAME="$browser"
+			;;
+		otter-browser)
+			DIRArr[0]="$homedir/.config/otter"
 			PSNAME="$browser"
 			;;
 		qupzilla)
