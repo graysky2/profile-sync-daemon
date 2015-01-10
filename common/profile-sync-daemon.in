@@ -126,7 +126,11 @@ config_check() {
 	for user in $(echo "$USERS"); do
 		if [[ -z $(getent passwd $user) ]]; then
 			# bad user in the USERS array so quit
-			echo -e " ${BLD}${RED}$user${NRM}${BLD} is not a valid user. Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
+			echo -e " ${BLD}Cannot seem to find user: ${RED}$user${NRM}${BLD}."${NRM}
+			echo -e " ${BLD}Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
+			echo
+			echo -e " ${BLD}If you are using an encrypted homedir or NFS mounted homes, it could be"${NRM}
+			echo -e " ${BLD}that the homedir and browser profiles are simply not accessible when psd was started."${NRM}
 			exit 1
 		fi
 	done
