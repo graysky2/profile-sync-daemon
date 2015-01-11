@@ -582,14 +582,16 @@ do_sync() {
 
 				# make tmpfs container
 				if [[ -d "$DIR" ]]; then
-					[[ -r "$TMP" ]] || install -dm755 --owner=$user --group=$group "$TMP"
+					# retain permissions on sync target
+					PREFIXP=$(stat -c %a "$DIR")
+					[[ -r "$TMP" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMP"
 
 					if [[ $OLFS -eq 1 ]]; then
 						if [[ $OLFSVER -eq 23 ]]; then
-							[[ -r "$TMPRW" ]] || install -dm755 --owner=$user --group=$group "$TMPRW"
-							[[ -r "$TMPWK" ]] || install -dm755 --owner=$user --group=$group "$TMPWK"
+							[[ -r "$TMPRW" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPRW"
+							[[ -r "$TMPWK" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPWK"
 						elif [[ $OLFSVER -eq 22 ]]; then
-							[[ -r "$TMPRW" ]] || install -dm755 --owner=$user --group=$group "$TMPRW"
+							[[ -r "$TMPRW" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPRW"
 						fi
 					fi
 
