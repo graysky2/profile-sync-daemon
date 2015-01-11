@@ -19,6 +19,8 @@ Speed.
 Since the \fBprofile\fP(s), browser cache*, etc. are relocated into tmpfs (RAM disk), the corresponding onslaught of I/O associated with using the browser is also redirected from the physical disc to the RAM, thus reducing wear to the physical disc and also greatly improving browser responsiveness. For example, the access time of RAM is on the order of nanoseconds while the access time of physical discs is on the order of milliseconds. This is a difference of six orders of magnitude or 1,000,000 times faster.
 .PP
 *Note that some browsers such as Chrome/Chromium, Firefox (since v21), Midori, and Rekonq actually keeps their cache directories separately from their browser profile directory. It is not within the scope of profile-sync-daemon to modify this behavior; users wishing to relocate this directory, may refer to the following url for several work-arounds: https://wiki.archlinux.org/index.php/Chromium_Tips_and_Tweaks#Cache_in_tmpfs
+.SH ABOUT SYSTEM PRIVACY
+Psd uses system tmpfs which is likely world-readable. It is therefore recommended that permissions on \fBprofile\fP(s) should be set to 700 to retain privacy. Psd will honor the permissions set on the profile even if they too are world-readable. Running psd in parse mode (see below) will warn if these are not set to 700 but it is ultimately your choice.
 .SH SETUP
 /etc/psd.conf contains all user managed settings.
 .PP
@@ -34,8 +36,6 @@ Optionally define the location of your distro's tmpfs. Do this in the VOLATILE v
 Optionally define the location of your distro's /run. Do this in the DAEMON_FILE variable.
 .IP \(bu 3
 Optionally enable the use of overlayfs to improve sync speed even further and use a smaller memory footprint. Do this in the USE_OVERLAYFS variable. Note that this option requires you to manually load either the 'overlay' or 'overlayfs' kernel module PRIOR to starting psd. See the FAQ below for additional details on this feature.
-.SH ABOUT SYSTEM PRIVACY
-Psd uses system tmpfs which is likely world-readable. It is therefore recommended that permissions on \fBprofile\fP(s) should be set to 700 to retain privacy. Psd will honor the permissions set on the profile even if they too are world-readable. Running psd in parse mode (see below) will warn if these are not set to 700 but it is ultimately your choice.
 .SH RUNNING PSD
 .SS PREVIEW MODE
 The preview (parse) option can be called to show users exactly what psd will do/is doing based on the entries in /etc/psd.conf.
