@@ -706,6 +706,7 @@ parse() {
 			set_which "$user" "$browser"
 			for item in "${DIRArr[@]}"; do
 				DIR="$item"
+				BACKUP="$item-backup"
 				[[ "$browser" = "firefox" ]] ||
 					[[ "$browser" = "firefox-trunk" ]] ||
 					[[ "$browser" = "heftig-aurora" ]] ||
@@ -715,9 +716,11 @@ parse() {
 					suffix="-${item##*/}" ||
 					suffix=
 				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
-				# profile dir size
-				psize=$(du -Lh --max-depth=0 "$DIR" 2>/dev/null | awk '{ print $1 }')
 				if [[ -d "$DIR" ]]; then
+					# get permissions on profile dir and be smart about it since symlinks are all 777
+					[[ -f $DAEMON_FILE ]] && TRUEP=$(stat -c %a "$BACKUP") || TRUEP=$(stat -c %a "$DIR")
+					# profile dir size
+					psize=$(du -Lh --max-depth=0 "$DIR" 2>/dev/null | awk '{ print $1 }')
 					echo -en " ${BLD}browser/psname:"
 					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
 					echo -en " ${BLD}owner/group id:"
@@ -726,6 +729,8 @@ parse() {
 					echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR"${NRM}
 					echo -en " ${BLD}tmpfs dir:"
 					echo -e "$(tput cr)$(tput cuf 17) ${RED}$VOLATILE/$user-$browser$suffix"${NRM}
+					echo -en " ${BLD}permissions:"
+					echo -e "$(tput cr)$(tput cuf 17) $TRUEP"${NRM}
 					echo -en " ${BLD}profile size:"
 					echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
 					if [[ $OLFS -eq 1 ]]; then
