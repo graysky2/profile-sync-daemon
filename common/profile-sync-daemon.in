@@ -728,15 +728,13 @@ parse() {
 					echo -e "$(tput cr)$(tput cuf 17) $user/$group"${NRM}
 					echo -en " ${BLD}sync target:"
 					echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR"${NRM}
-					echo -en " ${BLD}tmpfs dir:"
-					echo -e "$(tput cr)$(tput cuf 17) ${GRN}$VOLATILE/$user-$browser$suffix"${NRM}
-					echo -en " ${BLD}permissions:"
-					if [[ -z $warn ]]; then
-						echo -e "$(tput cr)$(tput cuf 17) $TRUEP"${NRM}
-					else
-						echo -e "$(tput cr)$(tput cuf 17) ${RED}$TRUEP (recommend setting of 700 for increased privacy)"${NRM}
+					if [[ $warn -eq 1 ]]; then
+						echo -e "$(tput cr)$(tput cuf 17) ${RED} Permissions are $TRUEP on this profile."${NRM}
+						echo -e "$(tput cr)$(tput cuf 17) ${RED} Recommend a setting of 700 for increased privacy!"${NRM}
 						warn=
 					fi
+					echo -en " ${BLD}tmpfs dir:"
+					echo -e "$(tput cr)$(tput cuf 17) ${GRN}$VOLATILE/$user-$browser$suffix"${NRM}
 					echo -en " ${BLD}profile size:"
 					echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
 					if [[ $OLFS -eq 1 ]]; then

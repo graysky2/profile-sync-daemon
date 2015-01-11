@@ -35,7 +35,7 @@ Optionally define the location of your distro's /run. Do this in the DAEMON_FILE
 .IP \(bu 3
 Optionally enable the use of overlayfs to improve sync speed even further and use a smaller memory footprint. Do this in the USE_OVERLAYFS variable. Note that this option requires you to manually load either the 'overlay' or 'overlayfs' kernel module PRIOR to starting psd. See the FAQ below for additional details on this feature.
 .SH ABOUT SYSTEM PRIVACY
-Psd uses system tmpfs which is likely world-readable, it is therefore recommended that you set the permissions on your \fBprofile\fP(s) to 700 to retain privacy. Psd will honor the permissions you set on the profile even if they too are world-readable. Run psd in parse mode (see below) to verify permissions on each profile.
+Psd uses system tmpfs which is likely world-readable. It is therefore recommended that permissions on \fBprofile\fP(s) should be set to 700 to retain privacy. Psd will honor the permissions set on the profile even if they too are world-readable. Running psd in parse mode (see below) will warn if these are not set to 700 but it is ultimately your choice.
 .SH RUNNING PSD
 .SS PREVIEW MODE
 The preview (parse) option can be called to show users exactly what psd will do/is doing based on the entries in /etc/psd.conf.
@@ -229,7 +229,6 @@ Psd will manage the following per /run/psd.conf settings:
  owner/group id:  facade/100
  sync target:     /home/facade/.config/chromium
  tmpfs dir:       /tmp/facade-chromium
- permissions:     700
  profile size:    93M
  overlayfs size:  39M
 
@@ -237,7 +236,9 @@ Psd will manage the following per /run/psd.conf settings:
  owner/group id:  facade/100
  sync target:     /home/facade/.mozilla/firefox/f8cv8bfu.default
  tmpfs dir:       /tmp/facade-firefox-f8cv8bfu.default
- permissions:     755 (recommend setting of 700 for increased privacy)
+                   Permissions are 755 on this profile.
+                   Recommend a setting of 700 for increased privacy!
+
  profile size:    145M
  overlayfs size:  13M
 
