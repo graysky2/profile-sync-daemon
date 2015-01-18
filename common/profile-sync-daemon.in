@@ -259,6 +259,42 @@ ungraceful_state_check() {
 	done
 }
 
+cleanup() {
+	local browser user suffix
+	for user in $USERS; do
+		for browser in $BROWSERS; do
+			set_which "$user" "$browser"
+			for item in "${DIRArr[@]}"; do
+				DIR="$item"
+				BACKUP="$item-backup"
+				[[ "$browser" = "firefox" ]] ||
+					[[ "$browser" = "firefox-trunk" ]] ||
+					[[ "$browser" = "heftig-aurora" ]] ||
+					[[ "$browser" = "icecat" ]] ||
+					[[ "$browser" = "seamonkey" ]] ||
+					[[ "$browser" = "palemoon" ]] &&
+					suffix="-${item##*/}" || suffix=
+				if [[ -d "$DIR" ]]; then
+					ls "$item"-backup-crashrecovery* &>/dev/null
+					if [[ $? -eq 0  ]]; then
+						CRASHArr=("$item"-backup-crashrecovery*)
+						echo -e ${BLD}"Deleting ${#CRASHArr[@]} crashrecovery dirs for $DIR ..."${NRM}
+						for backup in "${CRASHArr[@]}"; do
+							echo -e ${BLD}${BLU}" $backup"${NRM}
+							rm -rf "$backup"
+						done
+						echo -e ${BLD}"Done!"
+						unset CRASHArr
+						echo
+					else
+						echo -e ${BLD}"Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}"${NRM}
+					fi
+				fi
+			done
+		done
+	done
+}
+
 set_which() {
 	### Arrays
 	# profileArr is transient used to store profile paths parsed from
@@ -717,6 +753,9 @@ parse() {
 					suffix=
 				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 				if [[ -d "$DIR" ]]; then
+					# first count up any crashrecovery dirs
+					ls "$item"-backup-crashrecovery* &>/dev/null
+					[[ $? -eq 0  ]] && CRASHArr=("$item"-backup-crashrecovery*)
 					# get permissions on profile dir and be smart about it since symlinks are all 777
 					[[ -f $DAEMON_FILE ]] && TRUEP=$(stat -c %a "$BACKUP") || TRUEP=$(stat -c %a "$DIR")
 					[[ $TRUEP -ne 700 ]] && warn=1
@@ -742,6 +781,11 @@ parse() {
 						echo -en " ${BLD}overlayfs size:"
 						echo -e "$(tput cr)$(tput cuf 17) $rwsize"${NRM}
 					fi
+					echo -en " ${BLD}recovery dirs:"
+					[[ "${#CRASHArr[@]}" -eq 0 ]] && 
+					echo -e "$(tput cr)$(tput cuf 17) none"${NRM} ||
+					echo -e "$(tput cr)$(tput cuf 17) ${RED}${#CRASHArr[@]}${NRM}${BLD} <- delete them with the c option"${NRM}
+					unset CRASHArr
 					echo
 				fi
 			done
@@ -752,6 +796,9 @@ parse() {
 case "$1" in
 	p|P|Parse|parse|Preview|preview|debug)
 		dep_check && config_check && dup_check && parse
+		;;
+	c|C|clean|Clean)
+		dep_check && config_check && dup_check && cleanup
 		;;
 	sync)
 		[[ ! -f $DAEMON_FILE ]] && root_check && dep_check && config_check && 
@@ -768,6 +815,7 @@ case "$1" in
 	*)
 		echo -e " ${BLD}$0 ${NRM}${GRN}[option]${NRM}"
 		echo -e " ${BLD} ${NRM}${GRN}preview${NRM}${BLD}	Parse config file (${NRM}${BLU}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed."${NRM}
+		echo -e " ${BLD} ${NRM}${GRN}clean${NRM}${BLD}		Clean (delete without prompting) ALL crashrecovery dirs for all profiles."${NRM}
 		echo -e " ${BLD} ${NRM}${RED}resync${NRM}${BLD}	Synchronize the tmpfs and media bound copy. Must be run as root user and NOT recommended."${NRM}
 		echo -e " ${BLD} ${NRM}${RED}sync${NRM}${BLD}		Force a manual sync. Must be run as root user and NOT recommended."${NRM}
 		echo -e " ${BLD} ${NRM}${RED}unsync${NRM}${BLD}	Force a manual unsync. Must be run as root user and NOT recommended."${NRM}
