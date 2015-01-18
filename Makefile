@@ -1,14 +1,13 @@
-VERSION = 5.63
+VERSION = 5.64
 PN = profile-sync-daemon
 
 PREFIX ?= /usr
 CONFDIR = /etc
 CRONDIR = /etc/cron.hourly
 INITDIR_SYSTEMD = /usr/lib/systemd/system
-INITDIR_OPENRC = /etc/init.d
 INITDIR_UPSTART = /etc/init.d
 BINDIR = $(PREFIX)/bin
-DOCDIR = $(PREFIX)/share/doc/$(PN)-$(VERSION)
+DOCDIR = $(PREFIX)/share/doc/$(PN)
 MANDIR = $(PREFIX)/share/man/man1
 
 # set to anything except 0 to enable manpage compression
@@ -62,8 +61,8 @@ install-cron:
 
 install-openrc:
 	$(Q)echo -e '\033[1;32mInstalling openrc files...\033[0m'
-	$(INSTALL_DIR) "$(DESTDIR)$(INITDIR_OPENRC)"
-	$(INSTALL_SCRIPT) init/psd.openrc "$(DESTDIR)$(INITDIR_OPENRC)/psd"
+	$(INSTALL_DIR) "$(DESTDIR)$(DOCDIR)"
+	$(INSTALL_SCRIPT) init/psd.openrc "$(DESTDIR)$(DOCDIR)/psd.openrc"
 	[ -f "$(DESTDIR)$(CONFDIR)/psd.conf" ] || $(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(CONFDIR)/psd.conf"
 
 install-systemd:
@@ -112,7 +111,7 @@ uninstall-cron:
 	$(RM) "$(DESTDIR)$(CRONDIR)/psd-update"
 
 uninstall-openrc:
-	$(RM) "$(DESTDIR)$(INITDIR_OPENRC)/psd"
+	$(RM) "$(DESTDIR)$(DOCDIR)/psd.openrc"
 
 uninstall-systemd:
 	$(RM) "$(DESTDIR)$(CONFDIR)/psd.conf"
@@ -140,5 +139,6 @@ uninstall:
 
 clean:
 	$(RM) -f common/$(PN)
+	$(RM) -f init/psd.openrc
 
 .PHONY: help install-bin install-man install-cron install-openrc install-systemd install-upstart install-openrc-all install-systemd-all install-upstart-all install uninstall-bin uninstall-man uninstall-cron uninstall-openrc uninstall-systemd uninstall-upstart uninstall-openrc-all uninstall-systemd-all uninstall-upstart-all uninstall clean

@@ -1,11 +1,10 @@
-#!/sbin/runscript
+#!/sbin/openrc-run
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 description="Webbrowser profile syncing"
 extra_commands="resync"
 description_resync="Manually sync the disk profile with running tmpfs image"
-
 
 depend() {
 	need devfs localmount

@@ -1,6 +1,11 @@
 DEPENDENCIES
  bash >=4.0
  rsync
+ 
+ a supported init system
+ -systemd
+ -openrc
+ -upstart
 
 BUILDING
  Several options are present in the Makefile. Most users can safely
@@ -20,13 +25,34 @@ BUILDING
 	# make install-systemd-all
 	# make install-upstart-all
 
+ Note for OpenRC users - An OpenRC service script is included and will be
+ installed to: /usr/share/doc/profile-sync-daemon/psd.openrc
+
+ You will need to:
+ 1) Verify the path to openrc-run on your distro in the shebang.
+ 2) Copy the script to your distro's OpenRC's script directory.
+ 3) Chmod it to 755.
+
+ Gentoo uses: /sbin/openrc-run so the shebang is: #!/sbin/openrc-run
+ Arch uses: /usr/bin/openrc-run so the shebang is: #!/usr/bin/openrc-run
+ 
+ If in doubt, you may simply execute the following command and use the output
+ as your location: which openrc-run
+
+ I have chosen this route since:
+ 1) I do not run OpenRC.
+ 2) I do not follow its development.
+ 3) Different distros use different paths to required executables (see above).
+ 4) OpenRC is unofficially supported for some distros, so even on the same 
+ distro, different paths to the required service scripts (see the Arch Linux
+ Wiki page on OpenRC for examples).
+ 
  As of v5.29, systemd installations no longer install the deprecated
  cron script instead using a systemd timer. Users may override and
  install the deprecated cron script by running: `make install-cron`
- then `make install-systemd-all` if desired.
-
- Note that the cron script is only deprecated for systemd installs;
- it is still recommended for users of both upstart or openrc.
+ then `make install-systemd-all` if desired. The cron script is only
+ deprecated for systemd installs; it is still recommended for users
+ of both upstart or openrc.
 
 USE A DISTRO PROVIDED PACKAGE
  ARCH LINUX
