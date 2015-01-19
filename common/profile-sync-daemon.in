@@ -298,12 +298,11 @@ cleanup() {
 							echo -e ${BLD}${RED}" $backup"${NRM}
 							rm -rf "$backup"
 						done
-						echo -e ${BLD}"Done!"
 						unset CRASHArr
-						echo
 					else
 						echo -e ${BLD}"Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}"${NRM}
 					fi
+					echo
 				fi
 			done
 		done
@@ -797,9 +796,18 @@ parse() {
 						echo -e "$(tput cr)$(tput cuf 17) $rwsize"${NRM}
 					fi
 					echo -en " ${BLD}recovery dirs:"
-					[[ "${#CRASHArr[@]}" -eq 0 ]] && 
-					echo -e "$(tput cr)$(tput cuf 17) none"${NRM} ||
-						echo -e "$(tput cr)$(tput cuf 17) ${RED}${#CRASHArr[@]}${NRM}${BLD} <- delete them with the c option"${NRM}
+					if [[ "${#CRASHArr[@]}" -eq 0 ]]; then
+						echo -e "$(tput cr)$(tput cuf 17) none"${NRM}
+					else
+						echo -e "$(tput cr)$(tput cuf 17) ${RED}${#CRASHArr[@]}${NRM}${BLD} <- delete with the c option"${NRM}
+            for backup in "${CRASHArr[@]}"; do
+							psize=$(du -Lh --max-depth=0 "$backup" 2>/dev/null | awk '{ print $1 }')
+							echo -en " ${BLD} dir path/size:"
+							echo -e "$(tput cr)$(tput cuf 17) ${BLU}$backup ${NRM}${BLD}($psize)"${NRM} 
+            done
+					fi
+
+
 					unset CRASHArr
 					echo
 				fi
