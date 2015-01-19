@@ -60,13 +60,25 @@ BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
 [[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
 
-# simple function to determine user intent rather than using an empty string
+# simple function to determine user intent rather than using a null value
 case "${USE_OVERLAYFS,,}" in
 	y|yes|true|t|on|1|enabled|enable|use)
 		OLFS=1
 		;;
 	*)
 		OLFS=0
+		;;
+esac
+
+# since the default for this one is a yes, need to force a null value to yes
+[[ -z "${USE_BACKUPS,,}" ]] && USE_BACKUPS="yes"
+
+case "${USE_BACKUPS,,}" in
+	y|yes|true|t|on|1|enabled|enable|use)
+		CRRE=1
+		;;
+	*)
+		CRRE=0
 		;;
 esac
 
@@ -248,11 +260,14 @@ ungraceful_state_check() {
 					return
 				else
 					[[ -h "$DIR" ]] && unlink "$DIR"
-					NOW=$(date +%Y%m%d_%H%M%S)
-					if [[ -d "$BACKUP" ]]; then
-						cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
-						mv "$BACKUP" "$DIR"
+					if [[ $CRRE -eq 1 ]]; then
+						# create a crashrecovery of profile
+						NOW=$(date +%Y%m%d_%H%M%S)
+						if [[ -d "$BACKUP" ]]; then
+							cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+						fi
 					fi
+					mv "$BACKUP" "$DIR"
 				fi
 			done
 		done
@@ -278,9 +293,9 @@ cleanup() {
 					ls "$item"-backup-crashrecovery* &>/dev/null
 					if [[ $? -eq 0  ]]; then
 						CRASHArr=("$item"-backup-crashrecovery*)
-						echo -e ${BLD}"Deleting ${#CRASHArr[@]} crashrecovery dirs for $DIR ..."${NRM}
+						echo -e ${BLD}"Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR"${NRM}
 						for backup in "${CRASHArr[@]}"; do
-							echo -e ${BLD}${BLU}" $backup"${NRM}
+							echo -e ${BLD}${RED}" $backup"${NRM}
 							rm -rf "$backup"
 						done
 						echo -e ${BLD}"Done!"
@@ -784,7 +799,7 @@ parse() {
 					echo -en " ${BLD}recovery dirs:"
 					[[ "${#CRASHArr[@]}" -eq 0 ]] && 
 					echo -e "$(tput cr)$(tput cuf 17) none"${NRM} ||
-					echo -e "$(tput cr)$(tput cuf 17) ${RED}${#CRASHArr[@]}${NRM}${BLD} <- delete them with the c option"${NRM}
+						echo -e "$(tput cr)$(tput cuf 17) ${RED}${#CRASHArr[@]}${NRM}${BLD} <- delete them with the c option"${NRM}
 					unset CRASHArr
 					echo
 				fi
