@@ -265,9 +265,9 @@ ungraceful_state_check() {
 						NOW=$(date +%Y%m%d_%H%M%S)
 						if [[ -d "$BACKUP" ]]; then
 							cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+							mv "$BACKUP" "$DIR"
 						fi
 					fi
-					mv "$BACKUP" "$DIR"
 				fi
 			done
 		done
@@ -800,14 +800,12 @@ parse() {
 						echo -e "$(tput cr)$(tput cuf 17) none"${NRM}
 					else
 						echo -e "$(tput cr)$(tput cuf 17) ${RED}${#CRASHArr[@]}${NRM}${BLD} <- delete with the c option"${NRM}
-            for backup in "${CRASHArr[@]}"; do
+						for backup in "${CRASHArr[@]}"; do
 							psize=$(du -Lh --max-depth=0 "$backup" 2>/dev/null | awk '{ print $1 }')
 							echo -en " ${BLD} dir path/size:"
 							echo -e "$(tput cr)$(tput cuf 17) ${BLU}$backup ${NRM}${BLD}($psize)"${NRM} 
-            done
+						done
 					fi
-
-
 					unset CRASHArr
 					echo
 				fi
