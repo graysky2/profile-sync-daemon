@@ -259,13 +259,11 @@ ungraceful_state_check() {
 					# all is well so continue
 					return
 				else
+					NOW=$(date +%Y%m%d_%H%M%S)
 					[[ -h "$DIR" ]] && unlink "$DIR"
 					if [[ -d "$BACKUP" ]]; then
-						if [[ $CRRE -eq 1 ]]; then
-							# create a crashrecovery of profile
-							NOW=$(date +%Y%m%d_%H%M%S)
+						[[ $CRRE -eq 1 ]] &&
 							cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
-						fi
 						mv "$BACKUP" "$DIR"
 					fi
 				fi
