@@ -41,7 +41,7 @@ To build from source, see the included INSTALL text document.
 * ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian: in [graysky's PPA](https://github.com/graysky2/profile-sync-daemon#debian-users).
 * ![logo](http://i1-news.softpedia-static.com/images/extra/LINUX/small/slw106news5.png "mint logo")Mint: in [graysky's PPA](https://github.com/graysky2/profile-sync-daemon#mint-users).
 * ![logo](http://s30.postimg.org/auetslwfh/opensuse.jpg "open suse")OpenSUSE: packaged by [Overman79](https://build.opensuse.org/package/show/home:ZaWertun:utility/profile-sync-daemon).
-* ![logo](http://wiki.codeblocks.org/images/8/8b/Slackware-logo_32.png "slack logo")Slackware: on [slackbuilds](http://slackbuilds.org/repository/14.1/system/profile-sync-daemon).
+* ![logo](http://wiki.codeblocks.org/images/8/8b/Slackware-logo_32.png "slack logo")Slackware: on [slackbuilds](http://slackbuilds.org/apps/profile-sync-daemon).
 * ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu: in [graysky's PPA](https://github.com/graysky2/profile-sync-daemon#ubuntu-users).
 
 ###Debian Users
