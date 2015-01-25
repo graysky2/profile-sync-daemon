@@ -28,7 +28,7 @@ To build from source, see the included INSTALL text document.
 
 ##Installation from Distro Packages
 ### Officially Packaged
-* ![logo](http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/62/62f592e47fa6a0b48aad9d41dd587d402a55d825.jpg "agilia logo")Agilialinux: in the official [repos](http://packages.agilialinux.ru/show.php?id=31189).
+* ![logo](http://distrowatch.com/images/icon-small/agilia.png "agilia logo")Agilialinux: in the official [repos](http://packages.agilialinux.ru/show.php?id=31189).
 * ![logo](http://cloud.ohloh.net/attachments/14589/me_small.png "exherbo logo")Exherbo: in the official [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
 * ![logo](http://s9.postimg.org/p5f1tscxn/fedora.jpg "fedora logo")Fedora: in the official [repos](http://koji.fedoraproject.org/koji/packageinfo?packageID=16307).
 * ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo: in the official [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
