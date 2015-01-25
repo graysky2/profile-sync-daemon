@@ -27,17 +27,23 @@ Consult the man page or the wiki page: https://wiki.archlinux.org/index.php/Prof
 To build from source, see the included INSTALL text document.
 
 ##Installation from Distro Packages
+### Officially Packaged
+* ![logo](http://cdn.akamai.steamstatic.com/steamcommunity/public/images/avatars/62/62f592e47fa6a0b48aad9d41dd587d402a55d825.jpg "agilia logo")Agilialinux: in the official [repos](http://packages.agilialinux.ru/show.php?id=31189).
+http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch: in the [AUR](https://aur.archlinux.org/packages/profile-sync-daemon).
+* ![logo](http://cloud.ohloh.net/attachments/14589/me_small.png "exherbo logo")Exherbo: in the official [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
+* ![logo](http://s9.postimg.org/p5f1tscxn/fedora.jpg "fedora logo")Fedora: in the official [repos](http://koji.fedoraproject.org/koji/packageinfo?packageID=16307).
+* ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo: in the official [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
+* ![logo](http://s29.postimg.org/ofjg812er/nixos_logo_small.png "nixos logo")NixOS: in the official  [repos](https://github.com/graysky2/profile-sync-daemon#nixos-users).
+* ![logo](http://s23.postimg.org/5pabe2o5z/void_logo_transparent.png "void logo")Void: in the official [repos](https://github.com/xtraeme/xbps-packages/tree/master/srcpkgs/profile-sync-daemon).
+
+### User Packaged
 * ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch: in the [AUR](https://aur.archlinux.org/packages/profile-sync-daemon).
 * ![logo](http://s18.postimg.org/w5jvz71mt/chakra.jpg "chakra logo")Chakra: in the [CCR](http://chakraos.org/ccr/packages.php?ID=5008).
 * ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian: in [graysky's PPA](https://github.com/graysky2/profile-sync-daemon#debian-users).
-* ![logo](http://cloud.ohloh.net/attachments/14589/me_small.png "exherbo logo")Exherbo: in the Exherbo [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
-* ![logo](http://s9.postimg.org/p5f1tscxn/fedora.jpg "fedora logo")Fedora: in the official [repos](http://koji.fedoraproject.org/koji/packageinfo?packageID=16307).
-* ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo: in the Gentoo [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
 * ![logo](http://i1-news.softpedia-static.com/images/extra/LINUX/small/slw106news5.png "mint logo")Mint: in [graysky's PPA](https://github.com/graysky2/profile-sync-daemon#mint-users).
-* ![logo](http://s29.postimg.org/ofjg812er/nixos_logo_small.png "nixos logo")NixOS: Available through the [psd service](https://github.com/graysky2/profile-sync-daemon#nixos-users).
 * ![logo](http://s30.postimg.org/auetslwfh/opensuse.jpg "open suse")OpenSUSE: packaged by [Overman79](https://build.opensuse.org/package/show/home:ZaWertun:utility/profile-sync-daemon).
+* ![logo](http://wiki.codeblocks.org/images/8/8b/Slackware-logo_32.png "slack logo")Slackware: on [slackbuilds](http://slackbuilds.org/repository/14.1/system/profile-sync-daemon).
 * ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu: in [graysky's PPA](https://github.com/graysky2/profile-sync-daemon#ubuntu-users).
-* ![logo](http://s23.postimg.org/5pabe2o5z/void_logo_transparent.png "void logo")Void: in the Void [repos](https://github.com/xtraeme/xbps-packages/tree/master/srcpkgs/profile-sync-daemon).
 
 ###Debian Users
 Tested on Debian 7.7 (wheezy) and 8.0 (jessie). To add the PPA (personal package archive) to your Debian system; do the following as the root user:
