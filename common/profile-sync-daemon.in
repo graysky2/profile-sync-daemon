@@ -55,6 +55,7 @@ palemoon
 qupzilla
 rekonq
 seamonkey
+vivaldi
 )
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
@@ -215,6 +216,9 @@ config_check() {
 			palemoon)
 				return
 				;;
+			vivaldi)
+				return
+				;;
 			*)
 				# user defined an invalid browser
 				echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser. Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
@@ -352,6 +356,10 @@ set_which() {
 		opera-developer|opera-beta)
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="$browser"
+			;;
+		vivaldi)
+			DIRArr[0]="$homedir/.config/$browser"
+			PSNAME="$browser"-bin
 			;;
 		otter-browser)
 			DIRArr[0]="$homedir/.config/otter"
