@@ -3,7 +3,7 @@
 _psd() {
   local -a options
 
-  options=('p:Parse config file (/run/psd.conf) to see which profiles will be managed'
+  options=('p:Preview what psd will do/is doing and printout useful info'
            'c:Clean (delete without prompting) ALL crashrecovery dirs for all profiles')
 
   _describe 'options' options
