@@ -3,11 +3,8 @@
 _psd() {
   local -a options
 
-  options=('preview:Parse config file (/run/psd.conf) to see which profiles will be managed'
-           'clean:Clean (delete without prompting) ALL crashrecovery dirs for all profiles'
-           'resync:Synchronize the tmpfs and media bound copy. Must be run as root user and NOT recommended.'
-           'sync:Force a manual sync. Must be run as root user and NOT recommended.'
-           'unsync:Force a manual unsync. Must be run as root user and NOT recommended.')
+  options=('p:Parse config file (/run/psd.conf) to see which profiles will be managed'
+           'c:Clean (delete without prompting) ALL crashrecovery dirs for all profiles')
 
   _describe 'options' options
 }
