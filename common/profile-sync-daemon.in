@@ -52,6 +52,7 @@ opera-beta
 opera-next
 otter-browser
 palemoon
+pycharm
 qupzilla
 rekonq
 seamonkey
@@ -216,6 +217,9 @@ config_check() {
 			palemoon)
 				return
 				;;
+			pycharm)
+				return
+				;;
 			vivaldi)
 				return
 				;;
@@ -355,6 +359,10 @@ set_which() {
 			;;
 		opera-developer|opera-beta)
 			DIRArr[0]="$homedir/.config/$browser"
+			PSNAME="$browser"
+			;;
+		pycharm)
+			DIRArr[0]="$homedir/.PyCharm40"
 			PSNAME="$browser"
 			;;
 		vivaldi)
