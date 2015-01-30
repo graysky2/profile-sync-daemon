@@ -110,9 +110,12 @@ else
 		distro=
 	fi
 fi
-[[ -z "$distro" ]] &&	echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM} ||
-	echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $distro"${NRM}
-echo
+
+header() {
+	[[ -z "$distro" ]] &&	echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM} ||
+		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $distro"${NRM}
+	echo
+}
 
 dep_check() {
 	# checks for dependencies and that /etc/psd.conf is setup correctly
@@ -679,13 +682,16 @@ do_sync() {
 				else
 					if [[ ! -d "$homedir" ]] ; then
 						echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
+						exit 1
 					elif [[ -d "$BACKUP" ]] ; then
 						echo -e "${RED}$DIR does not exist or is a broken symlink! Is $VOLATILE unmounted?${NRM}" >&2
+						exit 1
 					fi
 				fi
 			done
 		done
 	done
+	echo -e "${BLD}Sync successful"${NRM}
 }
 
 do_unsync() {
@@ -723,14 +729,17 @@ do_unsync() {
 							rm -rf "$TMP" "$TMPRW" "$TMPWK"
 					fi
 					[[ -d "$TMP" ]] && rm -rf "$TMP"
+					echo -e "${BLD}Unsync successful"${NRM}
 				else
 					if [[ ! -d "$homedir" ]] ; then
 						echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
+						exit 1
 					fi
 				fi
 			done
 		done
 	done
+	echo -e "${BLD}Unsync successful"${NRM}
 }
 
 parse() {
@@ -822,10 +831,10 @@ parse() {
 
 case "$1" in
 	p|P|Parse|parse|Preview|preview|debug)
-		dep_check && config_check && dup_check && parse
+		dep_check && config_check && dup_check && header && parse
 		;;
 	c|C|clean|Clean)
-		dep_check && config_check && dup_check && cleanup
+		dep_check && config_check && dup_check && header && cleanup
 		;;
 	sync)
 		[[ ! -f $DAEMON_FILE ]] && root_check && dep_check && config_check && 
@@ -840,6 +849,7 @@ case "$1" in
 		do_unsync
 		;;
 	*)
+		header
 		echo -e " ${BLD}$0 ${NRM}${GRN}[option]${NRM}"
 		echo -e " ${BLD} ${NRM}${GRN}preview${NRM}${BLD}	Parse config file (${NRM}${BLU}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed."${NRM}
 		echo -e " ${BLD} ${NRM}${GRN}clean${NRM}${BLD}		Clean (delete without prompting) ALL crashrecovery dirs for all profiles."${NRM}
