@@ -56,6 +56,7 @@ qupzilla
 rekonq
 seamonkey
 vivaldi
+thunderbird
 )
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
@@ -222,6 +223,9 @@ config_check() {
 			vivaldi)
 				return
 				;;
+			thunderbird)
+				return
+				;;
 			*)
 				# user defined an invalid browser
 				echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser. Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
@@ -259,6 +263,7 @@ ungraceful_state_check() {
 					[[ "$browser" = "heftig-aurora" ]] ||
 					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
+					[[ "$browser" = "thunderbird" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
@@ -292,6 +297,7 @@ cleanup() {
 					[[ "$browser" = "heftig-aurora" ]] ||
 					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
+					[[ "$browser" = "thunderbird" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" || suffix=
 				if [[ -d "$DIR" ]]; then
@@ -453,6 +459,14 @@ set_which() {
 				mozilla-config
 			fi
 			;;
+		thunderbird)
+			profiledir="$homedir/.thunderbird"
+			if [[ -d $profileDir ]]; then
+				profileArr=( $(grep '[P,p]'ath= $profileDir/profiles.ini |
+				sed 's/[P,p]ath=//') )
+				mozilla-config
+			fi
+			;;
 		*)
 			# skip invalid browser entries
 			return
@@ -488,6 +502,7 @@ dup_check() {
 				[[ "$browser" = "heftig-aurora" ]] ||
 				[[ "$browser" = "icecat" ]] ||
 				[[ "$browser" = "seamonkey" ]] ||
+				[[ "$browser" = "thunderbird" ]] ||
 				[[ "$browser" = "palemoon" ]]
 		then
 			if [[ -z "${DIRArr[@]}" ]]; then
@@ -583,6 +598,7 @@ do_sync() {
 					[[ "$browser" = "heftig-aurora" ]] ||
 					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
+					[[ "$browser" = "thunderbird" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
@@ -660,6 +676,7 @@ do_unsync() {
 					[[ "$browser" = "heftig-aurora" ]] ||
 					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
+					[[ "$browser" = "thunderbird" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
@@ -728,6 +745,7 @@ parse() {
 					[[ "$browser" = "heftig-aurora" ]] ||
 					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
+					[[ "$browser" = "thunderbird" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
