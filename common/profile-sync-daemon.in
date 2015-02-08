@@ -56,7 +56,6 @@ qupzilla
 rekonq
 seamonkey
 vivaldi
-thunderbird
 )
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
@@ -223,9 +222,6 @@ config_check() {
 			vivaldi)
 				return
 				;;
-			thunderbird)
-				return
-				;;
 			*)
 				# user defined an invalid browser
 				echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser. Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
@@ -263,7 +259,6 @@ ungraceful_state_check() {
 					[[ "$browser" = "heftig-aurora" ]] ||
 					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
-					[[ "$browser" = "thunderbird" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
@@ -297,7 +292,6 @@ cleanup() {
 					[[ "$browser" = "heftig-aurora" ]] ||
 					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
-					[[ "$browser" = "thunderbird" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" || suffix=
 				if [[ -d "$DIR" ]]; then
@@ -317,6 +311,23 @@ cleanup() {
 				fi
 			done
 		done
+	done
+}
+
+mozilla-config() {
+	# Assuming that $profileDir and $profileArr were set before
+	index=0
+	PSNAME="$browser"
+	for profileItem in ${profileArr[@]}; do
+		if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
+			# path is not relative
+			DIRArr[index]="$profileItem"
+		else
+			# we need to append the default path to give a
+			# fully qualified path
+			DIRArr[index]="$profileDir/$profileItem"
+		fi
+		index=$index+1
 	done
 }
 
@@ -390,99 +401,44 @@ set_which() {
 			PSNAME="$browser"
 			;;
 		firefox)
-			if [[ -d $homedir/.mozilla/firefox ]]; then
-				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox/profiles.ini |
+			profileDir="$homedir/.mozilla/firefox"
+			if [[ -d $profileDir ]]; then
+				profileArr=( $(grep '[P,p]'ath= $profileDir/profiles.ini |
 				sed 's/[P,p]ath=//') )
-				index=0
-				PSNAME="$browser"
-				for profileItem in ${profileArr[@]}; do
-					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
-						# path is not relative
-						DIRArr[index]="$profileItem"
-					else
-						# we need to append the default path to give a
-						# fully qualified path
-						DIRArr[index]="$homedir/.mozilla/firefox/$profileItem"
-					fi
-					index=$index+1
-				done
+				mozilla-config
 			fi
 			;;
 		firefox-trunk)
-			if [[ -d $homedir/.mozilla/firefox-trunk ]]; then
-				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox-trunk/profiles.ini |
+			profileDir="$homedir/.mozilla/firefox-trunk"
+			if [[ -d $profileDir ]]; then
+				profileArr=( $(grep '[P,p]'ath= $profileDir/profiles.ini |
 				sed 's/[P,p]ath=//') )
-				index=0
-				PSNAME="$browser"
-				for profileItem in ${profileArr[@]}; do
-					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
-						# path is not relative
-						DIRArr[index]="$profileItem"
-					else
-						# we need to append the default path to give a fully
-						# qualified path
-						DIRArr[index]="$homedir/.mozilla/firefox-trunk/$profileItem"
-					fi
-					index=$index+1
-				done
+				mozilla-config
 			fi
 			;;
 		heftig-aurora)
 			# https://bbs.archlinux.org/viewtopic.php?id=117157
-			if [[ -d $homedir/.mozilla/aurora ]]; then
-				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/aurora/profiles.ini |
+			profiledir="$homedir/.mozilla/aurora"
+			if [[ -d $profileDir ]]; then
+				profileArr=( $(grep '[P,p]'ath= $profileDir/profiles.ini |
 				sed 's/[P,p]ath=//') )
-				index=0
-				PSNAME="aurora"
-				for profileItem in ${profileArr[@]}; do
-					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
-						# path is not relative
-						DIRArr[index]="$profileItem"
-					else
-						# we need to append the default path to give a fully
-						# qualified path
-						DIRArr[index]="$homedir/.mozilla/aurora/$profileItem"
-					fi
-					index=$index+1
-				done
+				mozilla-config
 			fi
 			;;
 		icecat)
-			if [[ -d $homedir/.mozilla/icecat ]]; then
-				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/icecat/profiles.ini |
+			profiledir="$homedir/.mozilla/icecat"
+			if [[ -d $profileDir ]]; then
+				profileArr=( $(grep '[P,p]'ath= $profileDir/profiles.ini |
 				sed 's/[P,p]ath=//') )
-				index=0
-				PSNAME="$browser"
-				for profileItem in ${profileArr[@]}; do
-					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
-						# path is not relative
-						DIRArr[index]="$profileItem"
-					else
-						# we need to append the default path to give a
-						# fully qualified path
-						DIRArr[index]="$homedir/.mozilla/icecat/$profileItem"
-					fi
-					index=$index+1
-				done
+				mozilla-config
 			fi
 			;;
 		seamonkey)
-			if [[ -d $homedir/.mozilla/seamonkey ]]; then
-				profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/seamonkey/profiles.ini |
+			profiledir="$homedir/.mozilla/seamonkey"
+			if [[ -d $profileDir ]]; then
+				profileArr=( $(grep '[P,p]'ath= $profileDir/profiles.ini |
 				sed 's/[P,p]ath=//') )
-				index=0
-				PSNAME="$browser"
-				for profileItem in ${profileArr[@]}; do
-					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
-						# path is not relative
-						DIRArr[index]="$profileItem"
-					else
-						# we need to append the default path to give a fully
-						# qualified path
-						DIRArr[index]="$homedir/.mozilla/seamonkey/$profileItem"
-					fi
-					index=$index+1
-				done
+				mozilla-config
 			fi
 			;;
 		luakit)
@@ -490,26 +446,7 @@ set_which() {
 			PSNAME="$browser"
 			;;
 		palemoon)
-			if [[ -d $homedir/.moonchild\ productions/pale\ moon ]]; then
-				profileArr=( $(grep '[P,p]'ath= $homedir/.moonchild\ productions/pale\ moon/profiles.ini |
-				sed 's/[P,p]ath=//') )
-				index=0
-				PSNAME="$browser"
-				for profileItem in ${profileArr[@]}; do
-					if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
-						# path is not relative
-						DIRArr[index]="$profileItem"
-					else
-						# we need to append the default path to give a
-						# fully qualified path
-						DIRArr[index]="$homedir/.moonchild productions/pale moon/$profileItem"
-					fi
-					index=$index+1
-				done
-			fi
-			;;
-		thunderbird)
-			profiledir="$homedir/.thunderbird"
+			profiledir="$homedir/.moonchild\ productions/pale\ moon"
 			if [[ -d $profileDir ]]; then
 				profileArr=( $(grep '[P,p]'ath= $profileDir/profiles.ini |
 				sed 's/[P,p]ath=//') )
@@ -551,7 +488,6 @@ dup_check() {
 				[[ "$browser" = "heftig-aurora" ]] ||
 				[[ "$browser" = "icecat" ]] ||
 				[[ "$browser" = "seamonkey" ]] ||
-				[[ "$browser" = "thunderbird" ]] ||
 				[[ "$browser" = "palemoon" ]]
 		then
 			if [[ -z "${DIRArr[@]}" ]]; then
@@ -647,7 +583,6 @@ do_sync() {
 					[[ "$browser" = "heftig-aurora" ]] ||
 					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
-					[[ "$browser" = "thunderbird" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
@@ -725,7 +660,6 @@ do_unsync() {
 					[[ "$browser" = "heftig-aurora" ]] ||
 					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
-					[[ "$browser" = "thunderbird" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
@@ -794,7 +728,6 @@ parse() {
 					[[ "$browser" = "heftig-aurora" ]] ||
 					[[ "$browser" = "icecat" ]] ||
 					[[ "$browser" = "seamonkey" ]] ||
-					[[ "$browser" = "thunderbird" ]] ||
 					[[ "$browser" = "palemoon" ]] &&
 					suffix="-${item##*/}" ||
 					suffix=
