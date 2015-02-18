@@ -19,7 +19,7 @@ Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browse
 * QupZilla
 * Rekonq
 * Seamonkey
-* Vivaldi-browser
+* Vivaldi-browser and Vivaldi-browser-snapshot
 
 ##Documentation
 Consult the man page or the wiki page: https://wiki.archlinux.org/index.php/Profile-sync-daemon

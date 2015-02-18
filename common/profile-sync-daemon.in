@@ -56,6 +56,7 @@ qupzilla
 rekonq
 seamonkey
 vivaldi
+vivaldi-snapshot
 )
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
@@ -222,6 +223,9 @@ config_check() {
 			vivaldi)
 				return
 				;;
+			vivaldi-snapshot)
+				return
+				;;
 			*)
 				# user defined an invalid browser
 				echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser. Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
@@ -363,6 +367,10 @@ set_which() {
 		vivaldi)
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="$browser"-bin
+			;;
+		vivaldi-snapshot)
+			DIRArr[0]="$homedir/.config/vivaldi-snapshot"
+			PSNAME="vivaldi-bin"
 			;;
 		otter-browser)
 			DIRArr[0]="$homedir/.config/otter"
