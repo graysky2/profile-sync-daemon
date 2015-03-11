@@ -369,7 +369,7 @@ set_which() {
 			PSNAME="$browser"
 			;;
 		opera-legacy)
-			DIRArr[0]="$homedir/.config/$browser"
+			DIRArr[0]="$homedir/.$browser"
 			PSNAME="$browser"
 			;;
 		vivaldi)
