@@ -49,6 +49,7 @@ midori
 opera
 opera-developer
 opera-beta
+opera-legacy
 opera-next
 otter-browser
 palemoon
@@ -200,6 +201,9 @@ config_check() {
 				return
 				;;
 			opera-developer)
+				return
+				;;
+			opera-legacy)
 				return
 				;;
 			qupzilla)
@@ -361,6 +365,10 @@ set_which() {
 			PSNAME="$browser"
 			;;
 		opera-developer|opera-beta)
+			DIRArr[0]="$homedir/.config/$browser"
+			PSNAME="$browser"
+			;;
+		opera-legacy)
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="$browser"
 			;;
