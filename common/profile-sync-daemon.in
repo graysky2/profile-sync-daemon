@@ -85,9 +85,11 @@ case "${USE_BACKUPS,,}" in
 		;;
 esac
 
-# deterime is we are using overlayfs (v22 and below) or overlay (v23 and above)
+# determine is we are using overlayfs (v22 and below) or overlay (v23 and above)
 # overlay FS v23 and later requires both an upper and a work directory, both on
 # the same filesystem, but not part of the same subtree.
+#
+# ubuntu 15.04 has both overlay and overlayfs so prefer version 23
 
 if [[ $OLFS -eq 1 ]]; then
 	[[ $(grep -ciE "overlayfs$" /proc/filesystems) -eq 1 ]] && OLFSVER=22
