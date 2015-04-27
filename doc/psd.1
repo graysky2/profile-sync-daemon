@@ -35,7 +35,7 @@ Optionally define the location of your distro's tmpfs. Do this in the VOLATILE v
 .IP \(bu 3
 Optionally define the location of your distro's /run. Do this in the DAEMON_FILE variable.
 .IP \(bu 3
-Optionally enable the use of overlayfs to improve sync speed even further and use a smaller memory footprint. Do this in the USE_OVERLAYFS variable. Note that this option requires your kernel to have either the 'overlay' or 'overlayfs' module available. See the FAQ below for additional details on this feature.
+Optionally enable the use of overlayfs to improve sync speed even further and use a smaller memory footprint. Do this in the USE_OVERLAYFS variable. Note that this option requires your kernel be configured to use either the 'overlay' or 'overlayfs' module. See the FAQ below for additional details on this feature.
 .IP \(bu 3
 Optionally disable the use of crash-recovery snapshots. Do this in the USE_BACKUPS variable.
 .SH RUNNING PSD
@@ -223,9 +223,9 @@ It is HIGHLY recommended for users to use a distro-provided package of psd, see 
 .SH FAQ
 Q1: What is overlayfs and why do I want to use it?
 .PP
-A1: Overlayfs is a simple union file-system mainlined in the Linux kernel version 3.18.0. Starting with psd version 5.54, overlayfs can be used to reduce the memory footprint of psd's tmpfs space and to speed up sync and unsync operations. The magic is in how the overlay mount only writes out data that has changed rather than the entire profile. The same recovery features psd uses in its default mode are also active when running in overlayfs mode. Overlayfs mode is enabled by uncommenting the USE_OVERLAYFS="yes" line in /etc/psd.conf followed by a restart of the daemon.
+A1: Overlayfs is a simple union file-system mainlined in the Linux kernel version 3.18.0. Starting with psd version 5.54, overlayfs can be used to reduce the memory footprint of psd's tmpfs space and to speed up sync and unsync operations. The magic is in how the overlay mount only writes out data that has changed rather than the entire profile. The same recovery features psd uses in its default mode are also active when running in overlayfs mode. Overlayfs mode is enabled by uncommenting the USE_OVERLAYFS= line and set it to "yes" in /etc/psd.conf followed by a restart of the daemon.
 .PP
-There are several version of overlayfs available to the Linux kernel in production in various distros. Versions 22 and lower have a module called 'overlayfs' while newer versions (23 and higher) have a module called 'overlay' -- note the lack of the 'fs' in the newer version. Psd will automatically detect the overlayfs if you have it enabled and if your kernel is configured to use either of them and it will use the proper underlying commands.
+There are several versions of overlayfs available to the Linux kernel in production in various distros. Versions 22 and lower have a module called 'overlayfs' while newer versions (23 and higher) have a module called 'overlay' -- note the lack of the 'fs' in the newer version. Psd will automatically detect the overlayfs available to your kernel if it is configured to use one of them.
 .PP
 See the example in the PREVIEW MODE section above which shows a system using overlayfs to illustrate the memory savings that can be achieved. Note the "overlayfs size" report compared to the total "profile size" report for each profile. Be aware that these numbers will change depending on just how much data is written to the profile, but in common use cases, the overlayfs size will always be less than the profile size.
 .PP
