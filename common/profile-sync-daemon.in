@@ -99,8 +99,11 @@ if [[ $OLFS -eq 1 ]]; then
 	if [[ -z $OLFSVER ]]; then
 		# since mount should call modprobe on invocation, check to see if either
 		# module is in the tree using modinfo
-		[[ $(modinfo overlayfs &>/dev/null) -eq 0 ]] && OLFSVER=22
-		[[ $(modinfo overlay &>/dev/null) -eq 0 ]] && OLFSVER=23
+		modinfo overlayfs &>/dev/null
+		[[ $? -eq 0 ]] && OLFSVER=22
+
+		modinfo overlay &>/dev/null
+		[[ $? -eq 0 ]] && OLFSVER=23
 	fi
 fi
 
