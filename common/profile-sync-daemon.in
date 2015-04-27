@@ -92,8 +92,16 @@ esac
 # ubuntu 15.04 has both overlay and overlayfs so prefer version 23
 
 if [[ $OLFS -eq 1 ]]; then
+	# first test if either module is manually loaded manually or hardcoded
 	[[ $(grep -ciE "overlayfs$" /proc/filesystems) -eq 1 ]] && OLFSVER=22
 	[[ $(grep -ciE "overlay$" /proc/filesystems) -eq 1 ]] && OLFSVER=23
+
+	if [[ -z $OLFSVER ]]; then
+		# since mount should call modprobe on invocation, check to see if either
+		# module is in the tree using modinfo
+		[[ $(modinfo overlayfs &>/dev/null) -eq 0 ]] && OLFSVER=22
+		[[ $(modinfo overlay &>/dev/null) -eq 0 ]] && OLFSVER=23
+	fi
 fi
 
 # get distro name
@@ -128,10 +136,10 @@ dep_check() {
 	command -v awk >/dev/null 2>&1 || {
 	echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
 	if [[ $OLFS -eq 1 ]]; then
-		grep overlay /proc/filesystems &>/dev/null || {
+		[[ $OLFSVER -ge 22 ]] || {
 		youare=$(logname)
-		echo -e " ${BLD}Depending on your distro, either the ${BLU}overlay${NRM}${BLD} or ${BLU}overlayfs${NRM}${BLD} module needs to be loaded"${NRM}
-		echo -e " ${BLD}to use psd's in overlay mode. Load the correct module for your distro manually and"${NRM}
+		echo -e " ${BLD}Your kernel requires either the ${BLU}overlay${NRM}${BLD} or ${BLU}overlayfs${NRM}${BLD} module to use"${NRM}
+		echo -e " ${BLD}to use psd's in overlay mode. Cannot find either in your kernel so compile it in and"${NRM}
 		echo -e " ${BLD}try again or remove the option from ${BLU}$PSDCONF${NRM}${BLD}. ${RED}Aborting!"${NRM} >&2; exit 1;}
 	fi
 }
