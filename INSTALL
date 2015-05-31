@@ -64,14 +64,9 @@ USE A DISTRO PROVIDED PACKAGE
  PKGBUILD: http://chakra-linux.org/ccr/packages.php?ID=5008
 
  DEBIAN/MINT/UBUNTU
- Debian/Mint/Ubuntu users may use the PPA graysky maintains at
- this url: https://launchpad.net/~graysky/+archive/utils
- Or build themselves using the included Makefile.ubuntu and debian
- build tools such as dh_make and dpkg-buildpackage. Note in this
- case the scripts in common/debian.  Of particular interest is
- the fact that Ubuntu/Debian use different paths for both their
- lock files and for their default mounted tmpfs paths. See
- common/debian/postinst for the changes.
+ I no longer provide pre-packaged psd since Ubuntu and Debian
+ have started to switch to systemd from upstart since this is
+ just too much overhead for me since I run neither distro.
 
  EXHERBO
  Exherbo users can build the package directly with the provided
