@@ -43,9 +43,13 @@ case "$1" in
 		;;
 esac
 
-# setup to run at boot with default order
-update-rc.d -f psd remove >/dev/null 2>&1
-update-rc.d psd defaults
+systemd-notify --booted
+if [[ $? -eq 0 ]]; then
+	systemctl disable psd >/dev/null 2>&1
+else
+	# setup to run at boot with default order
+	update-rc.d -f psd remove >/dev/null 2>&1
+	update-rc.d psd defaults
+if
 
-
-exit 0
+		exit 0
