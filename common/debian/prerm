@@ -13,12 +13,7 @@ set -e
 
 case "$1" in
 	remove|deconfigure)
-		systemctl status psd &>/dev/null
-		if [ $? -eq 0 ]; then
-			systemctl stop psd &>/dev/null
-		else
-			service psd stop
-		fi
+		systemctl stop psd &>/dev/null
 		;;
 	upgrade|failed-upgrade)
 		/bin/true

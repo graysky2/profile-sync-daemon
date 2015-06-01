@@ -18,11 +18,6 @@ case "$1" in
 		[ -f /etc/psd.conf ] && . /etc/psd.conf
 		if [ -z "$USERS" ]; then
 			# empty var means fresh install or user did not setup
-			if [ $(grep -c -i 6.0 /etc/issue) = 1 ]; then
-				# debian squeeze needs to /dev/shm
-				# but wheezy does not so only modify if user is running squeeze aka Debian GNU/Linux 6.0
-				sed -i 's/VOLATILE="\/run\/shm"/VOLATILE="\/dev\/shm"/' /etc/psd.conf
-			fi
 			echo '--------------------------------------------------------------------------'
 			echo '  Define which users will make use of the sync in /etc/psd.conf'
 			echo '  Read the manpage before use or see the wiki page'
@@ -43,12 +38,5 @@ case "$1" in
 		;;
 esac
 
-systemd-notify --booted
-if [ $? -eq 0 ]; then
-	systemctl disable psd >/dev/null 2>&1
-else
-	update-rc.d -f psd remove >/dev/null 2>&1
-	pdate-rc.d psd defaults
-fi
-
+systemctl disable psd >/dev/null 2>&1
 exit 0

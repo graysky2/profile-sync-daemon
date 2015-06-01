@@ -14,14 +14,9 @@ set -e
 
 case "$1" in
 	purge|remove|deconfigure)
-		systemd-notify --booted
-		if [ $? -eq 0 ]; then
-			systemctl disable psd >/dev/null 2>&1
-		else
-			update-rc.d -f psd remove >/dev/null 2>&1
-			update-rc.d psd defaults
-		fi
-		upgrade|abort-upgrade|failed-upgrade)
+		systemctl disable psd >/dev/null 2>&1
+		;;
+	upgrade|abort-upgrade|failed-upgrade)
 		/bin/true
 		;;
 	*)

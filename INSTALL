@@ -1,7 +1,7 @@
 DEPENDENCIES
  bash >=4.0
  rsync
- 
+
  a supported init system
  -systemd
  -openrc
@@ -21,9 +21,9 @@ BUILDING
  the file system. Most users will want to select from three options
  depending on target init system (do not run all three)!
 
-	# make install-openrc-all
-	# make install-systemd-all
-	# make install-upstart-all
+ # make install-openrc-all
+ # make install-systemd-all
+ # make install-upstart-all
 
  Note for OpenRC users - An OpenRC service script is included and will be
  installed to: /usr/share/doc/profile-sync-daemon/psd.openrc
@@ -35,7 +35,7 @@ BUILDING
 
  Gentoo uses: /sbin/openrc-run so the shebang is: #!/sbin/openrc-run
  Arch uses: /usr/bin/openrc-run so the shebang is: #!/usr/bin/openrc-run
- 
+
  If in doubt, you may simply execute the following command and use the output
  as your location: which openrc-run
 
@@ -46,7 +46,7 @@ BUILDING
  4) OpenRC is unofficially supported for some distros, so even on the same 
  distro, different paths to the required service scripts (see the Arch Linux
  Wiki page on OpenRC for examples).
- 
+
  As of v5.29, systemd installations no longer install the deprecated
  cron script instead using a systemd timer. Users may override and
  install the deprecated cron script by running: `make install-cron`
@@ -64,9 +64,21 @@ USE A DISTRO PROVIDED PACKAGE
  PKGBUILD: http://chakra-linux.org/ccr/packages.php?ID=5008
 
  DEBIAN/MINT/UBUNTU
- I no longer provide pre-packaged psd since Ubuntu and Debian
- have started to switch to systemd from upstart since this is
- just too much overhead for me since I run neither distro.
+ Debian/Mint/Ubuntu users may use the PPA graysky maintains at
+ this url: https://launchpad.net/~graysky/+archive/utils
+
+ Note that your system MUST be using systemd as the init system.
+ I believe this to be true for:
+ Debian 8.0+
+ Mint 18.0+ ???
+ Ubuntu 15.04+
+
+ I still provide the SysV init scripts but you much build the package
+ your using the included Makefile.ubuntu and debian build tools such as
+ dh_make and dpkg-buildpackage. Note in this case the scripts in
+ common/debian.  Of particular interest is the fact that older Ubuntu/Debian
+ use different paths for both their lock files and for their default mounted
+ tmpfs paths.
 
  EXHERBO
  Exherbo users can build the package directly with the provided
@@ -94,7 +106,7 @@ USE A DISTRO PROVIDED PACKAGE
 
  services.psd = {
    enable = true; users = [ "facade" "debbie" ]; # At least one users
-	 browsers = [ "chromium" "firefox" ]; # Leave blank to enable all
+   browsers = [ "chromium" "firefox" ]; # Leave blank to enable all
    useOverlayFS = true; # set to true to enable overlayfs
  };
 
