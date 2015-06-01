@@ -38,5 +38,6 @@ case "$1" in
 		;;
 esac
 
-systemctl disable psd >/dev/null 2>&1
+systemctl enable psd >/dev/null 2>&1
+
 exit 0
