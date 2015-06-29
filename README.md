@@ -40,7 +40,6 @@ To build from source, see the included INSTALL text document.
 * ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch: in the [AUR](https://aur.archlinux.org/packages/profile-sync-daemon).
 * ![logo](http://s18.postimg.org/w5jvz71mt/chakra.jpg "chakra logo")Chakra: in the [CCR](http://chakraos.org/ccr/packages.php?ID=5008).
 * ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian: in [graysky's PPA](https://github.com/graysky2/profile-sync-daemon#debian-users).
-* ![logo](http://i1-news.softpedia-static.com/images/extra/LINUX/small/slw106news5.png "mint logo")Mint: in [graysky's PPA](https://github.com/graysky2/profile-sync-daemon#mint-users).
 * ![logo](http://s30.postimg.org/auetslwfh/opensuse.jpg "open suse")OpenSUSE: packaged by [Overman79](https://build.opensuse.org/package/show/home:ZaWertun:utility/profile-sync-daemon).
 * ![logo](http://wiki.codeblocks.org/images/8/8b/Slackware-logo_32.png "slack logo")Slackware: on [slackbuilds](http://slackbuilds.org/apps/profile-sync-daemon/).
 * ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu: in [graysky's PPA](https://github.com/graysky2/profile-sync-daemon#ubuntu-users).
@@ -59,13 +58,6 @@ To add the PPA (personal package archive) to your Debian system; do the followin
 Since June of 2013, Profile-sync-daemon is in the official repo. [Reference](https://bugzilla.redhat.com/show_bug.cgi?id=968253).
 
     sudo yum install profile-sync-daemon
-
-###Mint Users
-To add the PPA (personal package archive) to your Mint system (tested on 14.1), and to install psd:
-
-    sudo add-apt-repository ppa:graysky/utils
-    sudo apt-get update
-    sudo apt-get install profile-sync-daemon
 
 ###NixOS Users
 Currently, you need to be tracking `nixos-unstable`:
