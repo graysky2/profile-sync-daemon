@@ -1,5 +1,6 @@
 DEPENDENCIES
  bash >=4.0
+ cron (only if using openrc or upstart)
  rsync
 
  a supported init system
@@ -7,26 +8,41 @@ DEPENDENCIES
  -openrc
  -upstart
 
-BUILDING
- Several options are present in the Makefile. Most users can safely
- ignore them leaving the defaults. User of NixOS not using the distro
- provided package for psd should enable the NIXOS_MAN option to get
- a NixOS customized man page for example.
+BUILDING YOURSELF
+ Several options are present in the Makefile. Most users can safely  ignore them
+ leaving the defaults. User of NixOS not using the distro provided package for
+ psd should enable the NIXOS_MAN option to get a NixOS customized man page for
+ example.
 
  Setup the via a make.
 
-  $ make
+ $ make
 
- Running a `make install-xxx` as root will distribute the files to
- the file system. Most users will want to select from three options
- depending on target init system (do not run all three)!
+ Running a `make install-xxx` as root will distribute the files to the file-
+ system.  Most users will want to select from three options depending on target
+ init system (do not run all three)!
 
  # make install-openrc-all
  # make install-systemd-all
  # make install-upstart-all
 
- Note for OpenRC users - An OpenRC service script is included and will be
- installed to: /usr/share/doc/profile-sync-daemon/psd.openrc
+CAVEATS POST-INSTALL/PLEASE READ THIS SECTION
+
+ UPSTART USERS
+ As a friendly reminder for users of upstart, you will need to enable
+ the daemon manually if you built psd manually since I no longer supply
+ psd pre-packaged for non-systemd versions of Ubuntu/Debian/Mint and clones
+ (see my explanation in the section below for context).
+
+ To enable psd for upstart:
+ # update-rc.d psd defaults
+
+ To disable psd for upstart:
+ # update-rc.d -f psd remove
+
+ OPENRC USERS
+ Special note for OpenRC users - An OpenRC service script is included and will
+ be installed to: /usr/share/doc/profile-sync-daemon/psd.openrc
 
  You will need to:
  1) Verify the path to openrc-run on your distro in the shebang.
@@ -40,64 +56,57 @@ BUILDING
  as your location: which openrc-run
 
  I have chosen this route since:
- 1) I do not run OpenRC.
- 2) I do not follow its development.
+ 1) I do not run OpenRC or Upstart.
+ 2) I do not follow their respective development.
  3) Different distros use different paths to required executables (see above).
- 4) OpenRC is unofficially supported for some distros, so even on the same 
- distro, different paths to the required service scripts (see the Arch Linux
- Wiki page on OpenRC for examples).
+ 4) Both OpenRC and Upstart are unofficially supported for some distros, so even
+ on the same distro, there can be different paths to the required service scripts
+ (see the Arch Linux Wiki page on OpenRC for examples).
 
- As of v5.29, systemd installations no longer install the deprecated
- cron script instead using a systemd timer. Users may override and
- install the deprecated cron script by running: `make install-cron`
- then `make install-systemd-all` if desired. The cron script is only
- deprecated for systemd installs; it is still recommended for users
- of both upstart or openrc.
+ All these make it impractical for me to maintain pre-packaged versions of psd
+ for these init systems in my PPA (see below).
+
+ As of v5.29, systemd installations no longer install the deprecated cron script
+ instead using a systemd timer. Users may override and install the deprecated
+ cron script by running: `make install-cron` then `make install-systemd-all` if
+ desired. The cron script is only deprecated for systemd installs; it is still
+ recommended for users of both upstart or openrc.
 
 USE A DISTRO PROVIDED PACKAGE
  ARCH LINUX
- Arch users may build the package directly with the provided
- PKGBUILD: https://aur.archlinux.org/packages/profile-sync-daemon
+ Arch users may build the package directly with the provided PKGBUILD:
+ https://aur.archlinux.org/packages/profile-sync-daemon
 
  CHAKRA
- Chakra users may build the package directly with the provided
- PKGBUILD: http://chakra-linux.org/ccr/packages.php?ID=5008
+ Chakra users may build the package directly with the provided PKGBUILD:
+ http://chakra-linux.org/ccr/packages.php?ID=5008
 
- DEBIAN/MINT/UBUNTU
- Debian/Mint/Ubuntu users may use the PPA graysky maintains at
- this url: https://launchpad.net/~graysky/+archive/utils
+ DEBIAN/UBUNTU
+ Debian/Ubuntu users may use the PPA graysky maintains at this url:
+ https://launchpad.net/~graysky/+archive/utils
 
- Note that your system MUST be using systemd as the init system.
- I believe this to be true for:
+ Note that your system MUST be using systemd as the init system. I believe this
+ to be true for the following:
  Debian 8.0+
  Mint 18.0+ ???
  Ubuntu 15.04+
 
- I still provide the SysV init scripts but you much build the package
- your using the included Makefile.ubuntu and debian build tools such as
- dh_make and dpkg-buildpackage. Note in this case the scripts in
- common/debian.  Of particular interest is the fact that older Ubuntu/Debian
- use different paths for both their lock files and for their default mounted
- tmpfs paths.
-
  EXHERBO
- Exherbo users can build the package directly with the provided
- exhere:
+ Exherbo users can build the package directly with the provided ebuild here:
  http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon
 
  FEDORA
- Fedora users may use the official Fedora repositories to install
- profile-sync-daemon. Approval has been granted for inclusion on
- 01-Jun-2013. https://bugzilla.redhat.com/show_bug.cgi?id=968253
+ Fedora users may use the official Fedora repositories to install psd. Approval
+ has been granted for inclusion on 01-Jun-2013[1].
+ 1. https://bugzilla.redhat.com/show_bug.cgi?id=968253
 
  GENTOO
- Gentoo users can build the package directly with the provided
- ebuild:
+ Gentoo users can build the package directly with the provided ebuild:
  http://packages.gentoo.org/package/www-misc/profile-sync-daemon
 
  NIXOS
- Users of NixOS <14.12 (currently unreleased) MUST be tracking
- nixos-unstable; this will change once version 14.12 is finalized:
+ Users of NixOS <14.12 (currently unreleased) MUST be tracking nixos-unstable;
+ this will change once version 14.12 is finalized:
 
  nix-channel --add http://nixos.org/channels/nixos-unstable nixos
  nixos-rebuild switch --upgrade
