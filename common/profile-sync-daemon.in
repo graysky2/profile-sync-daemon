@@ -44,6 +44,7 @@ google-chrome-beta
 google-chrome-unstable
 heftig-aurora
 icecat
+inox
 luakit
 midori
 opera
@@ -199,6 +200,9 @@ config_check() {
 				return
 				;;
 			icecat)
+				return
+				;;
+			inox)
 				return
 				;;
 			midori)
@@ -363,7 +367,7 @@ set_which() {
 			DIRArr[0]="$homedir/.$browser"
 			PSNAME="xulrunner"
 			;;
-		chromium|chromium-dev|epiphany|midori)
+		chromium|chromium-dev|epiphany|midori|inox)
 			DIRArr[0]="$homedir/.config/$browser"
 			PSNAME="$browser"
 			;;

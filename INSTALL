@@ -8,8 +8,8 @@ DEPENDENCIES
  -openrc
  -upstart
 
-BUILDING YOURSELF
- Several options are present in the Makefile. Most users can safely  ignore them
+BUILDING
+ Several options are present in the Makefile. Most users can safely ignore them
  leaving the defaults. User of NixOS not using the distro provided package for
  psd should enable the NIXOS_MAN option to get a NixOS customized man page for
  example.
@@ -79,7 +79,7 @@ USE A DISTRO PROVIDED PACKAGE
 
  CHAKRA
  Chakra users may build the package directly with the provided PKGBUILD:
- http://chakra-linux.org/ccr/packages.php?ID=5008
+ http://chakraos.org/ccr/packages.php?ID=5008
 
  DEBIAN/UBUNTU
  Debian/Ubuntu users may use the PPA graysky maintains at this url:
