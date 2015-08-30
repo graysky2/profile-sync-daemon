@@ -4,7 +4,7 @@ PN = profile-sync-daemon
 PREFIX ?= /usr
 INITDIR_SYSTEMD = /usr/lib/systemd/user
 BINDIR = $(PREFIX)/bin
-DOCDIR = $(PREFIX)/share/doc/$(PN)
+DOCDIR = $(PREFIX)/share/doc/psd
 MANDIR = $(PREFIX)/share/man/man1
 ZSHDIR = $(PREFIX)/share/zsh/site-functions
 
