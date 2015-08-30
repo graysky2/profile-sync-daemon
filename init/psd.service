@@ -2,16 +2,16 @@
 Description=Profile-sync-daemon
 Documentation=man:psd(1) man:profile-sync-daemon(1)
 Documentation=https://wiki.archlinux.org/index.php/Profile-sync-daemon
+Wants=psd.timer
 Wants=local-fs.target
-Wants=psd-resync.service
 RequiresMountsFor=/home/
 After=winbindd.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/profile-sync-daemon sync
+ExecStart=/usr/bin/profile-sync-daemon resync
 ExecStop=/usr/bin/profile-sync-daemon unsync
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target

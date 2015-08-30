@@ -1,76 +1,16 @@
 DEPENDENCIES
  bash >=4.0
- cron (only if using openrc or upstart)
  rsync
-
- a supported init system
- -systemd
- -openrc
- -upstart
+ systemd
 
 BUILDING
- Several options are present in the Makefile. Most users can safely ignore them
- leaving the defaults. User of NixOS not using the distro provided package for
- psd should enable the NIXOS_MAN option to get a NixOS customized man page for
- example.
-
  Setup the via a make.
 
  $ make
 
- Running a `make install-xxx` as root will distribute the files to the file-
- system.  Most users will want to select from three options depending on target
- init system (do not run all three)!
-
- # make install-openrc-all
- # make install-systemd-all
- # make install-upstart-all
-
-CAVEATS POST-INSTALL/PLEASE READ THIS SECTION
-
- UPSTART USERS
- As a friendly reminder for users of upstart, you will need to enable
- the daemon manually if you built psd manually since I no longer supply
- psd pre-packaged for non-systemd versions of Ubuntu/Debian/Mint and clones
- (see my explanation in the section below for context).
-
- To enable psd for upstart:
- # update-rc.d psd defaults
-
- To disable psd for upstart:
- # update-rc.d -f psd remove
-
- OPENRC USERS
- Special note for OpenRC users - An OpenRC service script is included and will
- be installed to: /usr/share/doc/profile-sync-daemon/psd.openrc
-
- You will need to:
- 1) Verify the path to openrc-run on your distro in the shebang.
- 2) Copy the script to your distro's OpenRC's script directory.
- 3) Chmod it to 755.
-
- Gentoo uses: /sbin/openrc-run so the shebang is: #!/sbin/openrc-run
- Arch uses: /usr/bin/openrc-run so the shebang is: #!/usr/bin/openrc-run
-
- If in doubt, you may simply execute the following command and use the output
- as your location: which openrc-run
-
- I have chosen this route since:
- 1) I do not run OpenRC or Upstart.
- 2) I do not follow their respective development.
- 3) Different distros use different paths to required executables (see above).
- 4) Both OpenRC and Upstart are unofficially supported for some distros, so even
- on the same distro, there can be different paths to the required service scripts
- (see the Arch Linux Wiki page on OpenRC for examples).
-
- All these make it impractical for me to maintain pre-packaged versions of psd
- for these init systems in my PPA (see below).
-
- As of v5.29, systemd installations no longer install the deprecated cron script
- instead using a systemd timer. Users may override and install the deprecated
- cron script by running: `make install-cron` then `make install-systemd-all` if
- desired. The cron script is only deprecated for systemd installs; it is still
- recommended for users of both upstart or openrc.
+ Running a `make install` as root will distribute the files to the file-
+ 
+ # make install
 
 USE A DISTRO PROVIDED PACKAGE
  ARCH LINUX

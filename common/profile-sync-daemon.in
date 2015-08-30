@@ -12,22 +12,30 @@ BLU="\e[01;34m"
 NRM="\e[00m"
 VERS="@VERSION@"
 
-PSDCONF=${PSDCONF:-"/etc/psd.conf"}
-DAEMON_FILE=${DAEMON_FILE:-"/run/psd"}
+user=$(id -un)
+HOME="$(getent passwd $user | cut -d: -f6)"
+PSDCONFDIR="$HOME/.psd"
+PSDCONF="$PSDCONFDIR/psd.conf"
+PID_FILE="$PSDCONFDIR/.$user@$(hostname).pid"
 
-# Setup check /etc/psd.conf
-if [[ -f /etc/psd.conf ]]; then
+# Setup check for config file
+if [[ -f "$PSDCONF" ]]; then
 	. $PSDCONF
 else
-	# nothing to do if there is no conf file
-	echo -e " Cannot find $PSDCONF so bailing."
-	echo -e " Reinstall package to use profile-sync-daemon."
-	exit 1
+	[[ ! -d "$PSDCONFDIR" ]] && mkdir "$PSDCONFDIR"
+	if [[ -f /usr/share/doc/psd/psd.conf ]]; then
+		cp /usr/share/doc/psd/psd.conf "$PSDCONFDIR"
+		echo -e " First time running psd so please edit ${BLU}$PSDCONF${NRM}${BLD} to your liking and run again."${NRM}
+		exit 0
+	else
+		echo -e " Missing ${BLU}/usr/share/doc/psd${NRM}${BLD} - reinstall the package to use profile-sync-daemon."
+		exit 1
+	fi
 fi
 
-# if psd is active, source the snapshot of /etc/psd.conf preferentially
-if [[ -f "${DAEMON_FILE}.conf" ]]; then
-	PSDCONF="${DAEMON_FILE}.conf"
+# if psd is active, source the snapshot of config preferentially
+if [[ -f "${PID_FILE}.conf" ]]; then
+	PSDCONF="${PID_FILE}.conf"
 	. $PSDCONF
 fi
 
@@ -149,23 +157,26 @@ dep_check() {
 }
 
 config_check() {
-	# nothing to do if there are no users
-	if [[ -z "$USERS" ]]; then
-		echo -e " ${BLD}Must define at least one user in ${NRM}${BLU}$PSDCONF"${NRM}
-		exit 1
-	fi
+	if [[ $OLFS -eq 1 ]]; then
+		# user must have sudo rights to call /usr/bin/mount
+		# and /usr/bin/umount to use overlay mode
 
-	for user in $(echo "$USERS"); do
-		if [[ -z $(getent passwd $user) ]]; then
-			# bad user in the USERS array so quit
-			echo -e " ${BLD}Cannot seem to find user: ${RED}$user${NRM}${BLD}."${NRM}
-			echo -e " ${BLD}Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
+		sudo -n mount &>/dev/null
+		[[ $? -ne 0 ]] && FAILCODE=1
+
+		sudo -n umount -V &>/dev/null
+		[[ $? -ne 0 ]] && FAILCODE=2
+
+		if [[ $FAILCODE -ne 0 ]]; then
+			echo -e "${BLD}${RED} ERROR!"${NRM}
+			echo -e " ${BLD}User $user needs sudo access to ${BLU}/usr/bin/mount${NRM}${BLD} and to ${BLU}/usr/bin/umount"${NRM}
+			echo -e " ${BLD}in order to use psd in overlayfs mode."${NRM}
 			echo
-			echo -e " ${BLD}If you are using an encrypted homedir or NFS mounted homes, it could be"${NRM}
-			echo -e " ${BLD}that the homedir and browser profiles are simply not accessible when psd was started."${NRM}
+			echo -e " ${BLD}Fix this by adding the following line to ${BLU}/etc/sudoers${NRM}${BLD} to enable this functionality:"${NRM}
+			echo -e "   ${BLD}$user ALL=(ALL) NOPASSWD: /usr/bin/mount,/usr/bin/umount"${NRM}
 			exit 1
 		fi
-	done
+	fi
 
 	for browser in $(echo "$BROWSERS"); do
 		case "$browser" in
@@ -255,86 +266,70 @@ config_check() {
 	done
 }
 
-root_check() {
-	# we call this to ensure that only the root user is calling the
-	# function why care? both the sync and unsync functions require
-	# root access to $DAEMON_FILE Running as unprivileged user will
-	# fuck up the sync process resulting in unhappy users
-
-	if [[ $EUID -ne 0 ]]; then
-		echo -e " ${BLD}This function must be called as root!"${NRM} 1>&2
-		exit 1
-	fi
-}
-
 ungraceful_state_check() {
 	# if the machine was ungracefully shutdown then the backup will be
 	# on the filesystem and the link to tmpfs will be on the filesystem
 	# but the contents will be empty we need to simply remove the link
 	# and rotate the backup into place
-	local browser user suffix
-	for user in $USERS; do
-		for browser in $BROWSERS; do
-			set_which "$user" "$browser"
-			for item in "${DIRArr[@]}"; do
-				DIR="$item"
-				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] ||
-					[[ "$browser" = "firefox-trunk" ]] ||
-					[[ "$browser" = "heftig-aurora" ]] ||
-					[[ "$browser" = "icecat" ]] ||
-					[[ "$browser" = "seamonkey" ]] ||
-					[[ "$browser" = "palemoon" ]] &&
-					suffix="-${item##*/}" ||
-					suffix=
-				if [[ -e "$DIR/.flagged" ]]; then
-					# all is well so continue
-					return
-				else
-					NOW=$(date +%Y%m%d_%H%M%S)
-					[[ -h "$DIR" ]] && unlink "$DIR"
-					if [[ -d "$BACKUP" ]]; then
-						[[ $CRRE -eq 1 ]] &&
-							cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
-						mv "$BACKUP" "$DIR"
-					fi
+	local browser suffix
+	for browser in $BROWSERS; do
+		set_which "$user" "$browser"
+		for item in "${DIRArr[@]}"; do
+			DIR="$item"
+			BACKUP="$item-backup"
+			[[ "$browser" = "firefox" ]] ||
+				[[ "$browser" = "firefox-trunk" ]] ||
+				[[ "$browser" = "heftig-aurora" ]] ||
+				[[ "$browser" = "icecat" ]] ||
+				[[ "$browser" = "seamonkey" ]] ||
+				[[ "$browser" = "palemoon" ]] &&
+				suffix="-${item##*/}" ||
+				suffix=
+			if [[ -e "$DIR/.flagged" ]]; then
+				# all is well so continue
+				return
+			else
+				NOW=$(date +%Y%m%d_%H%M%S)
+				[[ -h "$DIR" ]] && unlink "$DIR"
+				if [[ -d "$BACKUP" ]]; then
+					[[ $CRRE -eq 1 ]] &&
+						cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+					mv "$BACKUP" "$DIR"
 				fi
-			done
+			fi
 		done
 	done
 }
 
 cleanup() {
-	local browser user suffix
-	for user in $USERS; do
-		for browser in $BROWSERS; do
-			set_which "$user" "$browser"
-			for item in "${DIRArr[@]}"; do
-				DIR="$item"
-				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] ||
-					[[ "$browser" = "firefox-trunk" ]] ||
-					[[ "$browser" = "heftig-aurora" ]] ||
-					[[ "$browser" = "icecat" ]] ||
-					[[ "$browser" = "seamonkey" ]] ||
-					[[ "$browser" = "palemoon" ]] &&
-					suffix="-${item##*/}" || suffix=
-				if [[ -d "$DIR" ]]; then
-					ls "$item"-backup-crashrecovery* &>/dev/null
-					if [[ $? -eq 0  ]]; then
-						CRASHArr=("$item"-backup-crashrecovery*)
-						echo -e ${BLD}"Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR"${NRM}
-						for backup in "${CRASHArr[@]}"; do
-							echo -e ${BLD}${RED}" $backup"${NRM}
-							rm -rf "$backup"
-						done
-						unset CRASHArr
-					else
-						echo -e ${BLD}"Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}"${NRM}
-					fi
-					echo
+	local browser suffix
+	for browser in $BROWSERS; do
+		set_which "$user" "$browser"
+		for item in "${DIRArr[@]}"; do
+			DIR="$item"
+			BACKUP="$item-backup"
+			[[ "$browser" = "firefox" ]] ||
+				[[ "$browser" = "firefox-trunk" ]] ||
+				[[ "$browser" = "heftig-aurora" ]] ||
+				[[ "$browser" = "icecat" ]] ||
+				[[ "$browser" = "seamonkey" ]] ||
+				[[ "$browser" = "palemoon" ]] &&
+				suffix="-${item##*/}" || suffix=
+			if [[ -d "$DIR" ]]; then
+				ls "$item"-backup-crashrecovery* &>/dev/null
+				if [[ $? -eq 0  ]]; then
+					CRASHArr=("$item"-backup-crashrecovery*)
+					echo -e ${BLD}"Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR"${NRM}
+					for backup in "${CRASHArr[@]}"; do
+						echo -e ${BLD}${RED}" $backup"${NRM}
+						rm -rf "$backup"
+					done
+					unset CRASHArr
+				else
+					echo -e ${BLD}"Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}"${NRM}
 				fi
-			done
+				echo
+			fi
 		done
 	done
 }
@@ -345,7 +340,6 @@ set_which() {
 	# firefox from and aurora DIRArr is a full path corrected for both
 	# relative and absolute paths
 
-	local user=$1
 	local browser=$2
 
 	homedir="$(getent passwd $user | cut -d: -f6)"
@@ -356,11 +350,6 @@ set_which() {
 	PSNAME=
 	BACKUP=
 	DIR=
-
-	# skip homeless users
-	if [[ -z $homedir ]]; then
-		return
-	fi
 
 	case "$browser" in
 		conkeror.mozdev.org)
@@ -544,16 +533,14 @@ set_which() {
 running_check() {
 	# check for browsers running and refuse to start if so
 	# without this cannot guarantee profile integrity
-	local browser user
-	for user in $USERS; do
-		for browser in $BROWSERS; do
-			set_which "$user" "$browser"
-			if [[ -n "$PSNAME" ]] &&
-				pgrep -u "$user" "$PSNAME" &>/dev/null; then
-			echo "Refusing to start; $browser is running by $user!"
-			exit 1
-		fi
-	done
+	local browser
+	for browser in $BROWSERS; do
+		set_which "$user" "$browser"
+		if [[ -n "$PSNAME" ]] &&
+			pgrep -u "$user" "$PSNAME" &>/dev/null; then
+		echo "Refusing to start; $browser is running by $user!"
+		exit 1
+	fi
 done
 }
 
@@ -561,234 +548,226 @@ dup_check() {
 	# only for firefox, icecat, seamonkey, palemoon, and aurora
 	# the LAST directory in the profile MUST be unique
 	# make sure there are no duplicates in ~/.mozilla/<browser>/profiles.ini
-	local browser user
-	for user in $USERS; do
-		for browser in $BROWSERS; do
-			set_which "$user" "$browser"
-			if [[ "$browser" = "firefox" ]] ||
-				[[ "$browser" = "firefox-trunk" ]] ||
-				[[ "$browser" = "heftig-aurora" ]] ||
-				[[ "$browser" = "icecat" ]] ||
-				[[ "$browser" = "seamonkey" ]] ||
-				[[ "$browser" = "palemoon" ]]
-		then
-			if [[ -z "${DIRArr[@]}" ]]; then
-				# nothing to check
+	local browser
+	for browser in $BROWSERS; do
+		set_which "$user" "$browser"
+		if [[ "$browser" = "firefox" ]] ||
+			[[ "$browser" = "firefox-trunk" ]] ||
+			[[ "$browser" = "heftig-aurora" ]] ||
+			[[ "$browser" = "icecat" ]] ||
+			[[ "$browser" = "seamonkey" ]] ||
+			[[ "$browser" = "palemoon" ]]
+	then
+		if [[ -z "${DIRArr[@]}" ]]; then
+			# nothing to check
+			return
+		else
+			# browser is on system so check profiles
+			#
+			# check that the LAST DIRECTORY in the full path is unique
+			unique_count=$(echo ${DIRArr[@]##*/} |
+			sed 's/ /\n/g' | sort -u | wc -l)
+			if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
+				# no problems so do nothing
 				return
 			else
-				# browser is on system so check profiles
-				#
-				# check that the LAST DIRECTORY in the full path is unique
-				unique_count=$(echo ${DIRArr[@]##*/} |
-				sed 's/ /\n/g' | sort -u | wc -l)
-				if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
-					# no problems so do nothing
-					return
-				else
-					echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
-					# clip of the 'heftig-' to give correct path
-					[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"
-					echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.mozilla/$browser/profiles.ini${NRM}${BLD} to use psd."${NRM}
-					exit 1
-				fi
-			fi
-		elif [[ "$browser" = "palemoon" ]]
-		then
-			if [[ -z "${DIRArr[@]}" ]]; then
-				# nothing to check
-				return
-			else
-				# browser is on system so check profiles
-				#
-				# check that the LAST DIRECTORY in the full path is unique
-				unique_count=$(echo ${DIRArr[@]##*/} |
-				sed 's/ /\n/g' | sort -u | wc -l)
-				if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
-					# no problems so do nothing
-					return
-				else
-					echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
-					echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.moonchild productions/pale moon/profiles.ini${NRM}${BLD} to use psd."${NRM}
-					exit 1
-				fi
+				echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
+				# clip of the 'heftig-' to give correct path
+				[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"
+				echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.mozilla/$browser/profiles.ini${NRM}${BLD} to use psd."${NRM}
+				exit 1
 			fi
 		fi
-	done
+	elif [[ "$browser" = "palemoon" ]]
+	then
+		if [[ -z "${DIRArr[@]}" ]]; then
+			# nothing to check
+			return
+		else
+			# browser is on system so check profiles
+			#
+			# check that the LAST DIRECTORY in the full path is unique
+			unique_count=$(echo ${DIRArr[@]##*/} |
+			sed 's/ /\n/g' | sort -u | wc -l)
+			if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
+				# no problems so do nothing
+				return
+			else
+				echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
+				echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.moonchild productions/pale moon/profiles.ini${NRM}${BLD} to use psd."${NRM}
+				exit 1
+			fi
+		fi
+	fi
 done
 }
 
 kill_browsers() {
 	# check for browsers running and kill them to safely sync/unsync
 	# without this cannot guarantee profile integrity
-	local browser user
-	for user in $USERS; do
-		for browser in $BROWSERS; do
-			set_which "$user" "$browser"
+	local browser
+	for browser in $BROWSERS; do
+		set_which "$user" "$browser"
 
-			local x=1
-			while [[ $x -le 60 ]]; do
-				if [[ -n "$PSNAME" ]] &&
-					pgrep -u "$user" "$PSNAME" &>/dev/null
-			then
-				if [[ $x -le 5 ]]; then
-					pkill -SIGTERM -u "$user" "$PSNAME"
-				else
-					pkill -SIGKILL -u "$user" "$PSNAME"
-				fi
+		local x=1
+		while [[ $x -le 60 ]]; do
+			if [[ -n "$PSNAME" ]] &&
+				pgrep -u "$user" "$PSNAME" &>/dev/null
+		then
+			if [[ $x -le 5 ]]; then
+				pkill -SIGTERM -u "$user" "$PSNAME"
 			else
-				break
+				pkill -SIGKILL -u "$user" "$PSNAME"
 			fi
-			x=$(( $x + 1 ))
-			sleep .05
-		done
+		else
+			break
+		fi
+		x=$(( $x + 1 ))
+		sleep .05
 	done
 done
 }
 
 do_sync() {
-	touch "$DAEMON_FILE"
+	touch "$PID_FILE"
 
 	# make a snapshot of /etc/psd.conf and redefine its location to tmpfs while
 	# psd is running to keep any edits made to the live /etc/psd.conf from
 	# potentially orphaning the tmpfs copies thus preserving the data
-	[[ ! -f "${DAEMON_FILE}.conf" ]] && cp "$PSDCONF" "${DAEMON_FILE}.conf"
+	[[ ! -f "${PID_FILE}.conf" ]] &&
+		cp "$PSDCONF" "${PID_FILE}.conf"
 
-	local browser user
-	for user in $USERS; do
-		for browser in $BROWSERS; do
-			set_which "$user" "$browser"
-			for item in "${DIRArr[@]}"; do
-				DIR="$item"
-				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] ||
-					[[ "$browser" = "firefox-trunk" ]] ||
-					[[ "$browser" = "heftig-aurora" ]] ||
-					[[ "$browser" = "icecat" ]] ||
-					[[ "$browser" = "seamonkey" ]] ||
-					[[ "$browser" = "palemoon" ]] &&
-					suffix="-${item##*/}" ||
-					suffix=
-				TMP="$VOLATILE/$user-$browser$suffix"
-				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
-				TMPWK="$VOLATILE/.$user-$browser${suffix}"
+	local browser
+	for browser in $BROWSERS; do
+		set_which "$user" "$browser"
+		for item in "${DIRArr[@]}"; do
+			DIR="$item"
+			BACKUP="$item-backup"
+			[[ "$browser" = "firefox" ]] ||
+				[[ "$browser" = "firefox-trunk" ]] ||
+				[[ "$browser" = "heftig-aurora" ]] ||
+				[[ "$browser" = "icecat" ]] ||
+				[[ "$browser" = "seamonkey" ]] ||
+				[[ "$browser" = "palemoon" ]] &&
+				suffix="-${item##*/}" ||
+				suffix=
+			TMP="$VOLATILE/$user-$browser$suffix"
+			TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
+			TMPWK="$VOLATILE/.$user-$browser${suffix}"
 
-				# make tmpfs container
-				if [[ -d "$DIR" ]]; then
-					# retain permissions on sync target
-					PREFIXP=$(stat -c %a "$DIR")
-					[[ -r "$TMP" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMP"
+			# make tmpfs container
+			if [[ -d "$DIR" ]]; then
+				# retain permissions on sync target
+				PREFIXP=$(stat -c %a "$DIR")
+				[[ -r "$TMP" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMP"
 
-					if [[ $OLFS -eq 1 ]]; then
-						if [[ $OLFSVER -eq 23 ]]; then
-							[[ -r "$TMPRW" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPRW"
-							[[ -r "$TMPWK" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPWK"
-						elif [[ $OLFSVER -eq 22 ]]; then
-							[[ -r "$TMPRW" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPRW"
-						fi
-					fi
-
-					# backup target and link to tmpfs container
-					if [[ $(readlink "$DIR") != "$TMP" ]]; then
-						mv "$DIR" "$BACKUP"
-					fi
-
-					# sync the tmpfs targets to the disc
-					if [[ -e "$DIR"/.flagged ]]; then
-						rsync -aogX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
-					else
-						# initial sync
-						if [[ $OLFS -eq 1 ]]; then
-							if [[ $OLFSVER -eq 23 ]]; then
-								mount -t overlay overlaid -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
-							elif [[ $OLFSVER -eq 22 ]]; then
-								mount -t overlayfs overlaid -olowerdir="$BACKUP",upperdir="$TMPRW" "$TMP"
-							fi
-						else
-							# keep user from launching browser while rsync is active
-							rsync -aogX --inplace --no-whole-file "$BACKUP/" "$TMP"
-						fi
-
-						ln -s "$TMP" "$DIR"
-						chown -h $user:$group "$DIR"
-						touch "$DIR/.flagged"
-					fi
-				else
-					if [[ ! -d "$homedir" ]] ; then
-						echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
-						exit 1
-					elif [[ -d "$BACKUP" ]] ; then
-						echo -e "${RED}$DIR does not exist or is a broken symlink! Is $VOLATILE unmounted?${NRM}" >&2
-						exit 1
+				if [[ $OLFS -eq 1 ]]; then
+					if [[ $OLFSVER -eq 23 ]]; then
+						[[ -r "$TMPRW" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPRW"
+						[[ -r "$TMPWK" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPWK"
+					elif [[ $OLFSVER -eq 22 ]]; then
+						[[ -r "$TMPRW" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPRW"
 					fi
 				fi
-			done
+
+				# backup target and link to tmpfs container
+				if [[ $(readlink "$DIR") != "$TMP" ]]; then
+					mv "$DIR" "$BACKUP"
+				fi
+
+				# sync the tmpfs targets to the disc
+				if [[ -e "$DIR"/.flagged ]]; then
+					rsync -aogX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
+				else
+					# initial sync
+					if [[ $OLFS -eq 1 ]]; then
+						if [[ $OLFSVER -eq 23 ]]; then
+							sudo mount -t overlay overlaid -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
+						elif [[ $OLFSVER -eq 22 ]]; then
+							sudo mount -t overlayfs overlaid -olowerdir="$BACKUP",upperdir="$TMPRW" "$TMP"
+						fi
+					else
+						# keep user from launching browser while rsync is active
+						rsync -aogX --inplace --no-whole-file "$BACKUP/" "$TMP"
+					fi
+
+					ln -s "$TMP" "$DIR"
+					chown -h $user:$group "$DIR"
+					touch "$DIR/.flagged"
+				fi
+			else
+				if [[ ! -d "$homedir" ]] ; then
+					echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
+					exit 1
+				elif [[ -d "$BACKUP" ]] ; then
+					echo -e "${RED}$DIR does not exist or is a broken symlink! Is $VOLATILE unmounted?${NRM}" >&2
+					exit 1
+				fi
+			fi
 		done
 	done
 	echo -e "${BLD}Sync successful"${NRM}
 }
 
 do_unsync() {
-	rm -f "$DAEMON_FILE" "${DAEMON_FILE}.conf"
+	rm -f "$PID_FILE" "${PID_FILE}.conf"
 
-	local browser user
-	for user in $USERS; do
-		for browser in $BROWSERS; do
-			set_which "$user" "$browser"
-			for item in "${DIRArr[@]}"; do
-				DIR="$item"
-				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] ||
-					[[ "$browser" = "firefox-trunk" ]] ||
-					[[ "$browser" = "heftig-aurora" ]] ||
-					[[ "$browser" = "icecat" ]] ||
-					[[ "$browser" = "seamonkey" ]] ||
-					[[ "$browser" = "palemoon" ]] &&
-					suffix="-${item##*/}" ||
-					suffix=
+	local browser
+	for browser in $BROWSERS; do
+		set_which "$user" "$browser"
+		for item in "${DIRArr[@]}"; do
+			DIR="$item"
+			BACKUP="$item-backup"
+			[[ "$browser" = "firefox" ]] ||
+				[[ "$browser" = "firefox-trunk" ]] ||
+				[[ "$browser" = "heftig-aurora" ]] ||
+				[[ "$browser" = "icecat" ]] ||
+				[[ "$browser" = "seamonkey" ]] ||
+				[[ "$browser" = "palemoon" ]] &&
+				suffix="-${item##*/}" ||
+				suffix=
 
-				TMP="$VOLATILE/$user-$browser$suffix"
-				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
-				TMPWK="$VOLATILE/.$user-$browser${suffix}"
-				# check if user has browser profile
-				if [[ -h "$DIR" ]]; then
-					unlink "$DIR"
-					# this assumes that the backup is always updated so
-					# be sure to invoke a sync before an unsync
-					#
-					# restore original dirtree
-					[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
-					if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
-						umount -l "$TMP" &&
-							rm -rf "$TMP" "$TMPRW" "$TMPWK"
-					fi
-					[[ -d "$TMP" ]] && rm -rf "$TMP"
-					echo -e "${BLD}Unsync successful"${NRM}
-				else
-					if [[ ! -d "$homedir" ]] ; then
-						echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
-						exit 1
-					fi
+			TMP="$VOLATILE/$user-$browser$suffix"
+			TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
+			TMPWK="$VOLATILE/.$user-$browser${suffix}"
+			# check if user has browser profile
+			if [[ -h "$DIR" ]]; then
+				unlink "$DIR"
+				# this assumes that the backup is always updated so
+				# be sure to invoke a sync before an unsync
+				#
+				# restore original dirtree
+				[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
+				if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
+					sudo umount -l "$TMP" &&
+						rm -rf "$TMP" "$TMPRW" "$TMPWK"
 				fi
-			done
+				[[ -d "$TMP" ]] && rm -rf "$TMP"
+				echo -e "${BLD}Unsync successful"${NRM}
+			else
+				if [[ ! -d "$homedir" ]] ; then
+					echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
+					exit 1
+				fi
+			fi
 		done
 	done
 	echo -e "${BLD}Unsync successful"${NRM}
 }
 
 parse() {
-	if [[ -f /usr/lib/systemd/system/psd.service ]]; then
+	if [[ -f /usr/lib/systemd/user/psd.service ]]; then
 		# running systemd
-		psd_state=$(systemctl is-active psd)
-		resync_state=$(systemctl is-active psd-resync.timer)
+		psd_state=$(systemctl --user is-active psd)
+		resync_state=$(systemctl --user is-active psd.timer)
 		[[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
 		[[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
 		echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}."${NRM}
-		echo -e " ${BLD}Systemd resync service is currently ${resync_color}$resync_state${NRM}${BLD}."${NRM}
+		echo -e " ${BLD}Systemd timer is currently ${resync_color}$resync_state${NRM}${BLD}."${NRM}
 	else
 		# using other init system + cron job for resync
-		[[ -x /etc/cron.hourly/psd-update ]] && resync_state="present" || resync_state="not present"
 		[[ "$resync_state" = "present" ]] && resync_color=${GRN} || resync_color=${RED}
-		echo -e " ${BLD}Daemon pid file is $([[ -f $DAEMON_FILE ]] &&
+		echo -e " ${BLD}Daemon pid file is $([[ -f $PID_FILE ]] &&
 			echo -e ${GRN}present${NRM}${BLD} || echo -e ${RED}not present${NRM}${BLD})."${NRM}
 		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}."${NRM}
 	fi
@@ -796,68 +775,66 @@ parse() {
 		echo -e "${BLD} Overlayfs v$OLFSVER is currently ${GRN}active${NRM}${BLD}."${NRM} ||
 		echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}."${NRM}
 	echo
-	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD} settings:"${NRM}
+	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD}:"${NRM}
 	echo
-	local browser user
-	for user in $USERS; do
-		for browser in $BROWSERS; do
-			set_which "$user" "$browser"
-			for item in "${DIRArr[@]}"; do
-				DIR="$item"
-				BACKUP="$item-backup"
-				[[ "$browser" = "firefox" ]] ||
-					[[ "$browser" = "firefox-trunk" ]] ||
-					[[ "$browser" = "heftig-aurora" ]] ||
-					[[ "$browser" = "icecat" ]] ||
-					[[ "$browser" = "seamonkey" ]] ||
-					[[ "$browser" = "palemoon" ]] &&
-					suffix="-${item##*/}" ||
-					suffix=
-				TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
-				if [[ -d "$DIR" ]]; then
-					# first count up any crashrecovery dirs
-					ls "$item"-backup-crashrecovery* &>/dev/null
-					[[ $? -eq 0  ]] && CRASHArr=("$item"-backup-crashrecovery*)
-					# get permissions on profile dir and be smart about it since symlinks are all 777
-					[[ -f $DAEMON_FILE ]] && TRUEP=$(stat -c %a "$BACKUP") || TRUEP=$(stat -c %a "$DIR")
-					[[ $TRUEP -ne 700 ]] && warn=1
-					# profile dir size
-					psize=$(du -Lh --max-depth=0 "$DIR" 2>/dev/null | awk '{ print $1 }')
-					echo -en " ${BLD}browser/psname:"
-					echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
-					echo -en " ${BLD}owner/group id:"
-					echo -e "$(tput cr)$(tput cuf 17) $user/$group"${NRM}
-					echo -en " ${BLD}sync target:"
-					echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR"${NRM}
-					if [[ $warn -eq 1 ]]; then
-						echo -e "$(tput cr)$(tput cuf 17) ${RED} Permissions are $TRUEP on this profile."${NRM}
-						echo -e "$(tput cr)$(tput cuf 17) ${RED} Recommend a setting of 700 for increased privacy!"${NRM}
-						warn=
-					fi
-					echo -en " ${BLD}tmpfs dir:"
-					echo -e "$(tput cr)$(tput cuf 17) ${GRN}$VOLATILE/$user-$browser$suffix"${NRM}
-					echo -en " ${BLD}profile size:"
-					echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
-					if [[ $OLFS -eq 1 ]]; then
-						rwsize=$(du -Lh --max-depth=0 "$TMPRW" 2>/dev/null | awk '{ print $1 }')
-						echo -en " ${BLD}overlayfs size:"
-						echo -e "$(tput cr)$(tput cuf 17) $rwsize"${NRM}
-					fi
-					echo -en " ${BLD}recovery dirs:"
-					if [[ "${#CRASHArr[@]}" -eq 0 ]]; then
-						echo -e "$(tput cr)$(tput cuf 17) none"${NRM}
-					else
-						echo -e "$(tput cr)$(tput cuf 17) ${RED}${#CRASHArr[@]}${NRM}${BLD} <- delete with the c option"${NRM}
-						for backup in "${CRASHArr[@]}"; do
-							psize=$(du -Lh --max-depth=0 "$backup" 2>/dev/null | awk '{ print $1 }')
-							echo -en " ${BLD} dir path/size:"
-							echo -e "$(tput cr)$(tput cuf 17) ${BLU}$backup ${NRM}${BLD}($psize)"${NRM} 
-						done
-					fi
-					unset CRASHArr
-					echo
+	local browser
+	for browser in $BROWSERS; do
+		set_which "$user" "$browser"
+		for item in "${DIRArr[@]}"; do
+			DIR="$item"
+			BACKUP="$item-backup"
+			[[ "$browser" = "firefox" ]] ||
+				[[ "$browser" = "firefox-trunk" ]] ||
+				[[ "$browser" = "heftig-aurora" ]] ||
+				[[ "$browser" = "icecat" ]] ||
+				[[ "$browser" = "seamonkey" ]] ||
+				[[ "$browser" = "palemoon" ]] &&
+				suffix="-${item##*/}" ||
+				suffix=
+			TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
+			if [[ -d "$DIR" ]]; then
+				# first count up any crashrecovery dirs
+				ls "$item"-backup-crashrecovery* &>/dev/null
+				[[ $? -eq 0  ]] && CRASHArr=("$item"-backup-crashrecovery*)
+				# get permissions on profile dir and be smart about it since symlinks are all 777
+				[[ -f $PID_FILE ]] && TRUEP=$(stat -c %a "$BACKUP") || TRUEP=$(stat -c %a "$DIR")
+				[[ $TRUEP -ne 700 ]] && warn=1
+				# profile dir size
+				psize=$(du -Lh --max-depth=0 "$DIR" 2>/dev/null | awk '{ print $1 }')
+				echo -en " ${BLD}browser/psname:"
+				echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
+				echo -en " ${BLD}owner/group id:"
+				echo -e "$(tput cr)$(tput cuf 17) $user/$group"${NRM}
+				echo -en " ${BLD}sync target:"
+				echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR"${NRM}
+				if [[ $warn -eq 1 ]]; then
+					echo -e "$(tput cr)$(tput cuf 17) ${RED} Permissions are $TRUEP on this profile."${NRM}
+					echo -e "$(tput cr)$(tput cuf 17) ${RED} Recommend a setting of 700 for increased privacy!"${NRM}
+					warn=
 				fi
-			done
+				echo -en " ${BLD}tmpfs dir:"
+				echo -e "$(tput cr)$(tput cuf 17) ${GRN}$VOLATILE/$user-$browser$suffix"${NRM}
+				echo -en " ${BLD}profile size:"
+				echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
+				if [[ $OLFS -eq 1 ]]; then
+					rwsize=$(du -Lh --max-depth=0 "$TMPRW" 2>/dev/null | awk '{ print $1 }')
+					echo -en " ${BLD}overlayfs size:"
+					echo -e "$(tput cr)$(tput cuf 17) $rwsize"${NRM}
+				fi
+				echo -en " ${BLD}recovery dirs:"
+				if [[ "${#CRASHArr[@]}" -eq 0 ]]; then
+					echo -e "$(tput cr)$(tput cuf 17) none"${NRM}
+				else
+					echo -e "$(tput cr)$(tput cuf 17) ${RED}${#CRASHArr[@]}${NRM}${BLD} <- delete with the c option"${NRM}
+					for backup in "${CRASHArr[@]}"; do
+						psize=$(du -Lh --max-depth=0 "$backup" 2>/dev/null | awk '{ print $1 }')
+						echo -en " ${BLD} dir path/size:"
+						echo -e "$(tput cr)$(tput cuf 17) ${BLU}$backup ${NRM}${BLD}($psize)"${NRM} 
+					done
+				fi
+				unset CRASHArr
+				echo
+			fi
 		done
 	done
 }
@@ -870,31 +847,46 @@ case "$1" in
 		dep_check && config_check && dup_check && header && cleanup
 		;;
 	sync)
-		[[ ! -f $DAEMON_FILE ]] && root_check && dep_check && config_check && 
-		dup_check && running_check && ungraceful_state_check
-		do_sync
+		if [[ ! -f $PID_FILE ]]; then
+			dep_check
+			config_check
+			dup_check
+			running_check
+			ungraceful_state_check
+			do_sync
+		fi
 		;;
 	resync)
-		[[ -f $DAEMON_FILE ]] && root_check && do_sync
+		if [[ -f $PID_FILE ]]; then
+			do_sync
+		else
+			dep_check
+			config_check
+			dup_check
+			running_check
+			ungraceful_state_check
+			do_sync
+		fi
 		;;
 	unsync)
-		[[ -f $DAEMON_FILE ]] && root_check && do_sync && kill_browsers
-		do_unsync
+		if [[ -f $PID_FILE ]]; then
+			do_sync
+			kill_browsers
+			do_unsync
+		fi
 		;;
 	*)
 		header
 		echo -e " ${BLD}$0 ${NRM}${GRN}[option]${NRM}"
 		echo -e " ${BLD} ${NRM}${GRN}preview${NRM}${BLD}	Parse config file (${NRM}${BLU}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed."${NRM}
 		echo -e " ${BLD} ${NRM}${GRN}clean${NRM}${BLD}		Clean (delete without prompting) ALL crashrecovery dirs for all profiles."${NRM}
-		echo -e " ${BLD} ${NRM}${RED}resync${NRM}${BLD}	Synchronize the tmpfs and media bound copy. Must be run as root user and NOT recommended."${NRM}
-		echo -e " ${BLD} ${NRM}${RED}sync${NRM}${BLD}		Force a manual sync. Must be run as root user and NOT recommended."${NRM}
-		echo -e " ${BLD} ${NRM}${RED}unsync${NRM}${BLD}	Force a manual unsync. Must be run as root user and NOT recommended."${NRM}
 		echo
-		echo -e " ${BLD}It is ${RED}HIGHLY DISCOURAGED${NRM}${BLD} to directly call $0 to sync or to unsync."${NRM}
-		if [[ -f /usr/lib/systemd/system/psd.service ]]; then
+		echo -e " ${BLD}It is ${RED}HIGHLY DISCOURAGED${NRM}${BLD} to directly call $0 to sync, resync, or to unsync."${NRM}
+		echo
+		if [[ -f /usr/lib/systemd/user/psd.service ]]; then
 			echo -e " ${BLD}Instead, use systemd to start/stop profile-sync-daemon."${NRM}
 			echo
-			echo -e " ${BLD}systemctl ${NRM}${GRN}[option]${NRM}${BLD} psd psd-resync"${NRM}
+			echo -e " ${BLD}systemctl --user ${NRM}${GRN}[option]${NRM}${BLD} psd psd-resync"${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}		Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}stop${NRM}${BLD}		Turn off daemon; remove symlinks and rotate tmpfs data back to disc."${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}enable${NRM}${BLD}	Autostart daemon when system comes up."${NRM}
