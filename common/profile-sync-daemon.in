@@ -161,10 +161,10 @@ config_check() {
 		# user must have sudo rights to call /usr/bin/mount
 		# and /usr/bin/umount to use overlay mode
 
-		sudo -n mount &>/dev/null
+		sudo -kn mount &>/dev/null
 		[[ $? -ne 0 ]] && FAILCODE=1
 
-		sudo -n umount -V &>/dev/null
+		sudo -kn umount -V &>/dev/null
 		[[ $? -ne 0 ]] && FAILCODE=2
 
 		if [[ $FAILCODE -ne 0 ]]; then
