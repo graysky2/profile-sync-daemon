@@ -154,6 +154,13 @@ dep_check() {
 		echo -e " ${BLD}to use psd's in overlay mode. Cannot find either in your kernel so compile it in and"${NRM}
 		echo -e " ${BLD}try again or remove the option from ${BLU}$PSDCONF${NRM}${BLD}. ${RED}Aborting!"${NRM} >&2; exit 1;}
 	fi
+
+	if [[ -f /etc/psd.conf ]]; then
+		echo -e "${BLD} This version of psd does not support /etc/psd.conf since it runs as your user."${NRM}
+		echo -e "${BLD} Recommend that you remove /etc/psd.conf and run it in systemd's user mode:"${NRM}
+		echo -e "${BLD}   systemd --user <action> psd.service"${NRM}
+		exit 1
+	fi
 }
 
 config_check() {
