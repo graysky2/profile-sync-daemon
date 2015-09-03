@@ -1,8 +1,22 @@
 #Profile-sync-daemon
 Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browser's profile in tmpfs and to periodically sync it back to your physical disc (HDD/SSD). This is accomplished via a symlinking step and an innovative use of rsync to maintain back-up and synchronization between the two. One of the major design goals of psd is a completely transparent user experience.
 
-##NOTE
+##NOTE FOR VERSION 6
 My desktop distro (Arch) switched to systemd a while ago and other big ones (Fedora, Debian, Ubuntu) have followed suite. With the release of psd version 6.x I will no longer be supporting alternative init systems such as upstart and openrc. It is to complex for me to maintain and test multiple configurations on non-native init systems for me.
+
+Also of note for version 6.x is that no longer does psd run in as a system service. It now runs as a user service.
+This is much more simple and means that:
+* There is no more need for /etc/psd.conf and the USERS array therein.
+* Different users can have their own config files that THEY own (~/.psd/psd.conf).
+* Encrypted $HOME should be supported under this model.
+
+Update instructions from version 5.x:
+* Stop psd v5.7x and close your browsers.
+* Build the package linked above and install it.
+* Run psd to create your ~/.psd/psd.conf and then edit it as you normally would.
+* Check it in parse mode `psd p` and if happy with the output, run it via systemd usermode: `systemctl --user start psd` (and optionally enable it).
+
+Note that if you're using overlayfs mode, your user needs to have sudo right to /usr/bin/mount and /usr/bin/umount or else psd will refuse to run in overlayfs mode.
 
 ##Supported Browsers
 * Chromium
@@ -37,7 +51,6 @@ To build from source, see the included INSTALL text document.
 * ![logo](http://cloud.ohloh.net/attachments/14589/me_small.png "exherbo logo")Exherbo: in the official [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
 * ![logo](http://s9.postimg.org/p5f1tscxn/fedora.jpg "fedora logo")Fedora: in the official [repos](http://koji.fedoraproject.org/koji/packageinfo?packageID=16307).
 * ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo: in the official [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
-* ![logo](http://s29.postimg.org/ofjg812er/nixos_logo_small.png "nixos logo")NixOS: in the official  [repos](https://github.com/graysky2/profile-sync-daemon#nixos-users).
 * ![logo](http://s23.postimg.org/5pabe2o5z/void_logo_transparent.png "void logo")Void: in the official [repos](https://github.com/xtraeme/xbps-packages/tree/master/srcpkgs/profile-sync-daemon).
 
 ### User Packaged
@@ -62,24 +75,6 @@ To add the PPA (personal package archive) to your Debian system; do the followin
 Since June of 2013, Profile-sync-daemon is in the official repo. [Reference](https://bugzilla.redhat.com/show_bug.cgi?id=968253).
 
     sudo yum install profile-sync-daemon
-
-###NixOS Users
-Currently, you need to be tracking `nixos-unstable`:
-
-    nix-channel --add http://nixos.org/channels/nixos-unstable nixos
-    nixos-rebuild switch --upgrade
-
-The NixOS module looks for a `services.psd` attribute set in your
-`configuration.nix` (run `nixos-help` for all options):
-
-      services.psd = {
-        enable = true;
-        users = [ "user42" "other_user" ];      # At least one is required
-        browsers = [ "firefox" "chromium" ];    # Leave blank to enable all
-        useOverlayFS = true; # set to true to enable overlayfs or set to false to use the default sync mode
-      };
-
-Then rebuild your system configuration with `nixos-rebuild switch`.
 
 ###Ubuntu Users
 You must be using AT LEAST Ubuntu 15.04 (Vivid) or have systemd as your init system to use these packages!
