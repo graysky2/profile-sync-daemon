@@ -8,7 +8,7 @@ BUILDING
 
  $ make
 
- Running a `make install` as root will distribute the files to the file-
+ Running a `make install` as root will distribute the files to the filesystem.
  
  # make install
 
@@ -31,35 +31,10 @@ USE A DISTRO PROVIDED PACKAGE
  Mint 18.0+ ???
  Ubuntu 15.04+
 
- EXHERBO
- Exherbo users can build the package directly with the provided ebuild here:
- http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon
-
  FEDORA
  Fedora users may use the official Fedora repositories to install psd. Approval
  has been granted for inclusion on 01-Jun-2013[1].
  1. https://bugzilla.redhat.com/show_bug.cgi?id=968253
-
- GENTOO
- Gentoo users can build the package directly with the provided ebuild:
- http://packages.gentoo.org/package/www-misc/profile-sync-daemon
-
- NIXOS
- Users of NixOS <14.12 (currently unreleased) MUST be tracking nixos-unstable;
- this will change once version 14.12 is finalized:
-
- nix-channel --add http://nixos.org/channels/nixos-unstable nixos
- nixos-rebuild switch --upgrade
-
- Now add the following to your configuration.nix:
-
- services.psd = {
-   enable = true; users = [ "facade" "debbie" ]; # At least one users
-   browsers = [ "chromium" "firefox" ]; # Leave blank to enable all
-   useOverlayFS = true; # set to true to enable overlayfs
- };
-
- Finally, rebuild with: the nixos-rebuild switch.
 
  VOID LINUX
  Void users can download the package directly from the official repos.
