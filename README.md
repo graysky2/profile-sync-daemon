@@ -7,7 +7,7 @@ My desktop distro (Arch) switched to systemd a while ago and other big ones (Fed
 Also of note for version 6.x is that no longer does psd run in as a system service. It now runs as a user service.
 This is much more simple and means that:
 * There is no more need for `/etc/psd.conf` and the USERS array therein.
-* Different users can have their own config files that THEY own (~/.psd/psd.conf).
+* Different users can have their own config files that THEY own (`~/.psd/psd.conf`).
 * Encrypted $HOME should be supported under this model.
 
 Update instructions from version 5.x:
