@@ -8,7 +8,7 @@ Also of note for version 6.x is that no longer does psd run in as a system servi
 This is much more simple and means that:
 * There is no more need for `/etc/psd.conf` and the USERS array therein.
 * Different users can have their own config files that THEY own (`~/.psd/psd.conf`).
-* Encrypted $HOME should be supported under this model.
+* Encrypted $HOME should be supported under this model (NOT yet implemented).
 
 Update instructions from version 5.x:
 * Stop psd v5.7x and close your browsers.
