@@ -6,14 +6,14 @@ My desktop distro (Arch) switched to systemd a while ago and other big ones (Fed
 
 Also of note for version 6.x is that no longer does psd run in as a system service. It now runs as a user service.
 This is much more simple and means that:
-* There is no more need for /etc/psd.conf and the USERS array therein.
+* There is no more need for `/etc/psd.conf` and the USERS array therein.
 * Different users can have their own config files that THEY own (~/.psd/psd.conf).
 * Encrypted $HOME should be supported under this model.
 
 Update instructions from version 5.x:
 * Stop psd v5.7x and close your browsers.
 * Build the package linked above and install it.
-* Run psd to create your ~/.psd/psd.conf and then edit it as you normally would.
+* Run psd to create your `~/.psd/psd.conf` and then edit it as you normally would.
 * Check it in parse mode `psd p` and if happy with the output, run it via systemd usermode: `systemctl --user start psd` (and optionally enable it).
 
 Note that if you're using overlayfs mode, your user needs to have sudo right to /usr/bin/mount and /usr/bin/umount or else psd will refuse to run in overlayfs mode.
