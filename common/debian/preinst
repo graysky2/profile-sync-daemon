@@ -19,16 +19,17 @@ case "$1" in
 			mv /etc/psd.conf /etc/psd.conf.old
 		fi
 		
-		systemctl daemon-reload &>/dev/null
+		systemctl daemon-reload
+
 		;;
 
 	abort-upgrade)
+		/bin/true
 		;;
 
 	*)
 		echo "preinst called with unknown argument \`$1'" >&2
-		exit 0
+		exit 1
 		;;
 esac
-
 exit 0
