@@ -15,6 +15,10 @@ case "$1" in
 		if [ -h /etc/systemd/system/multi-user.target.wants/psd.service ]; then
 			rm -f /etc/systemd/system/multi-user.target.wants/psd.service
 		fi
+
+		if [ -f /etc/psd.conf ]; then
+			mv /etc/psd.conf /etc/psd.conf.old
+		fi
 		;;
 
 	abort-upgrade)
