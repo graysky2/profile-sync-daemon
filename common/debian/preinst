@@ -4,6 +4,7 @@ set -e
 
 case "$1" in
 	install|upgrade)
+		systemctl daemon-reload &>/dev/null
 
 		# version 6 is a user daemon so clear out old system level files
 
@@ -20,6 +21,7 @@ case "$1" in
 			mv /etc/psd.conf /etc/psd.conf.old
 		fi
 		;;
+
 
 	abort-upgrade)
 		;;
