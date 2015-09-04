@@ -18,10 +18,9 @@ case "$1" in
 		if [ -f /etc/psd.conf ]; then
 			mv /etc/psd.conf /etc/psd.conf.old
 		fi
-		;;
 		
-		# refresh so the system daemon is no longer available
 		systemctl daemon-reload &>/dev/null
+		;;
 
 	abort-upgrade)
 		;;
