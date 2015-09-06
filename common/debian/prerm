@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+set -x
 # summary of how this script can be called:
 #        * <prerm> `remove'
 #        * <old-prerm> `upgrade' <new-version>
@@ -14,15 +15,13 @@ set -e
 case "$1" in
 	remove)
 		for i in $(users); do
-			running="$(su $i -c 'XDG_RUNTIME_DIR=/run/user/$UID systemctl --user is-active psd')"
-			return 0
-			if [[ "$running" = "active" ]]; then
-				return 0
+			if [ "$(su $i -c 'XDG_RUNTIME_DIR=/run/user/$UID systemctl --user is-active psd')" = "active" ]; then
 				echo "--> In order to preserve your profiles, pacman will now stop your psd service."
 				echo "--> Any running and managed browsers will be exited."
 				su $i -c 'XDG_RUNTIME_DIR=/run/user/$UID systemctl --user stop psd.service'
 				su $i -c 'XDG_RUNTIME_DIR=/run/user/$UID systemctl --user disable psd.service'
 			fi
+			return 0
 		done
 		;;
 	upgrade|failed-upgrade)
