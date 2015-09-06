@@ -15,7 +15,9 @@ case "$1" in
 	remove)
 		for i in $(users); do
 			running="$(su $i -c 'XDG_RUNTIME_DIR=/run/user/$UID systemctl --user is-active psd')"
+			return 0
 			if [[ "$running" = "active" ]]; then
+				return 0
 				echo "--> In order to preserve your profiles, pacman will now stop your psd service."
 				echo "--> Any running and managed browsers will be exited."
 				su $i -c 'XDG_RUNTIME_DIR=/run/user/$UID systemctl --user stop psd.service'
