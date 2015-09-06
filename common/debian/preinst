@@ -6,13 +6,13 @@ case "$1" in
 	install|upgrade)
 		# version 6 is a user daemon so clear out old system level files
 
-		[[ "$(systemctl is-active psd)" = "active" ]] &&
+		[ "$(systemctl is-active psd)" = "active" ] &&
 			systemctl stop psd &>/dev/null
 	
-		[[ -h /etc/systemd/system/multi-user.target.wants/psd.service ]] &&
+		[ -h /etc/systemd/system/multi-user.target.wants/psd.service ] &&
 			rm -f /etc/systemd/system/multi-user.target.wants/psd.service
 
-		[[ -f /etc/psd.conf ]] &&
+		[ -f /etc/psd.conf ] &&
 			mv /etc/psd.conf /etc/psd.conf.old
 		
 		systemctl daemon-reload
