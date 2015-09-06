@@ -1,7 +1,5 @@
 #!/bin/sh
-
 set -e
-set -x
 case "$1" in
 	install|upgrade)
 		# version 6 is a user daemon so clear out old system level files
