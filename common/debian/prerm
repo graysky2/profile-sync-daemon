@@ -19,6 +19,7 @@ case "$1" in
 				echo "--> In order to preserve your profiles, pacman will now stop your psd service."
 				echo "--> Any running and managed browsers will be exited."
 				su $i -c 'XDG_RUNTIME_DIR=/run/user/$UID systemctl --user stop psd.service'
+				su $i -c 'XDG_RUNTIME_DIR=/run/user/$UID systemctl --user disable psd.service'
 			fi
 		done
 		;;
