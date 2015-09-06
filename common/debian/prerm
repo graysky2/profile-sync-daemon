@@ -13,10 +13,14 @@ set -e
 
 case "$1" in
 	remove)
-		echo "If you have psd running and remove it, your profile(s) can be found"
-		echo "in their native directories with the -backup extension."
-		echo
-		echo "You will need to manually rename them."
+		for i in $(users); do
+			running="$(su $i -c 'XDG_RUNTIME_DIR=/run/user/$UID systemctl --user is-active psd')"
+			if [[ "$running" = "active" ]]; then
+				echo "--> In order to preserve your profiles, pacman will now stop your psd service."
+				echo "--> Any running and managed browsers will be exited."
+				su $i -c 'XDG_RUNTIME_DIR=/run/user/$UID systemctl --user stop psd.service'
+			fi
+		done
 		;;
 	upgrade|failed-upgrade)
 		/bin/true
