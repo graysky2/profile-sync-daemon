@@ -1,0 +1,2 @@
+DIRArr[0]="$homedir/.config/$browser"
+PSNAME="$browser"

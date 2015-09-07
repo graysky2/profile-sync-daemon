@@ -1,0 +1,4 @@
+# version 26 moved the profile dir but keep this for older versions
+DIRArr[0]="$homedir/.$browser"
+DIRArr[1]="$homedir/.config/$browser"
+PSNAME="$browser"

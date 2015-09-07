@@ -1,0 +1,17 @@
+if [[ -d $homedir/.moonchild\ productions/pale\ moon ]]; then
+    profileArr=( $(grep '[P,p]'ath= $homedir/.moonchild\ productions/pale\ moon/profiles.ini |
+    sed 's/[P,p]ath=//') )
+    index=0
+    PSNAME="$browser"
+    for profileItem in ${profileArr[@]}; do
+        if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
+            # path is not relative
+            DIRArr[index]="$profileItem"
+        else
+            # we need to append the default path to give a
+            # fully qualified path
+            DIRArr[index]="$homedir/.moonchild productions/pale moon/$profileItem"
+        fi
+        index=$index+1
+    done
+fi

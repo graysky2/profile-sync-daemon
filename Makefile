@@ -18,6 +18,7 @@ INSTALL_PROGRAM = $(INSTALL) -m755
 INSTALL_SCRIPT = $(INSTALL) -m755
 INSTALL_DATA = $(INSTALL) -m644
 INSTALL_DIR = $(INSTALL) -d
+RSYNC = rsync -a
 
 Q = @
 
@@ -34,6 +35,7 @@ install-bin: common/$(PN)
 	$(INSTALL_DATA) common/zsh-completion "$(DESTDIR)/$(ZSHDIR)/_psd"
 	$(INSTALL_DIR) "$(DESTDIR)$(DOCDIR)"
 	$(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(DOCDIR)/psd.conf"
+	$(RSYNC)		common/browsers/ "$(DESTDIR)$(DOCDIR)/browsers/"
 
 install-man:
 	$(Q)echo -e '\033[1;32mInstalling manpage...\033[0m'
@@ -59,7 +61,9 @@ uninstall-bin:
 	$(RM) "$(DESTDIR)$(BINDIR)/psd"
 	$(RM) "$(DESTDIR)$(ZSHDIR)/_psd"
 	$(RM) "$(DESTDIR)$(DOCDIR)/psd.conf"
+	$(RM) -rf "$(DESTDIR)$(DOCDIR)/browsers"
 	rmdir "$(DESTDIR)$(DOCDIR)"
+
 
 uninstall-man:
 	$(RM) -f "$(DESTDIR)$(MANDIR)/$(PN).1.gz"
