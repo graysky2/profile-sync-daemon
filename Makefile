@@ -52,7 +52,8 @@ install-systemd:
 	$(Q)echo -e '\033[1;32mInstalling systemd files...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(INITDIR_SYSTEMD)"
 	$(INSTALL_DATA) init/psd.service "$(DESTDIR)$(INITDIR_SYSTEMD)/psd.service"
-	$(INSTALL_DATA) init/psd.timer "$(DESTDIR)$(INITDIR_SYSTEMD)/psd.timer"
+	$(INSTALL_DATA) init/psd-resync.service "$(DESTDIR)$(INITDIR_SYSTEMD)/psd-resync.service"
+	$(INSTALL_DATA) init/psd-resync.timer "$(DESTDIR)$(INITDIR_SYSTEMD)/psd-resync.timer"
 
 install: install-bin install-man install-systemd
 
@@ -73,7 +74,8 @@ uninstall-man:
 
 uninstall-systemd:
 	$(RM) "$(DESTDIR)$(INITDIR_SYSTEMD)/psd.service"
-	$(RM) "$(DESTDIR)$(INITDIR_SYSTEMD)/psd.timer"
+	$(RM) "$(DESTDIR)$(INITDIR_SYSTEMD)/psd-resync.service"
+	$(RM) "$(DESTDIR)$(INITDIR_SYSTEMD)/psd-resync.timer"
 
 uninstall: uninstall-bin uninstall-man uninstall-systemd
 
