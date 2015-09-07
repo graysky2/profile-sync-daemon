@@ -478,7 +478,7 @@ parse() {
 	if [[ -f /usr/lib/systemd/user/psd.service ]]; then
 		# running systemd
 		psd_state=$(systemctl --user is-active psd)
-		resync_state=$(systemctl --user is-active psd.timer)
+		resync_state=$(systemctl --user is-active psd-resync.timer)
 		[[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
 		[[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
 		echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}."${NRM}
