@@ -1,0 +1,6 @@
+[Unit]
+Description=Timer for profile-sync-daemon - 1Hour
+PartOf=psd-resync.service psd.service
+
+[Timer]
+OnUnitActiveSec=1h
