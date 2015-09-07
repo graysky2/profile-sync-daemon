@@ -17,19 +17,19 @@ HOME="$(getent passwd $user | cut -d: -f6)"
 PSDCONFDIR="$HOME/.psd"
 PSDCONF="$PSDCONFDIR/psd.conf"
 PID_FILE="$PSDCONFDIR/.$user@$(hostname).pid"
-DOCDIR=/usr/share/doc/psd
+DOCDIR="/usr/share/doc/psd"
 
 # Setup check for config file
 if [[ -f "$PSDCONF" ]]; then
 	. $PSDCONF
 else
 	mkdir -p "$PSDCONFDIR"
-	if [[ -f ${DOCDIR}/psd.conf ]]; then
-		cp ${DOCDIR}/psd.conf "$PSDCONFDIR"
+	if [[ -f "$DOCDIR/psd.conf" ]]; then
+		cp "$DOCDIR/psd.conf" "$PSDCONFDIR"
 		echo -e " First time running psd so please edit ${BLU}$PSDCONF${NRM}${BLD} to your liking and run again."${NRM}
 		exit 0
 	else
-		echo -e " Missing ${BLU}${DOCDIR}${NRM}${BLD} - reinstall the package to use profile-sync-daemon."
+		echo -e " Missing ${BLU}$DOCDIR${NRM}${BLD} - reinstall the package to use profile-sync-daemon."
 		exit 1
 	fi
 fi
@@ -41,13 +41,14 @@ if [[ -f "${PID_FILE}.conf" ]]; then
 fi
 
 # all supported browsers
-ALL_BROWSERS=( $(ls ${DOCDIR}/browsers/) )
+ALL_BROWSERS=( $(ls "${DOCDIR}/browsers/") )
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
-if [[ -z "$VOLATILE" ]]; then
-	VOLATILE="/tmp"
-	# For security reason try to use user's tmpfs mount point
-	mountpoint -q /run/user/$UID && VOLATILE=/run/user/$UID
+# prefer using $XDG_RUNTIME_DIR for VOLATILE but fall-back to config value
+if [[ -n "$XDG_RUNTIME_DIR" ]]; then
+	VOLATILE="$XDG_RUNTIME_DIR"
+else
+	[[ -z "$VOLATILE" ]] &&  VOLATILE="/tmp"
 fi
 
 # simple function to determine user intent rather than using a null value
@@ -164,7 +165,7 @@ config_check() {
 	fi
 
 	for browser in $(echo "$BROWSERS"); do
-		if [ -f ${DOCDIR}/browsers/$browser ]; then
+		if [[ -f "$DOCDIR/browsers/$browser" ]]; then
 			return;
 		else
 			# user defined an invalid browser
@@ -244,8 +245,8 @@ set_which() {
 	BACKUP=
 	DIR=
 
-	[ -f ${DOCDIR}/browsers/$browser ] &&
-		. ${DOCDIR}/browsers/$browser
+	[[ -f "$DOCDIR/browsers/$browser" ]] &&
+		. "$DOCDIR/browsers/$browser"
 }
 
 running_check() {
@@ -349,7 +350,7 @@ done
 do_sync() {
 	touch "$PID_FILE"
 
-	# make a snapshot of ~/.psd/psd.conf and redefine its location to snapshot while
+	# make a snapshot of ~/.psd/psd.conf and redefine its location to tmpfs while
 	# psd is running to keep any edits made to the live ~/.psd/psd.conf from
 	# potentially orphaning the snapshot copies thus preserving the data
 	[[ ! -f "${PID_FILE}.conf" ]] &&
@@ -516,7 +517,13 @@ parse() {
 				[[ $? -eq 0  ]] && CRASHArr=("$item"-backup-crashrecovery*)
 				# get permissions on profile dir and be smart about it since symlinks are all 777
 				[[ -f $PID_FILE ]] && TRUEP=$(stat -c %a "$BACKUP") || TRUEP=$(stat -c %a "$DIR")
-				[[ $TRUEP -ne 700 ]] && warn=1
+				# since $XDG_RUNTIME_DIR is 700 by default so pass on by
+				if [[ "$VOLATILE" = "$XDG_RUNTIME_DIR" ]]; then
+					warn=
+				else
+					# using something other than $XDG_RUNTIME_DIR so check for privacy
+					[[ $TRUEP -ne 700 ]] && warn=1
+				fi
 				# profile dir size
 				psize=$(du -Lh --max-depth=0 "$DIR" 2>/dev/null | awk '{ print $1 }')
 				echo -en " ${BLD}browser/psname:"
