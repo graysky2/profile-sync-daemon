@@ -70,7 +70,11 @@ vivaldi-snapshot
 )
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
-[[ -z "$VOLATILE" ]] && VOLATILE="/tmp"
+if [[ -z "$VOLATILE" ]]; then
+	VOLATILE="/tmp"
+	# For security reason try to use user's tmpfs mount point
+	mountpoint -q /run/user/$UID && VOLATILE=/run/user/$UID
+fi
 
 # simple function to determine user intent rather than using a null value
 case "${USE_OVERLAYFS,,}" in
@@ -836,7 +840,7 @@ parse() {
 					for backup in "${CRASHArr[@]}"; do
 						psize=$(du -Lh --max-depth=0 "$backup" 2>/dev/null | awk '{ print $1 }')
 						echo -en " ${BLD} dir path/size:"
-						echo -e "$(tput cr)$(tput cuf 17) ${BLU}$backup ${NRM}${BLD}($psize)"${NRM} 
+						echo -e "$(tput cr)$(tput cuf 17) ${BLU}$backup ${NRM}${BLD}($psize)"${NRM}
 					done
 				fi
 				unset CRASHArr
