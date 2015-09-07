@@ -17,15 +17,15 @@ HOME="$(getent passwd $user | cut -d: -f6)"
 PSDCONFDIR="$HOME/.psd"
 PSDCONF="$PSDCONFDIR/psd.conf"
 PID_FILE="$PSDCONFDIR/.$user@$(hostname).pid"
-DOCDIR=/usr/share/doc/psd
+DOCDIR="/usr/share/doc/psd"
 
 # Setup check for config file
 if [[ -f "$PSDCONF" ]]; then
 	. $PSDCONF
 else
 	mkdir -p "$PSDCONFDIR"
-	if [[ -f ${DOCDIR}/psd.conf ]]; then
-		cp ${DOCDIR}/psd.conf "$PSDCONFDIR"
+	if [[ -f "${DOCDIR}/psd.conf" ]]; then
+		cp "${DOCDIR}/psd.conf" "$PSDCONFDIR"
 		echo -e " First time running psd so please edit ${BLU}$PSDCONF${NRM}${BLD} to your liking and run again."${NRM}
 		exit 0
 	else
@@ -41,7 +41,7 @@ if [[ -f "${PID_FILE}.conf" ]]; then
 fi
 
 # all supported browsers
-ALL_BROWSERS=( $(ls ${DOCDIR}/browsers/) )
+ALL_BROWSERS=( $(ls "${DOCDIR}/browsers/") )
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
 if [[ -z "$VOLATILE" ]]; then
@@ -164,7 +164,7 @@ config_check() {
 	fi
 
 	for browser in $(echo "$BROWSERS"); do
-		if [ -f ${DOCDIR}/browsers/$browser ]; then
+		if [[ -f "${DOCDIR}/browsers/$browser" ]]; then
 			return;
 		else
 			# user defined an invalid browser
@@ -244,8 +244,8 @@ set_which() {
 	BACKUP=
 	DIR=
 
-	[ -f ${DOCDIR}/browsers/$browser ] &&
-		. ${DOCDIR}/browsers/$browser
+	[[ -f "${DOCDIR}/browsers/$browser" ]] &&
+		. "${DOCDIR}/browsers/$browser"
 }
 
 running_check() {
@@ -349,7 +349,7 @@ done
 do_sync() {
 	touch "$PID_FILE"
 
-	# make a snapshot of ~/.psd/psd.conf and redefine its location to snapshot while
+	# make a snapshot of ~/.psd/psd.conf and redefine its location to tmpfs while
 	# psd is running to keep any edits made to the live ~/.psd/psd.conf from
 	# potentially orphaning the snapshot copies thus preserving the data
 	[[ ! -f "${PID_FILE}.conf" ]] &&

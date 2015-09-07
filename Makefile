@@ -35,7 +35,7 @@ install-bin: common/$(PN)
 	$(INSTALL_DATA) common/zsh-completion "$(DESTDIR)/$(ZSHDIR)/_psd"
 	$(INSTALL_DIR) "$(DESTDIR)$(DOCDIR)"
 	$(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(DOCDIR)/psd.conf"
-	$(RSYNC)		common/browsers/ "$(DESTDIR)$(DOCDIR)/browsers/"
+	$(RSYNC) common/browsers/ "$(DESTDIR)$(DOCDIR)/browsers/"
 
 install-man:
 	$(Q)echo -e '\033[1;32mInstalling manpage...\033[0m'
