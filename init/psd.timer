@@ -1,7 +1,0 @@
-[Unit]
-Description=Timer for Profile-sync-daemon - 1Hour
-PartOf=psd.service
-
-[Timer]
-OnBootSec=1h
-OnUnitActiveSec=1h
