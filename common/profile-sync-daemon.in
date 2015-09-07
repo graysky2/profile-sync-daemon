@@ -482,7 +482,7 @@ parse() {
 		[[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
 		[[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
 		echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}."${NRM}
-		echo -e " ${BLD}Systemd timer is currently ${resync_color}$resync_state${NRM}${BLD}."${NRM}
+		echo -e " ${BLD}Systemd resync-timer is currently ${resync_color}$resync_state${NRM}${BLD}."${NRM}
 	else
 		# using other init system + cron job for resync
 		[[ "$resync_state" = "present" ]] && resync_color=${GRN} || resync_color=${RED}

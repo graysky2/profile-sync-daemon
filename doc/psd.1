@@ -45,7 +45,7 @@ The preview (parse) option can be called to show users exactly what psd will do/
 .nf
 .fam C
   Systemd service is currently active.
-  Systemd timer is currently active.
+  Systemd resync-timer is currently active.
   Overlayfs v23 is currently active.
 
 .fam T
@@ -92,11 +92,11 @@ The clean mode will delete ALL recovery snapshots that have accumulated. Run thi
 .fam T
 .fi
 .SS START AND STOP PSD FOR SYSTEMD USERS
-With the release of version 6.0 of psd, the only init system that is officially supported is systemd. Psd ships with a service you should use to start or stop it. Additionally, a provided timer file will run the an hourly resync from tmpfs back to the disk. The timer is started automatically with psd.service.
+With the release of version 6.0 of psd, the only init system that is officially supported is systemd. Psd ships with a service you should use to start or stop it. Additionally, a provided resync-timer will run the an hourly resync from tmpfs back to the disk. The resync-timer is started automatically; you do not need to call systemctl to start it.
 .PP
 .nf
 .fam C
- $ systemctl --user [option] psd
+ $ systemctl --user [option] psd.service
 
 .fam T
 .fi
