@@ -17,18 +17,19 @@ HOME="$(getent passwd $user | cut -d: -f6)"
 PSDCONFDIR="$HOME/.psd"
 PSDCONF="$PSDCONFDIR/psd.conf"
 PID_FILE="$PSDCONFDIR/.$user@$(hostname).pid"
+DOCDIR=/usr/share/doc/psd
 
 # Setup check for config file
 if [[ -f "$PSDCONF" ]]; then
 	. $PSDCONF
 else
-	[[ ! -d "$PSDCONFDIR" ]] && mkdir "$PSDCONFDIR"
-	if [[ -f /usr/share/doc/psd/psd.conf ]]; then
-		cp /usr/share/doc/psd/psd.conf "$PSDCONFDIR"
+	mkdir -p "$PSDCONFDIR"
+	if [[ -f ${DOCDIR}/psd.conf ]]; then
+		cp ${DOCDIR}/psd.conf "$PSDCONFDIR"
 		echo -e " First time running psd so please edit ${BLU}$PSDCONF${NRM}${BLD} to your liking and run again."${NRM}
 		exit 0
 	else
-		echo -e " Missing ${BLU}/usr/share/doc/psd${NRM}${BLD} - reinstall the package to use profile-sync-daemon."
+		echo -e " Missing ${BLU}${DOCDIR}${NRM}${BLD} - reinstall the package to use profile-sync-daemon."
 		exit 1
 	fi
 fi
@@ -40,7 +41,7 @@ if [[ -f "${PID_FILE}.conf" ]]; then
 fi
 
 # all supported browsers
-ALL_BROWSERS=( $(ls /usr/share/doc/psd/browsers/) )
+ALL_BROWSERS=( $(ls ${DOCDIR}/browsers/) )
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
 if [[ -z "$VOLATILE" ]]; then
@@ -163,7 +164,7 @@ config_check() {
 	fi
 
 	for browser in $(echo "$BROWSERS"); do
-		if [ -f /usr/share/doc/psd/browsers/$browser ]; then
+		if [ -f ${DOCDIR}/browsers/$browser ]; then
 			return;
 		else
 			# user defined an invalid browser
@@ -178,20 +179,12 @@ ungraceful_state_check() {
 	# on the filesystem and the link to tmpfs will be on the filesystem
 	# but the contents will be empty we need to simply remove the link
 	# and rotate the backup into place
-	local browser suffix
+	local browser
 	for browser in $BROWSERS; do
 		set_which "$user" "$browser"
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
-			[[ "$browser" = "firefox" ]] ||
-				[[ "$browser" = "firefox-trunk" ]] ||
-				[[ "$browser" = "heftig-aurora" ]] ||
-				[[ "$browser" = "icecat" ]] ||
-				[[ "$browser" = "seamonkey" ]] ||
-				[[ "$browser" = "palemoon" ]] &&
-				suffix="-${item##*/}" ||
-				suffix=
 			if [[ -e "$DIR/.flagged" ]]; then
 				# all is well so continue
 				return
@@ -209,19 +202,12 @@ ungraceful_state_check() {
 }
 
 cleanup() {
-	local browser suffix
+	local browser
 	for browser in $BROWSERS; do
 		set_which "$user" "$browser"
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
-			[[ "$browser" = "firefox" ]] ||
-				[[ "$browser" = "firefox-trunk" ]] ||
-				[[ "$browser" = "heftig-aurora" ]] ||
-				[[ "$browser" = "icecat" ]] ||
-				[[ "$browser" = "seamonkey" ]] ||
-				[[ "$browser" = "palemoon" ]] &&
-				suffix="-${item##*/}" || suffix=
 			if [[ -d "$DIR" ]]; then
 				ls "$item"-backup-crashrecovery* &>/dev/null
 				if [[ $? -eq 0  ]]; then
@@ -258,8 +244,8 @@ set_which() {
 	BACKUP=
 	DIR=
 
-	[ -f /usr/share/doc/psd/browsers/$browser ] &&
-		. /usr/share/doc/psd/browsers/$browser
+	[ -f ${DOCDIR}/browsers/$browser ] &&
+		. ${DOCDIR}/browsers/$browser
 }
 
 running_check() {
