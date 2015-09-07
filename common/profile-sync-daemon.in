@@ -350,8 +350,8 @@ done
 do_sync() {
 	touch "$PID_FILE"
 
-	# make a snapshot of ~/.psd/psd.conf and redefine its location to tmpfs while
-	# psd is running to keep any edits made to the live ~/.psd/psd.conf from
+	# make a snapshot of ~/.psd/psd.conf and redefine its location to this snapshot
+	# while psd is running to keep any edits made to the "live" ~/.psd/psd.conf from
 	# potentially orphaning the snapshot copies thus preserving the data
 	[[ ! -f "${PID_FILE}.conf" ]] &&
 		cp "$PSDCONF" "${PID_FILE}.conf"
