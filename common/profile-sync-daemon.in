@@ -14,7 +14,8 @@ VERS="@VERSION@"
 
 user=$(id -un)
 HOME="$(getent passwd $user | cut -d: -f6)"
-PSDCONFDIR="$HOME/.psd"
+XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+PSDCONFDIR="$XDG_CONFIG_HOME/psd"
 PSDCONF="$PSDCONFDIR/psd.conf"
 PID_FILE="$PSDCONFDIR/.$user@$(hostname).pid"
 DOCDIR="/usr/share/doc/psd"
@@ -22,6 +23,13 @@ DOCDIR="/usr/share/doc/psd"
 # Setup check for config file
 if [[ -f "$PSDCONF" ]]; then
 	. $PSDCONF
+elif [[ -d "$HOME/.psd" ]]; then
+	# first check to see if a legacy ~/.psd is present and then move it to the
+	# new location
+	mkdir -p "$PSDCONFDIR"
+	rsync -ax "$HOME/.psd/" "$PSDCONFDIR/"
+	rm -rf "$HOME/.psd"
+	echo " The use of $HOME/.psd is deprecated. Existing config has been moved to $PSDCONFDIR."
 else
 	mkdir -p "$PSDCONFDIR"
 	if [[ -f "$DOCDIR/psd.conf" ]]; then
@@ -121,7 +129,7 @@ header() {
 }
 
 dep_check() {
-	# checks for dependencies and that /etc/psd.conf is setup correctly
+	# checks for dependencies and that psd.conf is setup correctly
 	command -v rsync >/dev/null 2>&1 || {
 	echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
 	command -v awk >/dev/null 2>&1 || {
@@ -350,8 +358,8 @@ done
 do_sync() {
 	touch "$PID_FILE"
 
-	# make a snapshot of ~/.psd/psd.conf and redefine its location to this snapshot
-	# while psd is running to keep any edits made to the "live" ~/.psd/psd.conf from
+	# make a snapshot of psd.conf and redefine its location to this snapshot
+	# while psd is running to keep any edits made to the "live" psd.conf from
 	# potentially orphaning the snapshot copies thus preserving the data
 	[[ ! -f "${PID_FILE}.conf" ]] &&
 		cp "$PSDCONF" "${PID_FILE}.conf"
