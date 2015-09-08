@@ -281,7 +281,7 @@ suffix_needed(){
 	browser=$1
 	unset check_suffix
 	. "$DOCDIR/browsers/$browser"
-	[ -n "$check_suffix" ]
+	[[ -n "$check_suffix" ]]
 }
 
 dup_check() {
@@ -292,48 +292,25 @@ dup_check() {
 	for browser in $BROWSERS; do
 		set_which "$user" "$browser"
 		if suffix_needed "$browser"; then
-		if [[ -z "${DIRArr[@]}" ]]; then
 			# nothing to check
-			return
-		else
+			[[ -z "${DIRArr[@]}" ]] && continue
 			# browser is on system so check profiles
 			#
 			# check that the LAST DIRECTORY in the full path is unique
-			unique_count=$(echo ${DIRArr[@]##*/} |
-			sed 's/ /\n/g' | sort -u | wc -l)
-			if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
-				# no problems so do nothing
-				return
-			else
-				echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
-				# clip of the 'heftig-' to give correct path
-				[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"
-				echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.mozilla/$browser/profiles.ini${NRM}${BLD} to use psd."${NRM}
-				exit 1
-			fi
+			unique_count=$(echo ${DIRArr[@]##*/} | sed 's/ /\n/g' | sort -u | wc -l)
+			# no problems so do nothing
+			[[ ${#DIRArr[@]##*/} -eq $unique_count ]] && continue
+
+			echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
+			# clip of the 'heftig-' to give correct path
+			[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"
+			profile_ini="$homedir/.mozilla/$browser/profiles.ini"
+			[[ "$browser" = "palemoon" ]] &&
+				profile_ini="$homedir/.moonchild productions/pale moon/profiles.ini"
+			echo -e " ${BLD}Must have unique last directories in ${BLU}${profile_ini}${NRM}${BLD} to use psd."${NRM}
+			exit 1
 		fi
-	elif [[ "$browser" = "palemoon" ]]
-	then
-		if [[ -z "${DIRArr[@]}" ]]; then
-			# nothing to check
-			return
-		else
-			# browser is on system so check profiles
-			#
-			# check that the LAST DIRECTORY in the full path is unique
-			unique_count=$(echo ${DIRArr[@]##*/} |
-			sed 's/ /\n/g' | sort -u | wc -l)
-			if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
-				# no problems so do nothing
-				return
-			else
-				echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
-				echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.moonchild productions/pale moon/profiles.ini${NRM}${BLD} to use psd."${NRM}
-				exit 1
-			fi
-		fi
-	fi
-done
+	done
 }
 
 kill_browsers() {
