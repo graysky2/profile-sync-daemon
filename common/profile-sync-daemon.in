@@ -361,6 +361,81 @@ kill_browsers() {
 done
 }
 
+do_sync_for(){
+	user=$1
+	browser=$2
+	set_which "$user" "$browser"
+	for item in "${DIRArr[@]}"; do
+		DIR="$item"
+		BACKUP="$item-backup"
+		[[ "$browser" = "firefox" ]] ||
+			[[ "$browser" = "firefox-trunk" ]] ||
+			[[ "$browser" = "heftig-aurora" ]] ||
+			[[ "$browser" = "icecat" ]] ||
+			[[ "$browser" = "seamonkey" ]] ||
+			[[ "$browser" = "palemoon" ]] &&
+			suffix="-${item##*/}" ||
+			suffix=
+		TMP="$VOLATILE/$user-$browser$suffix"
+		TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
+		TMPWK="$VOLATILE/.$user-$browser${suffix}"
+
+		# make tmpfs container
+		if [[ -d "$DIR" ]]; then
+			# retain permissions on sync target
+			PREFIXP=$(stat -c %a "$DIR")
+			[[ -r "$TMP" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMP"
+
+			if [[ $OLFS -eq 1 ]]; then
+				if [[ $OLFSVER -eq 23 ]]; then
+					[[ -r "$TMPRW" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPRW"
+					[[ -r "$TMPWK" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPWK"
+				elif [[ $OLFSVER -eq 22 ]]; then
+					[[ -r "$TMPRW" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPRW"
+				fi
+			fi
+
+			# backup target and link to tmpfs container
+			if [[ $(readlink "$DIR") != "$TMP" ]]; then
+				mv "$DIR" "$BACKUP"
+				# Refuse to start browser while initial sync
+				ln -s /dev/null "$DIR"
+				systemd-notify --ready --status="Waiting sync for ${browser}..."
+			fi
+
+			# sync the tmpfs targets to the disc
+			if [[ -e "$DIR"/.flagged ]]; then
+				rsync -aogX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
+			else
+				# initial sync
+				if [[ $OLFS -eq 1 ]]; then
+					if [[ $OLFSVER -eq 23 ]]; then
+						sudo mount -t overlay overlaid -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
+					elif [[ $OLFSVER -eq 22 ]]; then
+						sudo mount -t overlayfs overlaid -olowerdir="$BACKUP",upperdir="$TMPRW" "$TMP"
+					fi
+				else
+					# keep user from launching browser while rsync is active
+					rsync -aogX --inplace --no-whole-file "$BACKUP/" "$TMP"
+				fi
+
+				[[ $(readlink "$DIR") = "/dev/null" ]] && unlink "$DIR"
+				ln -s "$TMP" "$DIR"
+				chown -h $user:$group "$DIR"
+				touch "$DIR/.flagged"
+			fi
+		else
+			if [[ ! -d "$homedir" ]] ; then
+				echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
+				exit 1
+			elif [[ -d "$BACKUP" ]] ; then
+				echo -e "${RED}$DIR does not exist or is a broken symlink! Is $VOLATILE unmounted?${NRM}" >&2
+				exit 1
+			fi
+		fi
+	done
+}
+
 do_sync() {
 	touch "$PID_FILE"
 
@@ -373,73 +448,9 @@ do_sync() {
 
 	local browser
 	for browser in $BROWSERS; do
-		set_which "$user" "$browser"
-		for item in "${DIRArr[@]}"; do
-			DIR="$item"
-			BACKUP="$item-backup"
-			[[ "$browser" = "firefox" ]] ||
-				[[ "$browser" = "firefox-trunk" ]] ||
-				[[ "$browser" = "heftig-aurora" ]] ||
-				[[ "$browser" = "icecat" ]] ||
-				[[ "$browser" = "seamonkey" ]] ||
-				[[ "$browser" = "palemoon" ]] &&
-				suffix="-${item##*/}" ||
-				suffix=
-			TMP="$VOLATILE/$user-$browser$suffix"
-			TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
-			TMPWK="$VOLATILE/.$user-$browser${suffix}"
-
-			# make tmpfs container
-			if [[ -d "$DIR" ]]; then
-				# retain permissions on sync target
-				PREFIXP=$(stat -c %a "$DIR")
-				[[ -r "$TMP" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMP"
-
-				if [[ $OLFS -eq 1 ]]; then
-					if [[ $OLFSVER -eq 23 ]]; then
-						[[ -r "$TMPRW" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPRW"
-						[[ -r "$TMPWK" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPWK"
-					elif [[ $OLFSVER -eq 22 ]]; then
-						[[ -r "$TMPRW" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPRW"
-					fi
-				fi
-
-				# backup target and link to tmpfs container
-				if [[ $(readlink "$DIR") != "$TMP" ]]; then
-					mv "$DIR" "$BACKUP"
-				fi
-
-				# sync the tmpfs targets to the disc
-				if [[ -e "$DIR"/.flagged ]]; then
-					rsync -aogX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
-				else
-					# initial sync
-					if [[ $OLFS -eq 1 ]]; then
-						if [[ $OLFSVER -eq 23 ]]; then
-							sudo mount -t overlay overlaid -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
-						elif [[ $OLFSVER -eq 22 ]]; then
-							sudo mount -t overlayfs overlaid -olowerdir="$BACKUP",upperdir="$TMPRW" "$TMP"
-						fi
-					else
-						# keep user from launching browser while rsync is active
-						rsync -aogX --inplace --no-whole-file "$BACKUP/" "$TMP"
-					fi
-
-					ln -s "$TMP" "$DIR"
-					chown -h $user:$group "$DIR"
-					touch "$DIR/.flagged"
-				fi
-			else
-				if [[ ! -d "$homedir" ]] ; then
-					echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
-					exit 1
-				elif [[ -d "$BACKUP" ]] ; then
-					echo -e "${RED}$DIR does not exist or is a broken symlink! Is $VOLATILE unmounted?${NRM}" >&2
-					exit 1
-				fi
-			fi
-		done
+		do_sync_for $user $browser &
 	done
+	wait
 	echo -e "${BLD}Sync successful"${NRM}
 }
 
@@ -594,6 +605,7 @@ case "$1" in
 			running_check
 			ungraceful_state_check
 			do_sync
+			wait
 		fi
 		;;
 	resync)
