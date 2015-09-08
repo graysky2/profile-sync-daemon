@@ -277,6 +277,13 @@ running_check() {
 done
 }
 
+suffix_needed(){
+	browser=$1
+	unset check_suffix
+	. "$DOCDIR/browsers/$browser"
+	[ -n "$check_suffix" ]
+}
+
 dup_check() {
 	# only for firefox, icecat, seamonkey, palemoon, and aurora
 	# the LAST directory in the profile MUST be unique
@@ -284,13 +291,7 @@ dup_check() {
 	local browser
 	for browser in $BROWSERS; do
 		set_which "$user" "$browser"
-		if [[ "$browser" = "firefox" ]] ||
-			[[ "$browser" = "firefox-trunk" ]] ||
-			[[ "$browser" = "heftig-aurora" ]] ||
-			[[ "$browser" = "icecat" ]] ||
-			[[ "$browser" = "seamonkey" ]] ||
-			[[ "$browser" = "palemoon" ]]
-	then
+		if suffix_needed "$browser"; then
 		if [[ -z "${DIRArr[@]}" ]]; then
 			# nothing to check
 			return
@@ -377,14 +378,10 @@ do_sync() {
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
-			[[ "$browser" = "firefox" ]] ||
-				[[ "$browser" = "firefox-trunk" ]] ||
-				[[ "$browser" = "heftig-aurora" ]] ||
-				[[ "$browser" = "icecat" ]] ||
-				[[ "$browser" = "seamonkey" ]] ||
-				[[ "$browser" = "palemoon" ]] &&
-				suffix="-${item##*/}" ||
-				suffix=
+			suffix=
+			if suffix_needed "$browser"; then
+				suffix="-${item##*/}"
+			fi
 			TMP="$VOLATILE/$user-$browser$suffix"
 			TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 			TMPWK="$VOLATILE/.$user-$browser${suffix}"
@@ -452,15 +449,10 @@ do_unsync() {
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
-			[[ "$browser" = "firefox" ]] ||
-				[[ "$browser" = "firefox-trunk" ]] ||
-				[[ "$browser" = "heftig-aurora" ]] ||
-				[[ "$browser" = "icecat" ]] ||
-				[[ "$browser" = "seamonkey" ]] ||
-				[[ "$browser" = "palemoon" ]] &&
-				suffix="-${item##*/}" ||
-				suffix=
-
+			suffix=
+			if suffix_needed "$browser"; then
+				suffix="-${item##*/}"
+			fi
 			TMP="$VOLATILE/$user-$browser$suffix"
 			TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 			TMPWK="$VOLATILE/.$user-$browser${suffix}"
@@ -517,14 +509,10 @@ parse() {
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
-			[[ "$browser" = "firefox" ]] ||
-				[[ "$browser" = "firefox-trunk" ]] ||
-				[[ "$browser" = "heftig-aurora" ]] ||
-				[[ "$browser" = "icecat" ]] ||
-				[[ "$browser" = "seamonkey" ]] ||
-				[[ "$browser" = "palemoon" ]] &&
-				suffix="-${item##*/}" ||
-				suffix=
+			suffix=
+			if suffix_needed "$browser"; then
+				suffix="-${item##*/}"
+			fi
 			TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 			if [[ -d "$DIR" ]]; then
 				# first count up any crashrecovery dirs

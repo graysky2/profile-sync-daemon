@@ -15,3 +15,5 @@ if [[ -d $homedir/.moonchild\ productions/pale\ moon ]]; then
         index=$index+1
     done
 fi
+
+check_suffix=1
