@@ -29,7 +29,7 @@ elif [[ -d "$HOME/.psd" ]]; then
 	mkdir -p "$PSDCONFDIR"
 	rsync -ax "$HOME/.psd/" "$PSDCONFDIR/"
 	rm -rf "$HOME/.psd"
-	echo " The use of $HOME/.psd is deprecated. Existing config has been moved to $PSDCONFDIR."
+	echo " The use of $HOME/.psd is deprecated. Existing config has been moved to $PSDCONFDIR"
 else
 	mkdir -p "$PSDCONFDIR"
 	if [[ -f "$DOCDIR/psd.conf" ]]; then
@@ -42,9 +42,15 @@ else
 	fi
 fi
 
-# if psd is active, source the snapshot of config preferentially
-if [[ -f "${PID_FILE}.conf" ]]; then
-	PSDCONF="${PID_FILE}.conf"
+# if psd is active, source the snapshot of psd.conf preferentially
+# version 6.03 renames this file so if older version is running then
+# rotate the old name to the new one
+
+[[ -f "$PSDCONFDIR/.$user@$(hostname).pid.conf" ]] &&
+	mv "$PSDCONFDIR/.$user@$(hostname).pid.conf" "$PSDCONFDIR/.psd.conf"
+
+if [[ -f "$PSDCONFDIR/.psd.conf" ]]; then
+	PSDCONF="$PSDCONFDIR/.psd.conf"
 	. $PSDCONF
 fi
 
@@ -361,8 +367,9 @@ do_sync() {
 	# make a snapshot of psd.conf and redefine its location to this snapshot
 	# while psd is running to keep any edits made to the "live" psd.conf from
 	# potentially orphaning the snapshot copies thus preserving the data
-	[[ ! -f "${PID_FILE}.conf" ]] &&
-		cp "$PSDCONF" "${PID_FILE}.conf"
+
+	[[ ! -f "$PSDCONFDIR/.psd.conf" ]] &&
+		cp "$PSDCONF" "$PSDCONFDIR/.psd.conf"
 
 	local browser
 	for browser in $BROWSERS; do
@@ -437,7 +444,7 @@ do_sync() {
 }
 
 do_unsync() {
-	rm -f "$PID_FILE" "${PID_FILE}.conf"
+	rm -f "$PID_FILE" "$PSDCONFDIR/.psd.conf"
 
 	local browser
 	for browser in $BROWSERS; do
