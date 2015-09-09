@@ -49,8 +49,9 @@ fi
 [[ -f "$PSDCONFDIR/.$user@$(hostname).pid.conf" ]] &&
 	mv "$PSDCONFDIR/.$user@$(hostname).pid.conf" "$PSDCONFDIR/.psd.conf"
 
-if [[ -f "$PSDCONFDIR/.psd.conf" ]]; then
+if [[ -f "$PID_FILE" ]]; then
 	PSDCONF="$PSDCONFDIR/.psd.conf"
+	unset USE_OVERLAYFS BROWSERS VOLATILE USE_BACKUPS
 	. $PSDCONF
 fi
 
@@ -346,8 +347,7 @@ do_sync() {
 	# while psd is running to keep any edits made to the "live" psd.conf from
 	# potentially orphaning the snapshot copies thus preserving the data
 
-	[[ ! -f "$PSDCONFDIR/.psd.conf" ]] &&
-		cp "$PSDCONF" "$PSDCONFDIR/.psd.conf"
+	[[ -f "$PSDCONFDIR/.psd.conf" ]] ||	cp "$PSDCONF" "$PSDCONFDIR/.psd.conf"
 
 	local browser
 	for browser in $BROWSERS; do
