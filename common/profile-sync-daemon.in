@@ -277,6 +277,13 @@ running_check() {
 done
 }
 
+suffix_needed(){
+	browser=$1
+	unset check_suffix
+	. "$DOCDIR/browsers/$browser"
+	[[ -n "$check_suffix" ]]
+}
+
 dup_check() {
 	# only for firefox, icecat, seamonkey, palemoon, and aurora
 	# the LAST directory in the profile MUST be unique
@@ -284,55 +291,26 @@ dup_check() {
 	local browser
 	for browser in $BROWSERS; do
 		set_which "$user" "$browser"
-		if [[ "$browser" = "firefox" ]] ||
-			[[ "$browser" = "firefox-trunk" ]] ||
-			[[ "$browser" = "heftig-aurora" ]] ||
-			[[ "$browser" = "icecat" ]] ||
-			[[ "$browser" = "seamonkey" ]] ||
-			[[ "$browser" = "palemoon" ]]
-	then
-		if [[ -z "${DIRArr[@]}" ]]; then
+		if suffix_needed "$browser"; then
 			# nothing to check
-			return
-		else
+			[[ -z "${DIRArr[@]}" ]] && continue
 			# browser is on system so check profiles
 			#
 			# check that the LAST DIRECTORY in the full path is unique
-			unique_count=$(echo ${DIRArr[@]##*/} |
-			sed 's/ /\n/g' | sort -u | wc -l)
-			if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
-				# no problems so do nothing
-				return
-			else
-				echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
-				# clip of the 'heftig-' to give correct path
-				[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"
-				echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.mozilla/$browser/profiles.ini${NRM}${BLD} to use psd."${NRM}
-				exit 1
-			fi
+			unique_count=$(echo ${DIRArr[@]##*/} | sed 's/ /\n/g' | sort -u | wc -l)
+			# no problems so do nothing
+			[[ ${#DIRArr[@]##*/} -eq $unique_count ]] && continue
+
+			echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
+			# clip of the 'heftig-' to give correct path
+			[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"
+			profile_ini="$homedir/.mozilla/$browser/profiles.ini"
+			[[ "$browser" = "palemoon" ]] &&
+				profile_ini="$homedir/.moonchild productions/pale moon/profiles.ini"
+			echo -e " ${BLD}Must have unique last directories in ${BLU}${profile_ini}${NRM}${BLD} to use psd."${NRM}
+			exit 1
 		fi
-	elif [[ "$browser" = "palemoon" ]]
-	then
-		if [[ -z "${DIRArr[@]}" ]]; then
-			# nothing to check
-			return
-		else
-			# browser is on system so check profiles
-			#
-			# check that the LAST DIRECTORY in the full path is unique
-			unique_count=$(echo ${DIRArr[@]##*/} |
-			sed 's/ /\n/g' | sort -u | wc -l)
-			if [[ ${#DIRArr[@]##*/} -eq $unique_count ]]; then
-				# no problems so do nothing
-				return
-			else
-				echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
-				echo -e " ${BLD}Must have unique last directories in ${BLU}$homedir/.moonchild productions/pale moon/profiles.ini${NRM}${BLD} to use psd."${NRM}
-				exit 1
-			fi
-		fi
-	fi
-done
+	done
 }
 
 kill_browsers() {
@@ -377,14 +355,10 @@ do_sync() {
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
-			[[ "$browser" = "firefox" ]] ||
-				[[ "$browser" = "firefox-trunk" ]] ||
-				[[ "$browser" = "heftig-aurora" ]] ||
-				[[ "$browser" = "icecat" ]] ||
-				[[ "$browser" = "seamonkey" ]] ||
-				[[ "$browser" = "palemoon" ]] &&
-				suffix="-${item##*/}" ||
-				suffix=
+			suffix=
+			if suffix_needed "$browser"; then
+				suffix="-${item##*/}"
+			fi
 			TMP="$VOLATILE/$user-$browser$suffix"
 			TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 			TMPWK="$VOLATILE/.$user-$browser${suffix}"
@@ -452,15 +426,10 @@ do_unsync() {
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
-			[[ "$browser" = "firefox" ]] ||
-				[[ "$browser" = "firefox-trunk" ]] ||
-				[[ "$browser" = "heftig-aurora" ]] ||
-				[[ "$browser" = "icecat" ]] ||
-				[[ "$browser" = "seamonkey" ]] ||
-				[[ "$browser" = "palemoon" ]] &&
-				suffix="-${item##*/}" ||
-				suffix=
-
+			suffix=
+			if suffix_needed "$browser"; then
+				suffix="-${item##*/}"
+			fi
 			TMP="$VOLATILE/$user-$browser$suffix"
 			TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 			TMPWK="$VOLATILE/.$user-$browser${suffix}"
@@ -517,14 +486,10 @@ parse() {
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
-			[[ "$browser" = "firefox" ]] ||
-				[[ "$browser" = "firefox-trunk" ]] ||
-				[[ "$browser" = "heftig-aurora" ]] ||
-				[[ "$browser" = "icecat" ]] ||
-				[[ "$browser" = "seamonkey" ]] ||
-				[[ "$browser" = "palemoon" ]] &&
-				suffix="-${item##*/}" ||
-				suffix=
+			suffix=
+			if suffix_needed "$browser"; then
+				suffix="-${item##*/}"
+			fi
 			TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 			if [[ -d "$DIR" ]]; then
 				# first count up any crashrecovery dirs
