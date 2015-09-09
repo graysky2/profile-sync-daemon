@@ -383,6 +383,8 @@ do_sync() {
 				# backup target and link to tmpfs container
 				if [[ $(readlink "$DIR") != "$TMP" ]]; then
 					mv "$DIR" "$BACKUP"
+					# Refuse to start browser while initial sync
+					ln -s /dev/null "$DIR"
 				fi
 
 				# sync the tmpfs targets to the disc
@@ -401,6 +403,8 @@ do_sync() {
 						rsync -aogX --inplace --no-whole-file "$BACKUP/" "$TMP"
 					fi
 
+					# Now browser can start
+					[[ $(readlink "$DIR") = "/dev/null" ]] && unlink "$DIR"
 					ln -s "$TMP" "$DIR"
 					chown -h $user:$group "$DIR"
 					touch "$DIR/.flagged"
