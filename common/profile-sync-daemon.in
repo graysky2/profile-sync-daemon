@@ -182,9 +182,7 @@ config_check() {
 	fi
 
 	for browser in $(echo "$BROWSERS"); do
-		if [[ -f "$DOCDIR/browsers/$browser" ]]; then
-			return;
-		else
+		if [[ ! -f "$DOCDIR/browsers/$browser" ]]; then
 			# user defined an invalid browser
 			echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser. Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
 			exit 1
@@ -199,21 +197,21 @@ ungraceful_state_check() {
 	# and rotate the backup into place
 	local browser
 	for browser in $BROWSERS; do
-		set_which "$user" "$browser"
+		load_env_for "$browser"
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
-			if [[ -e "$DIR/.flagged" ]]; then
-				# all is well so continue
-				return
-			else
-				NOW=$(date +%Y%m%d_%H%M%S)
-				[[ -h "$DIR" ]] && unlink "$DIR"
-				if [[ -d "$BACKUP" ]]; then
-					[[ $CRRE -eq 1 ]] &&
-						cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
-					mv "$BACKUP" "$DIR"
+			# all is well so continue
+			[[ -e "$DIR/.flagged" ]] && continue
+
+			NOW=$(date +%Y%m%d_%H%M%S)
+			[[ -h "$DIR" ]] && unlink "$DIR"
+			if [[ -d "$BACKUP" ]]; then
+				if [[ $CRRE -eq 1 ]]; then
+					opts="-a --reflink=auto"
+					cp $opts "$BACKUP" "$BACKUP-crashrecovery-$NOW"
 				fi
+				mv "$BACKUP" "$DIR"
 			fi
 		done
 	done
@@ -222,48 +220,41 @@ ungraceful_state_check() {
 cleanup() {
 	local browser
 	for browser in $BROWSERS; do
-		set_which "$user" "$browser"
+		load_env_for "$browser"
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
-			BACKUP="$item-backup"
-			if [[ -d "$DIR" ]]; then
-				ls "$item"-backup-crashrecovery* &>/dev/null
-				if [[ $? -eq 0  ]]; then
-					CRASHArr=("$item"-backup-crashrecovery*)
-					echo -e ${BLD}"Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR"${NRM}
-					for backup in "${CRASHArr[@]}"; do
-						echo -e ${BLD}${RED}" $backup"${NRM}
-						rm -rf "$backup"
-					done
-					unset CRASHArr
-				else
-					echo -e ${BLD}"Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}"${NRM}
-				fi
-				echo
+			CRASHArr=("$item"-backup-crashrecovery*)
+			if ls ${CRASHArr[@]} &> /dev/null; then
+				echo -e ${BLD}"Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR"${NRM}
+				for backup in "${CRASHArr[@]}"; do
+					echo -e ${BLD}${RED}" $backup"${NRM}
+					rm -rf "$backup"
+				done
+				unset CRASHArr
+			else
+				echo -e ${BLD}"Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}"${NRM}
 			fi
+			echo
 		done
 	done
 }
 
-set_which() {
-	### Arrays
-	# profileArr is transient used to store profile paths parsed from
-	# firefox from and aurora DIRArr is a full path corrected for both
-	# relative and absolute paths
+load_env_for() {
+	browser="$1"
 
-	local browser=$2
-
-	homedir="$(getent passwd $user | cut -d: -f6)"
+	homedir=$HOME
 	group="$(id -g $user)"
 
+	### Arrays
+	# profileArr is transient used to store profile paths parsed from
+	# firefox and aurora
+	unset profileArr
+	# DIRArr is a full path corrected for both relative and absolute paths
 	# reset global variables and arrays
-	unset profileArr DIRArr
-	PSNAME=
-	BACKUP=
-	DIR=
+	unset DIRArr
 
-	[[ -f "$DOCDIR/browsers/$browser" ]] &&
-		. "$DOCDIR/browsers/$browser"
+	unset PSNAME
+	. "$DOCDIR/browsers/$browser"
 }
 
 running_check() {
@@ -271,13 +262,13 @@ running_check() {
 	# without this cannot guarantee profile integrity
 	local browser
 	for browser in $BROWSERS; do
-		set_which "$user" "$browser"
-		if [[ -n "$PSNAME" ]] &&
-			pgrep -u "$user" "$PSNAME" &>/dev/null; then
-		echo "Refusing to start; $browser is running by $user!"
-		exit 1
-	fi
-done
+		load_env_for "$browser"
+		[[ -z "$PSNAME" ]] && continue
+		if pgrep -u "$user" "$PSNAME" &>/dev/null; then
+			echo "Refusing to start; $browser is running by $user!"
+			exit 1
+		fi
+	done
 }
 
 suffix_needed(){
@@ -293,7 +284,7 @@ dup_check() {
 	# make sure there are no duplicates in ~/.mozilla/<browser>/profiles.ini
 	local browser
 	for browser in $BROWSERS; do
-		set_which "$user" "$browser"
+		load_env_for "$browser"
 		if suffix_needed "$browser"; then
 			# nothing to check
 			[[ -z "${DIRArr[@]}" ]] && continue
@@ -321,25 +312,23 @@ kill_browsers() {
 	# without this cannot guarantee profile integrity
 	local browser
 	for browser in $BROWSERS; do
-		set_which "$user" "$browser"
+		load_env_for "$browser"
 
 		local x=1
 		while [[ $x -le 60 ]]; do
-			if [[ -n "$PSNAME" ]] &&
-				pgrep -u "$user" "$PSNAME" &>/dev/null
-		then
+			[[ -n "$PSNAME" ]] || break
+			pgrep -u "$user" "$PSNAME" &>/dev/null || break
+
 			if [[ $x -le 5 ]]; then
 				pkill -SIGTERM -u "$user" "$PSNAME"
 			else
 				pkill -SIGKILL -u "$user" "$PSNAME"
 			fi
-		else
-			break
-		fi
-		x=$(( $x + 1 ))
-		sleep .05
+
+			x=$(( $x + 1 ))
+			sleep .05
+		done
 	done
-done
 }
 
 do_sync() {
@@ -353,7 +342,7 @@ do_sync() {
 
 	local browser
 	for browser in $BROWSERS; do
-		set_which "$user" "$browser"
+		load_env_for "$browser"
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
@@ -428,7 +417,7 @@ do_unsync() {
 
 	local browser
 	for browser in $BROWSERS; do
-		set_which "$user" "$browser"
+		load_env_for "$browser"
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
@@ -488,7 +477,7 @@ parse() {
 	echo
 	local browser
 	for browser in $BROWSERS; do
-		set_which "$user" "$browser"
+		load_env_for "$browser"
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
