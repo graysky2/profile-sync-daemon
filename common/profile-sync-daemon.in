@@ -50,9 +50,11 @@ fi
 	mv "$PSDCONFDIR/.$user@$(hostname).pid.conf" "$PSDCONFDIR/.psd.conf"
 
 if [[ -f "$PID_FILE" ]]; then
-	PSDCONF="$PSDCONFDIR/.psd.conf"
-	unset USE_OVERLAYFS BROWSERS VOLATILE USE_BACKUPS
-	. $PSDCONF
+	if [[ -f "$PSDCONFDIR/.psd.conf" ]]; then
+		PSDCONF="$PSDCONFDIR/.psd.conf"
+		unset USE_OVERLAYFS BROWSERS VOLATILE USE_BACKUPS
+		. $PSDCONF
+	fi
 fi
 
 # all supported browsers
