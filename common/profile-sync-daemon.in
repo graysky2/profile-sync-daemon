@@ -176,7 +176,7 @@ config_check() {
 			echo -e " ${BLD}in order to use psd in overlayfs mode."${NRM}
 			echo
 			echo -e " ${BLD}Fix this by adding the following line to ${BLU}/etc/sudoers${NRM}${BLD} to enable this functionality:"${NRM}
-			echo -e "   ${BLD}$user ALL=(ALL) NOPASSWD: /usr/bin/mount,/usr/bin/umount"${NRM}
+			echo -e "   ${BLD}$user ${BLD}$user ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper"${NRM}
 			exit 1
 		fi
 	fi
@@ -373,11 +373,7 @@ do_sync_for(){
 			else
 				# initial sync
 				if [[ $OLFS -eq 1 ]]; then
-					if [[ $OLFSVER -eq 23 ]]; then
-						sudo mount -t overlay overlaid -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
-					elif [[ $OLFSVER -eq 22 ]]; then
-						sudo mount -t overlayfs overlaid -olowerdir="$BACKUP",upperdir="$TMPRW" "$TMP"
-					fi
+					sudo psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$TMPRW" -w "$TMPWK" -d "$TMP" mountup
 				else
 					# keep user from launching browser while rsync is active
 					rsync -aogX --inplace --no-whole-file "$BACKUP/" "$TMP"
@@ -445,7 +441,7 @@ do_unsync() {
 				# restore original dirtree
 				[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
 				if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
-					sudo umount -l "$TMP" &&
+					sudo psd-overlay-helper -d "$TMP" mountdown &&
 						rm -rf "$TMP" "$TMPRW" "$TMPWK"
 				fi
 				[[ -d "$TMP" ]] && rm -rf "$TMP"

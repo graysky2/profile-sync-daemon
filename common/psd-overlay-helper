@@ -1,0 +1,43 @@
+#!/bin/bash
+readonly PATH=/usr/bin
+readonly IFS=$' \t\n'
+
+while getopts :v:l:u:w:d: OPT; do
+	case $OPT in
+		v|+v)
+			declare -ir OLFSVER=$OPTARG
+			;;
+		l|+l)
+			readonly BACKUP=$OPTARG
+			;;
+		u|+u)
+			readonly TMPRW=$OPTARG
+			;;
+		w|+w)
+			readonly TMPWK=$OPTARG
+			;;
+		d|+d)
+			readonly TMP=$OPTARG
+			;;
+	esac
+done
+shift $(( OPTIND - 1 ))
+OPTIND=1
+
+## TODO - pass error codes back to psd so it can break if the mount command fails
+case "$1" in
+	mountup)
+		if [[ $OLFSVER -eq 23 ]]; then
+			mount -o nosuid,nodev,noexec -t overlay overlaid -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
+		elif [[ $OLFSVER -eq 22 ]]; then
+			mount -o nosuid,nodev,noexec -t overlayfs overlaid -olowerdir="$BACKUP",upperdir="$TMPRW" "$TMP"
+		fi
+		;;
+	mountdown)
+		umount -l "$TMP"
+		;;
+	*)
+		echo "Do not call this script directly; psd will do so for you. Thank you, come again."
+		exit 0
+		;;
+esac

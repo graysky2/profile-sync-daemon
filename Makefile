@@ -30,6 +30,7 @@ install-bin: common/$(PN)
 	$(Q)echo -e '\033[1;32mInstalling main script...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(BINDIR)"
 	$(INSTALL_PROGRAM) common/$(PN) "$(DESTDIR)$(BINDIR)/$(PN)"
+	$(INSTALL_PROGRAM) common/psd-overlay-helper "$(DESTDIR)$(BINDIR)/psd-overlay-helper"
 	ln -s $(PN) "$(DESTDIR)$(BINDIR)/psd"
 	$(INSTALL_DIR) "$(DESTDIR)$(ZSHDIR)"
 	$(INSTALL_DATA) common/zsh-completion "$(DESTDIR)/$(ZSHDIR)/_psd"
@@ -61,6 +62,7 @@ uninstall-bin:
 	$(RM) "$(DESTDIR)$(BINDIR)/$(PN)"
 	$(RM) "$(DESTDIR)$(BINDIR)/psd"
 	$(RM) "$(DESTDIR)$(ZSHDIR)/_psd"
+	$(RM) "$(DESTDIR)$(BINDIR)/psd-overlay-helper"
 	$(RM) "$(DESTDIR)$(DOCDIR)/psd.conf"
 	$(RM) -rf "$(DESTDIR)$(DOCDIR)/browsers"
 	rmdir "$(DESTDIR)$(DOCDIR)"
