@@ -24,17 +24,16 @@ done
 shift $(( OPTIND - 1 ))
 OPTIND=1
 
+OLFS_NAME[22]=overlayfs
+OLFS_NAME[23]=overlay
+
 ## TODO - pass error codes back to psd so it can break if the mount command fails
 case "$1" in
 	mountup)
-		if [[ $OLFSVER -eq 23 ]]; then
-			mount -o nosuid,nodev,noexec -t overlay overlaid -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
-		elif [[ $OLFSVER -eq 22 ]]; then
-			mount -o nosuid,nodev,noexec -t overlayfs overlaid -olowerdir="$BACKUP",upperdir="$TMPRW" "$TMP"
-		fi
+			mount -o nosuid,nodev,noexec -t ${OLFS_NAME[$OLFSVER]} overlaid -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
 		;;
 	mountdown)
-		umount -l "$TMP"
+			umount -l "$TMP"
 		;;
 	*)
 		echo "Do not call this script directly; psd will do so for you. Thank you, come again."
