@@ -176,7 +176,7 @@ config_check() {
 			echo -e " ${BLD}in order to use psd in overlayfs mode."${NRM}
 			echo
 			echo -e " ${BLD}Fix this by adding the following line to ${BLU}/etc/sudoers${NRM}${BLD} to enable this functionality:"${NRM}
-			echo -e "   ${BLD}$user ${BLD}$user ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper"${NRM}
+			echo -e "   ${BLD}$user ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper"${NRM}
 			exit 1
 		fi
 	fi
