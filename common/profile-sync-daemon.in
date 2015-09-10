@@ -370,7 +370,7 @@ do_sync_for(){
 			else
 				# initial sync
 				if [[ $OLFS -eq 1 ]]; then
-					sudo psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$TMPRW" -w "$TMPWK" -d "$TMP" mountup
+					sudo psd-overlay-helper OLFSVER="$OLFSVER" BACKUP="$BACKUP" TMPRW="$TMPRW" TMPWK="$TMPWK" TMP="$TMP" ACTION=mountup
 				else
 					# keep user from launching browser while rsync is active
 					rsync -aogX --inplace --no-whole-file "$BACKUP/" "$TMP"
@@ -438,7 +438,7 @@ do_unsync() {
 				# restore original dirtree
 				[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
 				if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
-					sudo psd-overlay-helper -d "$TMP" mountdown &&
+					sudo psd-overlay-helper TMP="$TMP" ACTION=mountdown &&
 						rm -rf "$TMP" "$TMPRW" "$TMPWK"
 				fi
 				[[ -d "$TMP" ]] && rm -rf "$TMP"

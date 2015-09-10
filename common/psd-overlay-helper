@@ -1,34 +1,11 @@
 #!/bin/bash
-readonly PATH=/usr/bin
-readonly IFS=$' \t\n'
-
-while getopts :v:l:u:w:d: OPT; do
-	case $OPT in
-		v|+v)
-			declare -ir OLFSVER=$OPTARG
-			;;
-		l|+l)
-			readonly BACKUP=$OPTARG
-			;;
-		u|+u)
-			readonly TMPRW=$OPTARG
-			;;
-		w|+w)
-			readonly TMPWK=$OPTARG
-			;;
-		d|+d)
-			readonly TMP=$OPTARG
-			;;
-	esac
-done
-shift $(( OPTIND - 1 ))
-OPTIND=1
+declare -r $@
 
 OLFS_NAME[22]=overlayfs
 OLFS_NAME[23]=overlay
 
 ## TODO - pass error codes back to psd so it can break if the mount command fails
-case "$1" in
+case "$ACTION" in
 	mountup)
 			mount -o nosuid,nodev,noexec -t ${OLFS_NAME[$OLFSVER]} overlaid -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
 		;;
