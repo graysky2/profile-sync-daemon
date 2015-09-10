@@ -30,6 +30,8 @@ elif [[ -d "$HOME/.psd" ]]; then
 	rsync -ax "$HOME/.psd/" "$PSDCONFDIR/"
 	rm -rf "$HOME/.psd"
 	echo " The use of $HOME/.psd is deprecated. Existing config has been moved to $PSDCONFDIR"
+	# source it again retaining any user options
+	[[ -f "$PSDCONF" ]] && . $PSDCONF
 else
 	mkdir -p "$PSDCONFDIR"
 	if [[ -f "$DOCDIR/psd.conf" ]]; then
