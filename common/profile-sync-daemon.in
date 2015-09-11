@@ -20,6 +20,11 @@ PSDCONF="$PSDCONFDIR/psd.conf"
 PID_FILE="$PSDCONFDIR/.$user@$(hostname).pid"
 DOCDIR="/usr/share/doc/psd"
 
+if [[ ! -d "$DOCDIR" ]]; then
+	echo -e " Missing ${BLU}$DOCDIR${NRM}${BLD} - reinstall the package to use profile-sync-daemon."
+	exit 1
+fi
+
 # Setup check for config file
 if [[ -f "$PSDCONF" ]]; then
 	. $PSDCONF
@@ -38,12 +43,8 @@ else
 		cp "$DOCDIR/psd.conf" "$PSDCONFDIR"
 		echo -e " First time running psd so please edit ${BLU}$PSDCONF${NRM}${BLD} to your liking and run again."${NRM}
 		exit 0
-	else
-		echo -e " Missing ${BLU}$DOCDIR${NRM}${BLD} - reinstall the package to use profile-sync-daemon."
-		exit 1
 	fi
 fi
-
 # if psd is active, source the snapshot of psd.conf preferentially
 # version 6.03 renames this file so if older version is running then
 # rotate the old name to the new one
