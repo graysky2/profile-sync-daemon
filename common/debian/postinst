@@ -1,8 +1,16 @@
 #!/bin/sh
 set -e
 
-[ -f /etc/psd.conf ] &&
+if [ -f /etc/psd.conf ]; then
 	mv /etc/psd.conf /etc/psd.conf.old
+	echo 'ATTENTION: MAJOR CHANGES TO PSD WITH VERSION 6.00+'
+	echo '-> 1. A global /etc/psd.conf is no longer used. $HOME/.config/psd/psd.conf will be'
+	echo '->    created when psd is invoked the first time.'
+	echo '-> 2. A system service is no longer used. A user service is provided and can be'
+	echo '->    used like this:  systemctl --user start psd.service'
+	echo '-> 3. Users wanting to use overlayfs mode MUST have sudo access with nopasswd to'
+	echo '->    /usr/bin/psd-overlay-helper. See the man page for an example configured with visudo.'
+fi
 
 for i in $(users); do
 	su $i -c 'XDG_RUNTIME_DIR=/run/user/$UID systemctl --user daemon-reload'
