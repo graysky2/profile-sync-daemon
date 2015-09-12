@@ -372,6 +372,10 @@ do_sync_for(){
 				# initial sync
 				if [[ $OLFS -eq 1 ]]; then
 					sudo psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$TMPRW" -w "$TMPWK" -d "$TMP" mountup
+					if [[ $? -ne 0 ]]; then
+						echo -e "Error in trying to mount $TMP - this should not happen!"
+						exit 1
+					fi
 				else
 					# keep user from launching browser while rsync is active
 					rsync -aogX --inplace --no-whole-file "$BACKUP/" "$TMP"

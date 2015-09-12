@@ -9,9 +9,6 @@ case "$1" in
 		
 		[ "$(systemctl is-active psd)" = "active" ] &&
 			systemctl stop psd.service &>/dev/null
-	
-		[ -f /etc/psd.conf ] &&
-			mv /etc/psd.conf /etc/psd.conf.old
 		;;
 
 	abort-upgrade)
