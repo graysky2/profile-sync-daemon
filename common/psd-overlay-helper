@@ -1,5 +1,5 @@
 #!/bin/bash
-readonly PATH=/usr/bin
+readonly PATH=/usr/bin:/bin
 readonly IFS=$' \t\n'
 
 while getopts :v:l:u:w:d: OPT; do
