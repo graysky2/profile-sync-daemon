@@ -3,6 +3,8 @@ DEPENDENCIES
  rsync
  systemd
 
+ for debian only: module-init-tools
+
 BUILDING
  Setup the via a make.
 
