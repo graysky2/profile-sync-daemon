@@ -16,7 +16,7 @@ Update instructions from version 5.x:
 * Run psd to create your `~/.config/psd/psd.conf` and then edit it as you normally would.
 * Check it in parse mode `psd p` and if happy with the output, run it via systemd usermode: `systemctl --user start psd` (and optionally enable it).
 
-Note that if you're using overlayfs mode, your user needs to have sudo right to /usr/bin/mount and /usr/bin/umount or else psd will refuse to run in overlayfs mode.
+Note that if you're using overlayfs mode, your user needs to have sudo right to /usr/bin/psd-overlay-helper or else psd will refuse to run in overlayfs mode.
 
 ##Supported Browsers
 * Chromium
