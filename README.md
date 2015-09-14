@@ -47,6 +47,7 @@ To build from source, see the included INSTALL text document.
 
 ##Installation from Distro Packages
 ### Officially Packaged
+* ![logo](http://gnulinuxvagos.es/public/style_extra/downloads_traffic_images/os_Antergos.png "antergos logo")Antergos: in the official [repos](http://build.antergos.com/browse/main#).
 * ![logo](http://cloud.ohloh.net/attachments/14589/me_small.png "exherbo logo")Exherbo: in the official [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
 * ![logo](http://s9.postimg.org/p5f1tscxn/fedora.jpg "fedora logo")Fedora: in the official [repos](http://koji.fedoraproject.org/koji/packageinfo?packageID=16307).
 * ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo: in the official [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
