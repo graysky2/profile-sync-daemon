@@ -5,6 +5,9 @@
 # Inspired by some code originally written by Colin Verot
 #
 
+# needed for debian
+PATH=$PATH:/sbin
+
 BLD="\e[01m"
 RED="\e[01;31m"
 GRN="\e[01;32m"
