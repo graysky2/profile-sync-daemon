@@ -5,7 +5,7 @@
 # Inspired by some code originally written by Colin Verot
 #
 
-# needed for debian 8.xn
+# needed for debian 8.x
 [[ -h /sbin ]] || PATH=$PATH:/sbin
 
 BLD="\e[01m"
