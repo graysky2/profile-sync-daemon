@@ -5,8 +5,8 @@
 # Inspired by some code originally written by Colin Verot
 #
 
-# needed for debian
-PATH=$PATH:/sbin
+# needed for debian 8.xn
+[[ -h /sbin ]] || PATH=$PATH:/sbin
 
 BLD="\e[01m"
 RED="\e[01;31m"
@@ -145,6 +145,8 @@ dep_check() {
 	# checks for dependencies and that psd.conf is setup correctly
 	command -v rsync >/dev/null 2>&1 || {
 	echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
+	command -v modinfo >/dev/null 2>&1 || {
+	echo -e " ${BLD}I require modinfo but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
 	command -v awk >/dev/null 2>&1 || {
 	echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
 	if [[ $OLFS -eq 1 ]]; then
