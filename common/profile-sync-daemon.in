@@ -372,7 +372,7 @@ do_sync_for(){
 
 			# sync the tmpfs targets to the disc
 			if [[ -e "$DIR"/.flagged ]]; then
-				rsync -aogX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
+				rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
 			else
 				# initial sync
 				if [[ $OLFS -eq 1 ]]; then
@@ -383,7 +383,7 @@ do_sync_for(){
 					fi
 				else
 					# keep user from launching browser while rsync is active
-					rsync -aogX --inplace --no-whole-file "$BACKUP/" "$TMP"
+					rsync -aX --inplace --no-whole-file "$BACKUP/" "$TMP"
 				fi
 
 				# Now browser can start
