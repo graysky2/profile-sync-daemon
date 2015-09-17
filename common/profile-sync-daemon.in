@@ -20,7 +20,6 @@ HOME="$(getent passwd $user | cut -d: -f6)"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 PSDCONFDIR="$XDG_CONFIG_HOME/psd"
 PSDCONF="$PSDCONFDIR/psd.conf"
-PID_FILE="$PSDCONFDIR/.$user@$(hostname).pid"
 SHAREDIR="/usr/share/psd"
 
 if [[ ! -d "$SHAREDIR" ]]; then
@@ -73,6 +72,8 @@ if [[ -n "$XDG_RUNTIME_DIR" ]]; then
 else
 	[[ -z "$VOLATILE" ]] &&  VOLATILE="/tmp"
 fi
+
+PID_FILE="$VOLATILE/psd.pid"
 
 # simple function to determine user intent rather than using a null value
 case "${USE_OVERLAYFS,,}" in
@@ -208,7 +209,10 @@ ungraceful_state_check() {
 			[[ -e "$DIR/.flagged" ]] && continue
 
 			NOW=$(date +%Y%m%d_%H%M%S)
-			[[ -h "$DIR" ]] && unlink "$DIR"
+			if [[ -h "$DIR" ]]; then
+				echo "Ungraceful state detected for $DIR so fixing"
+				unlink "$DIR"
+			fi
 			if [[ -d "$BACKUP" ]]; then
 				if [[ $CRRE -eq 1 ]]; then
 					opts="-a --reflink=auto"
