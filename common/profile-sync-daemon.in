@@ -136,7 +136,7 @@ else
 fi
 
 header() {
-	[[ -z "$distro" ]] &&	echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM} ||
+	[[ -z "$distro" ]] && echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM} ||
 		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $distro"${NRM}
 	echo
 }
@@ -552,10 +552,19 @@ parse() {
 
 case "$1" in
 	p|P|Parse|parse|Preview|preview|debug)
-		dep_check && config_check && dup_check && header && parse
+		dep_check
+		config_check
+		dup_check
+		ungraceful_state_check
+		header
+		parse
 		;;
 	c|C|clean|Clean)
-		dep_check && config_check && dup_check && header && cleanup
+		dep_check
+		config_check
+		dup_check
+		header
+		cleanup
 		;;
 	sync)
 		if [[ ! -f $PID_FILE ]]; then
