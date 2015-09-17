@@ -3,8 +3,6 @@ DEPENDENCIES
  rsync
  systemd
 
- for debian only: module-init-tools
-
 BUILDING
  Setup the via a make.
 
@@ -14,29 +12,14 @@ BUILDING
  
  # make install
 
+ Note that it is not required in many case, but on ocassion, internals are
+ changed in the psd code which makes users stopping any active psd session
+ BEFORE the make install setup a good idea.
+
+ Users of Arch/Chakra/Antergos and graysky's PPA (Ubuntu/Debian) do not
+ need to worry about  this as the respective package managers will do 
+ this for you. The Fedora packages should also have this built it.
+
 USE A DISTRO PROVIDED PACKAGE
- ARCH LINUX
- Arch users may build the package directly with the provided PKGBUILD:
- https://aur.archlinux.org/packages/profile-sync-daemon
-
- CHAKRA
- Chakra users may build the package directly with the provided PKGBUILD:
- http://chakraos.org/ccr/packages.php?ID=5008
-
- DEBIAN/UBUNTU
- Debian/Ubuntu users may use the PPA graysky maintains at this url:
- https://launchpad.net/~graysky/+archive/utils
-
- Note that your system MUST be using systemd as the init system. I believe this
- to be true for the following:
- Debian 8.0+
- Mint 18.0+ ???
- Ubuntu 15.04+
-
- FEDORA
- Fedora users may use the official Fedora repositories to install psd. Approval
- has been granted for inclusion on 01-Jun-2013[1].
- 1. https://bugzilla.redhat.com/show_bug.cgi?id=968253
-
- VOID LINUX
- Void users can download the package directly from the official repos.
+ See the project homepage for an updated list of provided packages:
+ https://github.com/graysky2/profile-sync-daemon
