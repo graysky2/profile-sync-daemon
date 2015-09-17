@@ -2,7 +2,7 @@
 Description=Profile-sync-daemon
 Documentation=man:psd(1) man:profile-sync-daemon(1)
 Documentation=https://wiki.archlinux.org/index.php/Profile-sync-daemon
-Wants=psd-resync.service local-fs.target
+Wants=psd-resync.service
 RequiresMountsFor=/home/
 After=winbindd.service
 
@@ -10,7 +10,8 @@ After=winbindd.service
 Type=notify
 NotifyAccess=all
 RemainAfterExit=yes
-ExecStart=/usr/bin/profile-sync-daemon sync
+# just call /bin/true and let psd-resync.service do it for speed
+ExecStart=/bin/true
 ExecStop=/usr/bin/profile-sync-daemon unsync
 
 [Install]
