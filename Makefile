@@ -19,7 +19,6 @@ INSTALL_SCRIPT = $(INSTALL) -m755
 INSTALL_DATA = $(INSTALL) -m644
 INSTALL_DIR = $(INSTALL) -d
 RSYNC = rsync -a
-
 Q = @
 
 common/$(PN): common/$(PN).in
@@ -67,7 +66,6 @@ uninstall-bin:
 	$(RM) -rf "$(DESTDIR)$(SHAREDIR)/browsers"
 	rmdir "$(DESTDIR)$(SHAREDIR)"
 
-
 uninstall-man:
 	$(RM) -f "$(DESTDIR)$(MANDIR)/$(PN).1.gz"
 	$(RM) -f "$(DESTDIR)$(MANDIR)/psd.1.gz"
@@ -84,4 +82,4 @@ uninstall: uninstall-bin uninstall-man uninstall-systemd
 clean:
 	$(RM) -f common/$(PN)
 
-.PHONY: help install-bin install-man install-cron install-systemd install uninstall-bin uninstall-man uninstall-cron uninstall-systemd uninstall clean
+.PHONY: install-bin install-man install-systemd install uninstall-bin uninstall-man uninstall-systemd uninstall clean
