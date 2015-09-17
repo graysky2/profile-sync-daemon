@@ -1,7 +1,6 @@
 [Unit]
 Description=Timed resync
 After=psd.service
-Wants=psd-resync.timer
 PartOf=psd.service
 
 [Service]
