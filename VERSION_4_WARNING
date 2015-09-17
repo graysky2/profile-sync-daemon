@@ -1,8 +1,0 @@
-WARNING:
-
-Usage of the "mozilla" variable in the BROWSERS array is depreciated starting with profile-sync-daemon v4.00.
-It has been replaced with the "firefox" variable.
-
-In order to safely upgrade, you must run an unsync to rotate your firefox profile back to disk using verion 3.x
-
-As usual, watch for any changes in the newly provided /etc/psd.conf as well and be sure to incorporate them.
