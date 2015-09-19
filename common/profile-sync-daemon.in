@@ -398,7 +398,6 @@ do_sync_for() {
 				ln -s "$TMP" "$DIR"
 				chown -h $user:$group "$DIR"
 				touch "$DIR/.flagged"
-				echo -e "${BLD}$browser $REPORT successful"${NRM}
 			fi
 		else
 			if [[ ! -d "$homedir" ]] ; then
@@ -410,6 +409,7 @@ do_sync_for() {
 			fi
 		fi
 	done
+	echo -e "${BLD}$browser $REPORT successful"${NRM}
 }
 
 
@@ -572,17 +572,7 @@ case "$1" in
 		header
 		cleanup
 		;;
-	sync)
-		if [[ ! -f $PID_FILE ]]; then
-			dep_check
-			config_check
-			dup_check
-			running_check
-			ungraceful_state_check
-			do_sync
-		fi
-		;;
-	resync)
+	sync|resync)
 		if [[ -f $PID_FILE ]]; then
 			do_sync
 		else
