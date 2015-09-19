@@ -395,6 +395,7 @@ do_sync_for(){
 				ln -s "$TMP" "$DIR"
 				chown -h $user:$group "$DIR"
 				touch "$DIR/.flagged"
+				echo -e "${BLD}$DIR sync successful"${NRM}
 			fi
 		else
 			if [[ ! -d "$homedir" ]] ; then
@@ -424,7 +425,6 @@ do_sync() {
 	done
 	systemd-notify --ready --status="Waiting sync for ${browser}..."
 	wait
-	echo -e "${BLD}Sync successful"${NRM}
 }
 
 do_unsync() {
