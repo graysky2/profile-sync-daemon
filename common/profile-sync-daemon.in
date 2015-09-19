@@ -278,7 +278,7 @@ running_check() {
 	done
 }
 
-suffix_needed(){
+suffix_needed() {
 	browser=$1
 	unset check_suffix
 	. "$SHAREDIR/browsers/$browser"
@@ -338,7 +338,7 @@ kill_browsers() {
 	done
 }
 
-do_sync_for(){
+do_sync_for() {
 	browser=$1
 	load_env_for "$browser"
 	for item in "${DIRArr[@]}"; do
@@ -351,6 +351,7 @@ do_sync_for(){
 		TMP="$VOLATILE/$user-$browser$suffix"
 		TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
 		TMPWK="$VOLATILE/.$user-$browser${suffix}"
+		local REPORT
 
 		# make tmpfs container
 		if [[ -d "$DIR" ]]; then
@@ -370,15 +371,17 @@ do_sync_for(){
 			# backup target and link to tmpfs container
 			if [[ $(readlink "$DIR") != "$TMP" ]]; then
 				mv "$DIR" "$BACKUP"
-				# Refuse to start browser while initial sync
+				# refuse to start browser while initial sync
 				ln -s /dev/null "$DIR"
 			fi
 
 			# sync the tmpfs targets to the disc
 			if [[ -e "$DIR"/.flagged ]]; then
+				REPORT="resync"
 				rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
 			else
 				# initial sync
+				REPORT="sync"
 				if [[ $OLFS -eq 1 ]]; then
 					sudo psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$TMPRW" -w "$TMPWK" -d "$TMP" mountup
 					if [[ $? -ne 0 ]]; then
@@ -390,12 +393,12 @@ do_sync_for(){
 					rsync -aX --inplace --no-whole-file "$BACKUP/" "$TMP"
 				fi
 
-				# Now browser can start
+				# now browser can start
 				[[ $(readlink "$DIR") = "/dev/null" ]] && unlink "$DIR"
 				ln -s "$TMP" "$DIR"
 				chown -h $user:$group "$DIR"
 				touch "$DIR/.flagged"
-				echo -e "${BLD}$browser sync successful"${NRM}
+				echo -e "${BLD}$browser $REPORT successful"${NRM}
 			fi
 		else
 			if [[ ! -d "$homedir" ]] ; then
