@@ -2,7 +2,7 @@
 Description=Profile-sync-daemon
 Documentation=man:psd(1) man:profile-sync-daemon(1)
 Documentation=https://wiki.archlinux.org/index.php/Profile-sync-daemon
-Wants=psd-resync.service
+Requires=psd-resync.timer
 RequiresMountsFor=/home/
 After=winbindd.service
 
