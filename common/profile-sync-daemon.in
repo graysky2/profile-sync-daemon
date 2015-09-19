@@ -395,7 +395,7 @@ do_sync_for(){
 				ln -s "$TMP" "$DIR"
 				chown -h $user:$group "$DIR"
 				touch "$DIR/.flagged"
-				echo -e "${BLD}$DIR sync successful"${NRM}
+				echo -e "${BLD}$browser sync successful"${NRM}
 			fi
 		else
 			if [[ ! -d "$homedir" ]] ; then
@@ -456,7 +456,7 @@ do_unsync() {
 						rm -rf "$TMP" "$TMPRW" "$TMPWK"
 				fi
 				[[ -d "$TMP" ]] && rm -rf "$TMP"
-				echo -e "${BLD}Unsync successful"${NRM}
+				echo -e "${BLD}$browser unsync successful"${NRM}
 			else
 				if [[ ! -d "$homedir" ]] ; then
 					echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
@@ -465,7 +465,6 @@ do_unsync() {
 			fi
 		done
 	done
-	echo -e "${BLD}Unsync successful"${NRM}
 }
 
 parse() {
