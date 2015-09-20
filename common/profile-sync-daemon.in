@@ -399,6 +399,7 @@ do_sync_for() {
 				chown -h $user:$group "$DIR"
 				touch "$DIR/.flagged"
 			fi
+			echo -e "${BLD}$browser $REPORT successful"${NRM}
 		else
 			if [[ ! -d "$homedir" ]] ; then
 				echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
@@ -409,7 +410,6 @@ do_sync_for() {
 			fi
 		fi
 	done
-	echo -e "${BLD}$browser $REPORT successful"${NRM}
 }
 
 
