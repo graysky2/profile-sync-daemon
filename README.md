@@ -78,7 +78,7 @@ Since June of 2013, Profile-sync-daemon is in the official repo. [Reference](htt
 
 ###Ubuntu Users
 You must be using AT LEAST Ubuntu 15.04 (Vivid) or have systemd as your init system to use these packages!
-To add the PPA (personal package archive) to your Ubuntu system (packages available for Lucid and newer), and to install psd:
+To add the PPA (personal package archive) to your Ubuntu system (packages available for Vivid and newer), and to install psd:
 
     sudo add-apt-repository ppa:graysky/utils
     sudo apt-get update
