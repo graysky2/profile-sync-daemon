@@ -1,4 +1,4 @@
-VERSION = 6.11
+VERSION = 6.11.1
 PN = profile-sync-daemon
 
 PREFIX ?= /usr
@@ -33,9 +33,9 @@ install-bin: common/$(PN)
 	ln -s $(PN) "$(DESTDIR)$(BINDIR)/psd"
 	$(INSTALL_DIR) "$(DESTDIR)$(ZSHDIR)"
 	$(INSTALL_DATA) common/zsh-completion "$(DESTDIR)/$(ZSHDIR)/_psd"
-	$(INSTALL_DIR) "$(DESTDIR)$(SHAREDIR)"
+	$(INSTALL_DIR) "$(DESTDIR)$(SHAREDIR)/browsers"
 	$(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(SHAREDIR)/psd.conf"
-	$(RSYNC) common/browsers/ "$(DESTDIR)$(SHAREDIR)/browsers/"
+	cp common/browsers/* "$(DESTDIR)$(SHAREDIR)/browsers"
 
 install-man:
 	$(Q)echo -e '\033[1;32mInstalling manpage...\033[0m'
