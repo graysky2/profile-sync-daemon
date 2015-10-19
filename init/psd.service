@@ -16,3 +16,4 @@ ExecStop=/usr/bin/profile-sync-daemon unsync
 
 [Install]
 WantedBy=default.target
+Also=psd-sleep.service
