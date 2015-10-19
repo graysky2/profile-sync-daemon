@@ -1,0 +1,16 @@
+[Unit]
+Description=Profile-sync-daemon
+Documentation=man:psd(1) man:profile-sync-daemon(1)
+Documentation=https://wiki.archlinux.org/index.php/Profile-sync-daemon
+Before=sleep.target
+StopWhenUnneeded=yes
+RequiresMountsFor=/home/
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/profile-sync-daemon unsync
+ExecStop=/usr/bin/profile-sync-daemon resync
+
+[Install]
+WantedBy=sleep.target
