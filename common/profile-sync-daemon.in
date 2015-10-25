@@ -344,6 +344,7 @@ do_sync_for() {
 	for item in "${DIRArr[@]}"; do
 		DIR="$item"
 		BACKUP="$item-backup"
+		BACK_OVFS="$item-back-ovfs"
 		suffix=
 		if suffix_needed "$browser"; then
 			suffix="-${item##*/}"
@@ -378,7 +379,11 @@ do_sync_for() {
 			# sync the tmpfs targets to the disc
 			if [[ -e "$DIR"/.flagged ]]; then
 				REPORT="resync"
-				rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
+				if [[ $OLFS -eq 1 ]]; then
+					rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACK_OVFS/"
+				else
+					rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
+				fi
 			else
 				# initial sync
 				REPORT="sync"
@@ -439,6 +444,7 @@ do_unsync() {
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
+			BACK_OVFS="$item-back-ovfs"
 			suffix=
 			if suffix_needed "$browser"; then
 				suffix="-${item##*/}"
@@ -455,6 +461,7 @@ do_unsync() {
 				# restore original dirtree
 				[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
 				if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
+					rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$DIR/"
 					sudo psd-overlay-helper -d "$TMP" mountdown &&
 						rm -rf "$TMP" "$TMPRW" "$TMPWK"
 				fi
