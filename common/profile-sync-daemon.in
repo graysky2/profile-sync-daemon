@@ -350,8 +350,8 @@ do_sync_for() {
 			suffix="-${item##*/}"
 		fi
 		TMP="$VOLATILE/$user-$browser$suffix"
-		TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
-		TMPWK="$VOLATILE/.$user-$browser${suffix}"
+		UPPER="$VOLATILE/$user-$browser${suffix}-rw"
+		WORK="$VOLATILE/.$user-$browser${suffix}"
 		local REPORT
 
 		# make tmpfs container
@@ -362,10 +362,10 @@ do_sync_for() {
 
 			if [[ $OLFS -eq 1 ]]; then
 				if [[ $OLFSVER -eq 23 ]]; then
-					[[ -r "$TMPRW" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPRW"
-					[[ -r "$TMPWK" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPWK"
+					[[ -r "$UPPER" ]] || install -dm$PREFIXP --owner=$user --group=$group "$UPPER"
+					[[ -r "$WORK" ]] || install -dm$PREFIXP --owner=$user --group=$group "$WORK"
 				elif [[ $OLFSVER -eq 22 ]]; then
-					[[ -r "$TMPRW" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPRW"
+					[[ -r "$UPPER" ]] || install -dm$PREFIXP --owner=$user --group=$group "$UPPER"
 				fi
 			fi
 
@@ -388,7 +388,7 @@ do_sync_for() {
 				# initial sync
 				REPORT="sync"
 				if [[ $OLFS -eq 1 ]]; then
-					sudo psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$TMPRW" -w "$TMPWK" -d "$TMP" mountup
+					sudo psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$UPPER" -w "$WORK" -d "$TMP" mountup
 					if [[ $? -ne 0 ]]; then
 						echo -e "Error in trying to mount $TMP - this should not happen!"
 						exit 1
@@ -450,8 +450,8 @@ do_unsync() {
 				suffix="-${item##*/}"
 			fi
 			TMP="$VOLATILE/$user-$browser$suffix"
-			TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
-			TMPWK="$VOLATILE/.$user-$browser${suffix}"
+			UPPER="$VOLATILE/$user-$browser${suffix}-rw"
+			WORK="$VOLATILE/.$user-$browser${suffix}"
 			# check if user has browser profile
 			if [[ -h "$DIR" ]]; then
 				unlink "$DIR"
@@ -463,7 +463,7 @@ do_unsync() {
 				if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
 					rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$DIR/"
 					sudo psd-overlay-helper -d "$TMP" mountdown &&
-						rm -rf "$TMP" "$TMPRW" "$TMPWK"
+						rm -rf "$TMP" "$UPPER" "$WORK"
 				fi
 				[[ -d "$TMP" ]] && rm -rf "$TMP"
 				echo -e "${BLD}$browser unsync successful"${NRM}
@@ -509,7 +509,7 @@ parse() {
 			if suffix_needed "$browser"; then
 				suffix="-${item##*/}"
 			fi
-			TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
+			UPPER="$VOLATILE/$user-$browser${suffix}-rw"
 			if [[ -d "$DIR" ]]; then
 				# first count up any crashrecovery dirs
 				ls "$item"-backup-crashrecovery* &>/dev/null
@@ -541,7 +541,7 @@ parse() {
 				echo -en " ${BLD}profile size:"
 				echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
 				if [[ $OLFS -eq 1 ]]; then
-					rwsize=$(du -Lh --max-depth=0 "$TMPRW" 2>/dev/null | awk '{ print $1 }')
+					rwsize=$(du -Lh --max-depth=0 "$UPPER" 2>/dev/null | awk '{ print $1 }')
 					echo -en " ${BLD}overlayfs size:"
 					echo -e "$(tput cr)$(tput cuf 17) $rwsize"${NRM}
 				fi

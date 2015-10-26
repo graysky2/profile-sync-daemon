@@ -11,10 +11,10 @@ while getopts :v:l:u:w:d: OPT; do
 			readonly BACKUP=$OPTARG
 			;;
 		u|+u)
-			readonly TMPRW=$OPTARG
+			readonly UPPER=$OPTARG
 			;;
 		w|+w)
-			readonly TMPWK=$OPTARG
+			readonly WORK=$OPTARG
 			;;
 		d|+d)
 			readonly TMP=$OPTARG
@@ -28,9 +28,9 @@ OPTIND=1
 case "$1" in
 	mountup)
 		if [[ $OLFSVER -eq 23 ]]; then
-			mount -o nosuid,nodev,noexec -t overlay overlaid -olowerdir="$BACKUP",upperdir="$TMPRW",workdir="$TMPWK" "$TMP"
+			mount -o nosuid,nodev,noexec -t overlay overlaid -olowerdir="$BACKUP",upperdir="$UPPER",workdir="$WORK" "$TMP"
 		elif [[ $OLFSVER -eq 22 ]]; then
-			mount -o nosuid,nodev,noexec -t overlayfs overlaid -olowerdir="$BACKUP",upperdir="$TMPRW" "$TMP"
+			mount -o nosuid,nodev,noexec -t overlayfs overlaid -olowerdir="$BACKUP",upperdir="$UPPER" "$TMP"
 		fi
 		;;
 	mountdown)
