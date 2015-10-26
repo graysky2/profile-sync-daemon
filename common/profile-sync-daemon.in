@@ -47,6 +47,15 @@ else
 		exit 0
 	fi
 fi
+
+# prefer using $XDG_RUNTIME_DIR for VOLATILE but fall-back to config value
+if [[ -n "$XDG_RUNTIME_DIR" ]]; then
+	VOLATILE="$XDG_RUNTIME_DIR"
+else
+	[[ -z "$VOLATILE" ]] &&  VOLATILE="/tmp"
+fi
+
+PID_FILE="$VOLATILE/psd.pid"
 # if psd is active, source the snapshot of psd.conf preferentially
 # version 6.03 renames this file so if older version is running then
 # rotate the old name to the new one
@@ -57,7 +66,7 @@ fi
 if [[ -f "$PID_FILE" ]]; then
 	if [[ -f "$PSDCONFDIR/.psd.conf" ]]; then
 		PSDCONF="$PSDCONFDIR/.psd.conf"
-		unset USE_OVERLAYFS BROWSERS VOLATILE USE_BACKUPS
+		unset USE_OVERLAYFS BROWSERS USE_BACKUPS
 		. $PSDCONF
 	fi
 fi
@@ -65,15 +74,6 @@ fi
 # all supported browsers
 ALL_BROWSERS=( $(ls "${SHAREDIR}/browsers/") )
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
-
-# prefer using $XDG_RUNTIME_DIR for VOLATILE but fall-back to config value
-if [[ -n "$XDG_RUNTIME_DIR" ]]; then
-	VOLATILE="$XDG_RUNTIME_DIR"
-else
-	[[ -z "$VOLATILE" ]] &&  VOLATILE="/tmp"
-fi
-
-PID_FILE="$VOLATILE/psd.pid"
 
 # simple function to determine user intent rather than using a null value
 case "${USE_OVERLAYFS,,}" in
