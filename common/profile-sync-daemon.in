@@ -251,6 +251,9 @@ ungraceful_state_check() {
 					fi
 				fi
 			fi
+
+			# if overlayfs was active but is no longer, remove $BACK_OVFS
+			[[ $OLFS -eq 1 ]] || rm -rf "$BACK_OVFS"
 		done
 	done
 }
