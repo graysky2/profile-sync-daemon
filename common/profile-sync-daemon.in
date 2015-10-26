@@ -205,6 +205,8 @@ ungraceful_state_check() {
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
+			BACK_OVFS="$item-back-ovfs"
+
 			# all is well so continue
 			[[ -e "$DIR/.flagged" ]] && continue
 
@@ -213,12 +215,41 @@ ungraceful_state_check() {
 				echo "Ungraceful state detected for $DIR so fixing"
 				unlink "$DIR"
 			fi
+
 			if [[ -d "$BACKUP" ]]; then
-				if [[ $CRRE -eq 1 ]]; then
-					opts="-a --reflink=auto"
-					cp $opts "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+				if [[ -d "$BACK_OVFS" ]]; then
+					# always snapshot the most recent of these two dirs...
+					# if using overlayfs $BACK_OVFS and $BACKUP should be compared
+					# against each other to see which is newer and then that should
+					# be what psd snapshots since BACKUP (the lowerdir) is readonly
+					# at the time the user started psd could be many resync cycles
+					# in the past
+
+					BACKUP_TIME=$(stat "$BACKUP" | grep Change | awk '{ print $2,$3 }')
+					BACK_OVFS_TIME=$(stat "$BACK_OVFS" | grep Change | awk '{ print $2,$3 }')
+
+					[[ $(date -d "$BACK_OVFS_TIME" "+%s") -ge $(date -d "$BACKUP_TIME" "+%s") ]] &&
+						TARGETTOKEEP="$BACK_OVFS" ||
+						TARGETTOKEEP="$BACKUP"
+
+					if [[ $CRRE -eq 1 ]]; then
+						opts="-a --reflink=auto"
+						cp $opts "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
+					fi
+
+					mv "$TARGETTOKEEP" "$DIR"
+					rm -rf "$BACKUP"
+				else
+					# we only find the BACKUP and no BACKOVFS then either the initial resync
+					# never occurred before the crash using overlayfs or we aren't using overlayfs
+					# at all which can be treated the same way
+
+					if [[ $CRRE -eq 1 ]]; then
+						opts="-a --reflink=auto"
+						cp $opts "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+						mv "$BACKUP" "$DIR"
+					fi
 				fi
-				mv "$BACKUP" "$DIR"
 			fi
 		done
 	done
