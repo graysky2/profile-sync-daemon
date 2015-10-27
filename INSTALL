@@ -3,13 +3,18 @@ DEPENDENCIES
  rsync
  systemd
 
+WARNING
+To avoid data loss, it is HIGHLY recommended that users stop any running
+versions of this software before install updates. Internal changes are
+always possible from one release to another.
+
 BUILDING
  Setup the via a make.
 
  $ make
 
  Running a `make install` as root will distribute the files to the filesystem.
- 
+
  # make install
 
  Note that it is not required in many case, but on ocassion, internals are
@@ -17,7 +22,7 @@ BUILDING
  BEFORE the make install setup a good idea.
 
  Users of Arch/Chakra/Antergos and graysky's PPA (Ubuntu/Debian) do not
- need to worry about this as the respective package managers will do 
+ need to worry about this as the respective package managers will do
  this for you. The Fedora packages should also have this built it.
 
 USE A DISTRO PROVIDED PACKAGE
