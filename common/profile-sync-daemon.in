@@ -47,6 +47,15 @@ else
 		exit 0
 	fi
 fi
+
+# prefer using $XDG_RUNTIME_DIR for VOLATILE but fall-back to config value
+if [[ -n "$XDG_RUNTIME_DIR" ]]; then
+	VOLATILE="$XDG_RUNTIME_DIR"
+else
+	[[ -z "$VOLATILE" ]] &&  VOLATILE="/tmp"
+fi
+
+PID_FILE="$VOLATILE/psd.pid"
 # if psd is active, source the snapshot of psd.conf preferentially
 # version 6.03 renames this file so if older version is running then
 # rotate the old name to the new one
@@ -57,7 +66,7 @@ fi
 if [[ -f "$PID_FILE" ]]; then
 	if [[ -f "$PSDCONFDIR/.psd.conf" ]]; then
 		PSDCONF="$PSDCONFDIR/.psd.conf"
-		unset USE_OVERLAYFS BROWSERS VOLATILE USE_BACKUPS
+		unset USE_OVERLAYFS BROWSERS USE_BACKUPS
 		. $PSDCONF
 	fi
 fi
@@ -65,15 +74,6 @@ fi
 # all supported browsers
 ALL_BROWSERS=( $(ls "${SHAREDIR}/browsers/") )
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
-
-# prefer using $XDG_RUNTIME_DIR for VOLATILE but fall-back to config value
-if [[ -n "$XDG_RUNTIME_DIR" ]]; then
-	VOLATILE="$XDG_RUNTIME_DIR"
-else
-	[[ -z "$VOLATILE" ]] &&  VOLATILE="/tmp"
-fi
-
-PID_FILE="$VOLATILE/psd.pid"
 
 # simple function to determine user intent rather than using a null value
 case "${USE_OVERLAYFS,,}" in
@@ -205,6 +205,8 @@ ungraceful_state_check() {
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
+			BACK_OVFS="$item-back-ovfs"
+
 			# all is well so continue
 			[[ -e "$DIR/.flagged" ]] && continue
 
@@ -213,13 +215,45 @@ ungraceful_state_check() {
 				echo "Ungraceful state detected for $DIR so fixing"
 				unlink "$DIR"
 			fi
+
 			if [[ -d "$BACKUP" ]]; then
-				if [[ $CRRE -eq 1 ]]; then
-					opts="-a --reflink=auto"
-					cp $opts "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+				if [[ -d "$BACK_OVFS" ]]; then
+					# always snapshot the most recent of these two dirs...
+					# if using overlayfs $BACK_OVFS and $BACKUP should be compared
+					# against each other to see which is newer and then that should
+					# be what psd snapshots since BACKUP (the lowerdir) is readonly
+					# at the time the user started psd could be many resync cycles
+					# in the past
+
+					BACKUP_TIME=$(stat "$BACKUP" | grep Change | awk '{ print $2,$3 }')
+					BACK_OVFS_TIME=$(stat "$BACK_OVFS" | grep Change | awk '{ print $2,$3 }')
+
+					[[ $(date -d "$BACK_OVFS_TIME" "+%s") -ge $(date -d "$BACKUP_TIME" "+%s") ]] &&
+						TARGETTOKEEP="$BACK_OVFS" ||
+						TARGETTOKEEP="$BACKUP"
+
+					if [[ $CRRE -eq 1 ]]; then
+						opts="-a --reflink=auto"
+						cp $opts "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
+					fi
+
+					mv "$TARGETTOKEEP" "$DIR"
+					rm -rf "$BACKUP"
+				else
+					# we only find the BACKUP and no BACKOVFS then either the initial resync
+					# never occurred before the crash using overlayfs or we aren't using overlayfs
+					# at all which can be treated the same way
+
+					if [[ $CRRE -eq 1 ]]; then
+						opts="-a --reflink=auto"
+						cp $opts "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+						mv "$BACKUP" "$DIR"
+					fi
 				fi
-				mv "$BACKUP" "$DIR"
 			fi
+
+			# if overlayfs was active but is no longer, remove $BACK_OVFS
+			[[ $OLFS -eq 1 ]] || rm -rf "$BACK_OVFS"
 		done
 	done
 }
@@ -344,13 +378,14 @@ do_sync_for() {
 	for item in "${DIRArr[@]}"; do
 		DIR="$item"
 		BACKUP="$item-backup"
+		BACK_OVFS="$item-back-ovfs"
 		suffix=
 		if suffix_needed "$browser"; then
 			suffix="-${item##*/}"
 		fi
 		TMP="$VOLATILE/$user-$browser$suffix"
-		TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
-		TMPWK="$VOLATILE/.$user-$browser${suffix}"
+		UPPER="$VOLATILE/$user-$browser${suffix}-rw"
+		WORK="$VOLATILE/.$user-$browser${suffix}"
 		local REPORT
 
 		# make tmpfs container
@@ -361,10 +396,10 @@ do_sync_for() {
 
 			if [[ $OLFS -eq 1 ]]; then
 				if [[ $OLFSVER -eq 23 ]]; then
-					[[ -r "$TMPRW" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPRW"
-					[[ -r "$TMPWK" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPWK"
+					[[ -r "$UPPER" ]] || install -dm$PREFIXP --owner=$user --group=$group "$UPPER"
+					[[ -r "$WORK" ]] || install -dm$PREFIXP --owner=$user --group=$group "$WORK"
 				elif [[ $OLFSVER -eq 22 ]]; then
-					[[ -r "$TMPRW" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMPRW"
+					[[ -r "$UPPER" ]] || install -dm$PREFIXP --owner=$user --group=$group "$UPPER"
 				fi
 			fi
 
@@ -378,12 +413,16 @@ do_sync_for() {
 			# sync the tmpfs targets to the disc
 			if [[ -e "$DIR"/.flagged ]]; then
 				REPORT="resync"
-				rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
+				if [[ $OLFS -eq 1 ]]; then
+					rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACK_OVFS/"
+				else
+					rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
+				fi
 			else
 				# initial sync
 				REPORT="sync"
 				if [[ $OLFS -eq 1 ]]; then
-					sudo psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$TMPRW" -w "$TMPWK" -d "$TMP" mountup
+					sudo psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$UPPER" -w "$WORK" -d "$TMP" mountup
 					if [[ $? -ne 0 ]]; then
 						echo -e "Error in trying to mount $TMP - this should not happen!"
 						exit 1
@@ -439,13 +478,14 @@ do_unsync() {
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
 			BACKUP="$item-backup"
+			BACK_OVFS="$item-back-ovfs"
 			suffix=
 			if suffix_needed "$browser"; then
 				suffix="-${item##*/}"
 			fi
 			TMP="$VOLATILE/$user-$browser$suffix"
-			TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
-			TMPWK="$VOLATILE/.$user-$browser${suffix}"
+			UPPER="$VOLATILE/$user-$browser${suffix}-rw"
+			WORK="$VOLATILE/.$user-$browser${suffix}"
 			# check if user has browser profile
 			if [[ -h "$DIR" ]]; then
 				unlink "$DIR"
@@ -455,8 +495,9 @@ do_unsync() {
 				# restore original dirtree
 				[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
 				if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
+					rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$DIR/"
 					sudo psd-overlay-helper -d "$TMP" mountdown &&
-						rm -rf "$TMP" "$TMPRW" "$TMPWK"
+						rm -rf "$TMP" "$UPPER" "$WORK"
 				fi
 				[[ -d "$TMP" ]] && rm -rf "$TMP"
 				echo -e "${BLD}$browser unsync successful"${NRM}
@@ -502,7 +543,7 @@ parse() {
 			if suffix_needed "$browser"; then
 				suffix="-${item##*/}"
 			fi
-			TMPRW="$VOLATILE/$user-$browser${suffix}-rw"
+			UPPER="$VOLATILE/$user-$browser${suffix}-rw"
 			if [[ -d "$DIR" ]]; then
 				# first count up any crashrecovery dirs
 				ls "$item"-backup-crashrecovery* &>/dev/null
@@ -534,7 +575,7 @@ parse() {
 				echo -en " ${BLD}profile size:"
 				echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
 				if [[ $OLFS -eq 1 ]]; then
-					rwsize=$(du -Lh --max-depth=0 "$TMPRW" 2>/dev/null | awk '{ print $1 }')
+					rwsize=$(du -Lh --max-depth=0 "$UPPER" 2>/dev/null | awk '{ print $1 }')
 					echo -en " ${BLD}overlayfs size:"
 					echo -e "$(tput cr)$(tput cuf 17) $rwsize"${NRM}
 				fi
