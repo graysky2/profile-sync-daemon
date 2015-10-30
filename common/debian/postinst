@@ -16,5 +16,4 @@ for i in $(users); do
 	su $i -c 'XDG_RUNTIME_DIR=/run/user/$UID systemctl --user daemon-reload'
 	return 0
 done
-systemctl daemon-reload
 

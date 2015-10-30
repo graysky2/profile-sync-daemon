@@ -11,6 +11,16 @@ case "$1" in
 			[ "$(systemctl is-active psd)" = "active" ] &&
 				systemctl stop psd.service &>/dev/null
 		fi
+
+		for i in $(users); do
+			if [ "$(su $i -c 'XDG_RUNTIME_DIR=/run/user/$UID systemctl --user is-active psd')" = "active" ]; then
+				echo "--> Internal changes to psd require it to be stopped before the update."
+				echo "--> Restart it manually:  systemctl --user start psd"
+				su $i -c 'XDG_RUNTIME_DIR=/run/user/$UID systemctl --user stop psd.service'
+			fi
+			return 0
+		done
+
 		;;
 
 	abort-upgrade)

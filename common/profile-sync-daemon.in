@@ -175,12 +175,10 @@ config_check() {
 		[[ $? -ne 0 ]] && FAILCODE=1
 
 		if [[ $FAILCODE -ne 0 ]]; then
-			echo -e "${BLD}${RED} ERROR!"${NRM}
-			echo -e " ${BLD}User $user needs sudo access to ${BLU}/usr/bin/mount${NRM}${BLD} and to ${BLU}/usr/bin/umount"${NRM}
-			echo -e " ${BLD}in order to use psd in overlayfs mode."${NRM}
+			echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, $user needs sudo access to ${BLU}/usr/bin/psd-overlay-helper${NRM}${BLD}"${NRM}
 			echo
 			echo -e " ${BLD}Fix this by adding the following line to ${BLU}/etc/sudoers${NRM}${BLD} to enable this functionality:"${NRM}
-			echo -e "   ${BLD}$user ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper"${NRM}
+			echo -e "  ${BLD}$user ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper"${NRM}
 			exit 1
 		fi
 	fi
