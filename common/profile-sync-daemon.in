@@ -23,7 +23,12 @@ PSDCONF="$PSDCONFDIR/psd.conf"
 SHAREDIR="/usr/share/psd"
 
 if [[ ! -d "$SHAREDIR" ]]; then
-	echo -e " Missing ${BLU}$SHAREDIR${NRM}${BLD} - reinstall the package to use profile-sync-daemon."
+	echo -e " Missing ${BLU}$SHAREDIR${NRM}${BLD} - reinstall the package to use profile-sync-daemon."${NRM}
+	exit 1
+fi
+
+if [[ ! -d "$XDG_RUNTIME_DIR" ]]; then
+	echo -e " Cannot find XDG_RUNTME_DIR which should be set by systemd."
 	exit 1
 fi
 
@@ -48,13 +53,7 @@ else
 	fi
 fi
 
-# prefer using $XDG_RUNTIME_DIR for VOLATILE but fall-back to config value
-if [[ -n "$XDG_RUNTIME_DIR" ]]; then
-	VOLATILE="$XDG_RUNTIME_DIR"
-else
-	[[ -z "$VOLATILE" ]] &&  VOLATILE="/tmp"
-fi
-
+VOLATILE="$XDG_RUNTIME_DIR"
 PID_FILE="$VOLATILE/psd.pid"
 # if psd is active, source the snapshot of psd.conf preferentially
 # version 6.03 renames this file so if older version is running then
@@ -68,6 +67,7 @@ if [[ -f "$PID_FILE" ]]; then
 		PSDCONF="$PSDCONFDIR/.psd.conf"
 		unset USE_OVERLAYFS BROWSERS USE_BACKUPS
 		. $PSDCONF
+		VOLATILE="$XDG_RUNTIME_DIR"
 	fi
 fi
 
