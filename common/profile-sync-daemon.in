@@ -67,6 +67,7 @@ if [[ -f "$PID_FILE" ]]; then
 		PSDCONF="$PSDCONFDIR/.psd.conf"
 		unset USE_OVERLAYFS BROWSERS USE_BACKUPS
 		. $PSDCONF
+		# defining VOLATILE in the config is deprecated since v6.16
 		VOLATILE="$XDG_RUNTIME_DIR"
 	fi
 fi
@@ -457,14 +458,24 @@ do_sync() {
 	# while psd is running to keep any edits made to the "live" psd.conf from
 	# potentially orphaning the snapshot copies thus preserving the data
 
-	[[ -f "$PSDCONFDIR/.psd.conf" ]] ||	cp "$PSDCONF" "$PSDCONFDIR/.psd.conf"
+	[[ -f "$PSDCONFDIR/.psd.conf" ]] || {
+	echo "# Automatically generated file; DO NOT EDIT!" > "$PSDCONFDIR/.psd.conf"
+	echo "# The purpose is to snapshot the settings used when psd was activated." >> "$PSDCONFDIR/.psd.conf"
+	echo "# Any edits to the live config: $PSDCONFDIR/psd.conf" >> "$PSDCONFDIR/.psd.conf"
+	echo "# will be applied the _next_ time psd is activated." >> "$PSDCONFDIR/.psd.conf"
+	echo "#" >> "$PSDCONFDIR/.psd.conf"
+	echo "USE_OVERLAYFS=\"$USE_OVERLAYFS\"">> "$PSDCONFDIR/.psd.conf"
+	echo "BROWSERS=\"$BROWSERS\"" >> "$PSDCONFDIR/.psd.conf"
+	echo "USE_BACKUPS=\"$USE_BACKUPS\"" >> "$PSDCONFDIR/.psd.conf"
+	chmod 400 "$PSDCONFDIR/.psd.conf"
+}
 
-	local browser
-	for browser in $BROWSERS; do
-		do_sync_for $browser &
-	done
-	systemd-notify --ready --status="Waiting sync for ${browser}..."
-	wait
+local browser
+for browser in $BROWSERS; do
+	do_sync_for $browser &
+done
+systemd-notify --ready --status="Waiting sync for ${browser}..."
+wait
 }
 
 do_unsync() {
