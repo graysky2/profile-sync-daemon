@@ -657,7 +657,7 @@ case "$1" in
 		if [[ -f /usr/lib/systemd/user/psd.service ]]; then
 			echo -e " ${BLD}Instead, use systemd to start/stop profile-sync-daemon."${NRM}
 			echo
-			echo -e " ${BLD}systemctl --user ${NRM}${GRN}[option]${NRM}${BLD} psd psd-resync"${NRM}
+			echo -e " ${BLD}systemctl --user ${NRM}${GRN}[option]${NRM}${BLD} psd"${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}		Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}stop${NRM}${BLD}		Turn off daemon; remove symlinks and rotate tmpfs data back to disc."${NRM}
 			echo -e " ${BLD} ${NRM}${GRN}enable${NRM}${BLD}	Autostart daemon when system comes up."${NRM}
