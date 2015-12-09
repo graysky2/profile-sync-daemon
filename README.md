@@ -37,7 +37,7 @@ Note that if you're using overlayfs mode, your user needs to have sudo right to 
 * QupZilla
 * Rekonq
 * Seamonkey
-* surf (http://surf.suckless.org/)
+* Surf (http://surf.suckless.org/)
 * Vivaldi-browser and Vivaldi-browser-snapshot
 
 ##Documentation
