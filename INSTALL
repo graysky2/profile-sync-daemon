@@ -3,28 +3,22 @@ DEPENDENCIES
  rsync
  systemd
 
-WARNING
-To avoid data loss, it is HIGHLY recommended that users stop any running
-versions of this software before install updates. Internal changes are
-always possible from one release to another.
+##### WARNING vvvvv
+# To avoid data loss, it is HIGHLY recommended that users stop any running
+# versions of this software BEFORE installing updates. Internal changes are
+# always possible from one release to another.
+# Users of Arch/Chakra/Antergos, Fedora, and graysky's PPA (Ubuntu/Debian) do not
+# need to worry about this as the respective package managers will do
+# this for you.
+##### WARNING ^^^^^
 
-BUILDING
- Setup the via a make.
-
+Option 1: BUILD IT YOURSELF
+1) Prepare the files for installation.
  $ make
 
- Running a `make install` as root will distribute the files to the filesystem.
-
+2) Install. (requires superuser/root)
  # make install
 
- Note that it is not required in many case, but on ocassion, internals are
- changed in the psd code which makes users stopping any active psd session
- BEFORE the make install setup a good idea.
-
- Users of Arch/Chakra/Antergos and graysky's PPA (Ubuntu/Debian) do not
- need to worry about this as the respective package managers will do
- this for you. The Fedora packages should also have this built it.
-
-USE A DISTRO PROVIDED PACKAGE
+Option 2: USE A DISTRO PROVIDED PACKAGE
  See the project homepage for an updated list of provided packages:
  https://github.com/graysky2/profile-sync-daemon
