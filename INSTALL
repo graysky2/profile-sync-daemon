@@ -17,7 +17,7 @@ BUILDING
 
  # make install
 
- Note that it is not required in many case, but on ocassion, internals are
+ Note that it is not required in many case, but on occasion, internals are
  changed in the psd code which makes users stopping any active psd session
  BEFORE the make install setup a good idea.
 
