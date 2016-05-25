@@ -27,6 +27,11 @@ if [[ ! -d "$SHAREDIR" ]]; then
 	exit 1
 fi
 
+if [[ ! -d "$SHAREDIR/browsers" ]]; then
+	echo -e " ${RED}ERROR:${NRM}${BLD} Missing ${BLU}$SHAREDIR/browsers${NRM}${BLD} - reinstall the package to use profile-sync-daemon."${NRM}
+	exit 1
+fi
+
 if [[ $EUID -eq 0 ]]; then
 	echo -e " ${RED}WARNING:${NRM}${BLD} Do not call ${BLU}$0${NRM}${BLD} as root."${NRM}
 	exit 1
