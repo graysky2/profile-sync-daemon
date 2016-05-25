@@ -35,6 +35,7 @@ Note that if you're using overlayfs mode, your user needs to have sudo right to 
 * Otter-browser
 * Palemoon
 * QupZilla
+* Qutebrowser
 * Rekonq
 * Seamonkey
 * Surf (http://surf.suckless.org/)
