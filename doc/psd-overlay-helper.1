@@ -1,0 +1,17 @@
+.TH psd-overlay-helper 1 "13 June 2016" "" ""
+.SH NAME
+\fBpsd-overlay-helper \fP- Script to use overlay file system for profile-sync-daemon.
+\fB
+.SH DESCRIPTION
+Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage browser profile/profiles in tmpfs and to periodically sync back to the physical disc (HDD/SSD). This is accomplished by an innovative use of rsync to maintain synchronization between a tmpfs copy and media-bound backup of the browser profile/profiles. Additionally, psd features several crash recovery features.
+
+The psd-overlay-helper script is used internally to enable the usage of the overlay file system. It should not be called by the user directly.
+.SH CONTRIBUTE
+Users wishing to contribute to this code, should fork and send a pull request. Source is freely available on the project page linked below.
+.SH ONLINE
+.IP \(bu 3
+Project page: https://github.com/graysky2/profile-sync-daemon
+.IP \(bu 3
+Wiki page: https://wiki.archlinux.org/index.php/Profile-sync-daemon
+.SH AUTHOR
+graysky (graysky AT archlinux DOT us)
