@@ -41,8 +41,10 @@ install-man:
 	$(Q)echo -e '\033[1;32mInstalling manpage...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(MANDIR)"
 	$(INSTALL_DATA) doc/psd.1 "$(DESTDIR)$(MANDIR)/psd.1"
+	$(INSTALL_DATA) doc/psd-overlay-helper.1 "$(DESTDIR)$(MANDIR)/psd-overlay-helper.1"
 ifneq ($(COMPRESS_MAN),0)
 	gzip -9 "$(DESTDIR)$(MANDIR)/psd.1"
+	gzip -9 "$(DESTDIR)$(MANDIR)/psd-overlay-helper.1"
 	ln -s psd.1.gz "$(DESTDIR)$(MANDIR)/$(PN).1.gz"
 else
 	ln -s psd.1 "$(DESTDIR)$(MANDIR)/$(PN).1"
