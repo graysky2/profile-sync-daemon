@@ -21,6 +21,8 @@ XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 PSDCONFDIR="$XDG_CONFIG_HOME/psd"
 PSDCONF="$PSDCONFDIR/psd.conf"
 SHAREDIR="/usr/share/psd"
+VOLATILE="$XDG_RUNTIME_DIR"
+PID_FILE="$VOLATILE/psd.pid"
 
 if [[ ! -d "$SHAREDIR" ]]; then
 	echo -e " ${RED}ERROR:${NRM}${BLD} Missing ${BLU}$SHAREDIR${NRM}${BLD} - reinstall the package to use profile-sync-daemon."${NRM}
@@ -44,6 +46,19 @@ fi
 
 # Setup check for config file
 if [[ -f "$PSDCONF" ]]; then
+	if [[ ! -f "$PID_FILE" ]]; then
+		# do nothing if psd is currently running, otherwise
+		# make sure only comments and variables/arrays are defined to prevent
+		# problems like issue #166
+		if egrep -q -v '^$|^#|^[^ ]*=[^;]*' "$PSDCONF"; then
+			# something that isn't a blank line, comment, or variable present
+			# so exit
+			echo -e " ${RED}ERROR:${NRM}${BLD} Syntax error(s) detected in ${BLU}$PSDCONF${NRM}${BLD} - edit and try again."${NRM}
+			echo -e "${NRM}${BLD}Line number: offending comment"${NRM}
+			egrep -vn '^$|^#|^[^ ]*=[^;]*' "$PSDCONF"
+			exit 1
+		fi
+	fi
 	. $PSDCONF
 elif [[ -d "$HOME/.psd" ]]; then
 	# first check to see if a legacy ~/.psd is present and then move it to the
@@ -63,8 +78,6 @@ else
 	fi
 fi
 
-VOLATILE="$XDG_RUNTIME_DIR"
-PID_FILE="$VOLATILE/psd.pid"
 # if psd is active, source the snapshot of psd.conf preferentially
 # version 6.03 renames this file so if older version is running then
 # rotate the old name to the new one
