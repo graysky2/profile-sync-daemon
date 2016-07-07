@@ -259,7 +259,7 @@ ungraceful_state_check() {
 						cp $opts "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
 					fi
 
-					mv "$TARGETTOKEEP" "$DIR"
+					mv --no-target-directory "$TARGETTOKEEP" "$DIR"
 					rm -rf "$BACKUP"
 				else
 					# we only find the BACKUP and no BACKOVFS then either the initial resync
@@ -269,7 +269,7 @@ ungraceful_state_check() {
 					if [[ $CRRE -eq 1 ]]; then
 						opts="-a --reflink=auto"
 						cp $opts "$BACKUP" "$BACKUP-crashrecovery-$NOW"
-						mv "$BACKUP" "$DIR"
+						mv --no-target-directory "$BACKUP" "$DIR"
 					fi
 				fi
 			fi
@@ -427,7 +427,7 @@ do_sync_for() {
 
 			# backup target and link to tmpfs container
 			if [[ $(readlink "$DIR") != "$TMP" ]]; then
-				mv "$DIR" "$BACKUP"
+				mv --no-target-directory "$DIR" "$BACKUP"
 				# refuse to start browser while initial sync
 				ln -s /dev/null "$DIR"
 			fi
@@ -525,7 +525,7 @@ do_unsync() {
 				# be sure to invoke a sync before an unsync
 				#
 				# restore original dirtree
-				[[ -d "$BACKUP" ]] && mv "$BACKUP" "$DIR"
+				[[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
 				if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
 					rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$DIR/"
 					sudo psd-overlay-helper -d "$TMP" mountdown &&
