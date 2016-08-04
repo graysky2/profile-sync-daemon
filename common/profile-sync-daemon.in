@@ -590,7 +590,7 @@ parse() {
 					[[ $TRUEP -ne 700 ]] && warn=1
 				fi
 				# profile dir size
-				psize=$(du -Lh --max-depth=0 "$DIR" 2>/dev/null | awk '{ print $1 }')
+				psize=$(du -Dh --max-depth=0 "$DIR" 2>/dev/null | awk '{ print $1 }')
 				echo -en " ${BLD}browser/psname:"
 				echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
 				echo -en " ${BLD}owner/group id:"
@@ -607,7 +607,7 @@ parse() {
 				echo -en " ${BLD}profile size:"
 				echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
 				if [[ $OLFS -eq 1 ]]; then
-					rwsize=$(du -Lh --max-depth=0 "$UPPER" 2>/dev/null | awk '{ print $1 }')
+					rwsize=$(du -Dh --max-depth=0 "$UPPER" 2>/dev/null | awk '{ print $1 }')
 					echo -en " ${BLD}overlayfs size:"
 					echo -e "$(tput cr)$(tput cuf 17) $rwsize"${NRM}
 				fi
@@ -617,7 +617,7 @@ parse() {
 				else
 					echo -e "$(tput cr)$(tput cuf 17) ${RED}${#CRASHArr[@]}${NRM}${BLD} <- delete with the c option"${NRM}
 					for backup in "${CRASHArr[@]}"; do
-						psize=$(du -Lh --max-depth=0 "$backup" 2>/dev/null | awk '{ print $1 }')
+						psize=$(du -Dh --max-depth=0 "$backup" 2>/dev/null | awk '{ print $1 }')
 						echo -en " ${BLD} dir path/size:"
 						echo -e "$(tput cr)$(tput cuf 17) ${BLU}$backup ${NRM}${BLD}($psize)"${NRM}
 					done
