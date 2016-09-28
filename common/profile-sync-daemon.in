@@ -356,7 +356,7 @@ dup_check() {
 			# check that the LAST DIRECTORY in the full path is unique
 			unique_count=$(echo ${DIRArr[@]##*/} | sed 's/ /\n/g' | sort -u | wc -l)
 			# no problems so do nothing
-			[[ ${#DIRArr[@]##*/} -eq $unique_count ]] && continue
+			[[ ${#DIRArr[@]} -eq $unique_count ]] && continue
 
 			echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
 			# clip of the 'heftig-' to give correct path
