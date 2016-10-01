@@ -234,8 +234,16 @@ ungraceful_state_check() {
 
 			NOW=$(date +%Y%m%d_%H%M%S)
 			if [[ -h "$DIR" ]]; then
-				echo "Ungraceful state detected for $DIR so fixing"
-				unlink "$DIR"
+				# symlinked browser profiles are not supported so bail if one is detected
+				if [[ -d $(readlink "$DIR") ]]; then
+					echo -e " ${RED}Warning!"${NRM}
+					echo -e " ${BLD}${BLU}$DIR${NRM}${BLD} appears to be a symlink but these are not supported."${NRM}
+					echo -e " ${BLD}Please make the browser profile a live directory and try again. Exiting."${NRM}
+					exit 1
+				else
+					echo "Ungraceful state detected for $DIR so fixing"
+					unlink "$DIR"
+				fi
 			fi
 
 			if [[ -d "$BACKUP" ]]; then
