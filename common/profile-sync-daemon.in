@@ -96,7 +96,7 @@ if [[ -f "$PID_FILE" ]]; then
 fi
 
 # all supported browsers
-ALL_BROWSERS=( $(ls "${SHAREDIR}/browsers/") )
+ALL_BROWSERS=( $(find "$SHAREDIR/browsers" -type f -printf "%f\n") )
 BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
 
 # simple function to determine user intent rather than using a null value
@@ -286,8 +286,8 @@ cleanup() {
 		load_env_for "$browser"
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
-			CRASHArr=("$item"-backup-crashrecovery*)
-			if ls ${CRASHArr[@]} &> /dev/null; then
+			CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*') )
+			if [[ ${#CRASHArr[@]} -gt 0 ]]; then
 				echo -e ${BLD}"Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR"${NRM}
 				for backup in "${CRASHArr[@]}"; do
 					echo -e ${BLD}${RED}" $backup"${NRM}
@@ -577,9 +577,7 @@ parse() {
 			fi
 			UPPER="$VOLATILE/$user-$browser${suffix}-rw"
 			if [[ -d "$DIR" ]]; then
-				# first count up any crashrecovery dirs
-				ls "$item"-backup-crashrecovery* &>/dev/null
-				[[ $? -eq 0  ]] && CRASHArr=("$item"-backup-crashrecovery*)
+				CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*') )
 				# get permissions on profile dir and be smart about it since symlinks are all 777
 				[[ -f $PID_FILE ]] && TRUEP=$(stat -c %a "$BACKUP") || TRUEP=$(stat -c %a "$DIR")
 				# since $XDG_RUNTIME_DIR is 700 by default so pass on by

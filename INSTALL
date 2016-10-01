@@ -1,5 +1,6 @@
 DEPENDENCIES
  bash >=4.0
+ find
  rsync
  systemd
 
