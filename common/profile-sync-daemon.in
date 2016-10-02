@@ -95,9 +95,12 @@ if [[ -f "$PID_FILE" ]]; then
 	fi
 fi
 
-# all supported browsers
-ALL_BROWSERS=( $(find "$SHAREDIR/browsers" -type f -printf "%f\n") )
-BROWSERS=${BROWSERS:-"${ALL_BROWSERS[@]}"}
+# BROWSERS defined as string var so redefine it as an array
+if [[ -z "$BROWSERS" ]]; then
+	BROWSERS=( $(find "$SHAREDIR/browsers" -type f -printf "%f\n") )
+else
+	BROWSERS=( $BROWSERS )
+fi
 
 # simple function to determine user intent rather than using a null value
 case "${USE_OVERLAYFS,,}" in
@@ -206,7 +209,7 @@ config_check() {
 		fi
 	fi
 
-	for browser in $(echo "$BROWSERS"); do
+	for browser in "${BROWSERS[@]}"; do
 		if [[ ! -f "$SHAREDIR/browsers/$browser" ]]; then
 			# user defined an invalid browser
 			echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser. Check config file for typos: ${NRM}${BLU}$PSDCONF${NRM}"
@@ -221,7 +224,7 @@ ungraceful_state_check() {
 	# but the contents will be empty we need to simply remove the link
 	# and rotate the backup into place
 	local browser
-	for browser in $BROWSERS; do
+	for browser in "${BROWSERS[@]}"; do
 		load_env_for "$browser"
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
@@ -263,7 +266,7 @@ ungraceful_state_check() {
 
 					if [[ $CRRE -eq 1 ]]; then
 						opts="-a --reflink=auto"
-						cp "$opts" "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
+						cp $opts "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
 					fi
 
 					mv --no-target-directory "$TARGETTOKEEP" "$DIR"
@@ -275,7 +278,7 @@ ungraceful_state_check() {
 
 					if [[ $CRRE -eq 1 ]]; then
 						opts="-a --reflink=auto"
-						cp "$opts" "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+						cp $opts "$BACKUP" "$BACKUP-crashrecovery-$NOW"
 						mv --no-target-directory "$BACKUP" "$DIR"
 					fi
 				fi
@@ -289,7 +292,7 @@ ungraceful_state_check() {
 
 cleanup() {
 	local browser
-	for browser in $BROWSERS; do
+	for browser in "${BROWSERS[@]}"; do
 		load_env_for "$browser"
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
@@ -331,7 +334,7 @@ running_check() {
 	# check for browsers running and refuse to start if so
 	# without this cannot guarantee profile integrity
 	local browser
-	for browser in $BROWSERS; do
+	for browser in "${BROWSERS[@]}"; do
 		load_env_for "$browser"
 		[[ -z "$PSNAME" ]] && continue
 		if pgrep -u "$user" "$PSNAME" &>/dev/null; then
@@ -353,7 +356,7 @@ dup_check() {
 	# the LAST directory in the profile MUST be unique
 	# make sure there are no duplicates in ~/.mozilla/<browser>/profiles.ini
 	local browser
-	for browser in $BROWSERS; do
+	for browser in "${BROWSERS[@]}"; do
 		load_env_for "$browser"
 		if suffix_needed "$browser"; then
 			# nothing to check
@@ -381,7 +384,7 @@ kill_browsers() {
 	# check for browsers running and kill them to safely sync/unsync
 	# without this cannot guarantee profile integrity
 	local browser
-	for browser in $BROWSERS; do
+	for browser in "${BROWSERS[@]}"; do
 		load_env_for "$browser"
 
 		local x=1
@@ -494,14 +497,14 @@ do_sync() {
 	echo "# Any edits to the live config: $PSDCONFDIR/psd.conf" >> "$PSDCONFDIR/.psd.conf"
 	echo "# will be applied the _next_ time psd is activated." >> "$PSDCONFDIR/.psd.conf"
 	echo "#" >> "$PSDCONFDIR/.psd.conf"
-	echo "USE_OVERLAYFS=\"$USE_OVERLAYFS\"">> "$PSDCONFDIR/.psd.conf"
-	echo "BROWSERS=\"$BROWSERS\"" >> "$PSDCONFDIR/.psd.conf"
+	echo "USE_OVERLAYFS=\"$USE_OVERLAYFS\"" >> "$PSDCONFDIR/.psd.conf"
+	echo "BROWSERS=\"${BROWSERS[*]}\"" >> "$PSDCONFDIR/.psd.conf"
 	echo "USE_BACKUPS=\"$USE_BACKUPS\"" >> "$PSDCONFDIR/.psd.conf"
 	chmod 400 "$PSDCONFDIR/.psd.conf"
 }
 
 local browser
-for browser in $BROWSERS; do
+for browser in "${BROWSERS[@]}"; do
 	do_sync_for "$browser" &
 done
 systemd-notify --ready --status="Waiting sync for ${browser}..."
@@ -512,7 +515,7 @@ do_unsync() {
 	rm -f "$PID_FILE" "$PSDCONFDIR/.psd.conf"
 
 	local browser
-	for browser in $BROWSERS; do
+	for browser in "${BROWSERS[@]}"; do
 		load_env_for "$browser"
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
@@ -564,7 +567,7 @@ parse() {
 	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD}:${NRM}"
 	echo
 	local browser
-	for browser in $BROWSERS; do
+	for browser in "${BROWSERS[@]}"; do
 		load_env_for "$browser"
 		for item in "${DIRArr[@]}"; do
 			DIR="$item"
