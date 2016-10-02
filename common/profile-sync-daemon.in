@@ -16,7 +16,7 @@ NRM="\e[00m"
 VERS="@VERSION@"
 
 user=$(id -un)
-HOME="$(getent passwd $user | cut -d: -f6)"
+HOME="$(getent passwd "$user" | cut -d: -f6)"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 PSDCONFDIR="$XDG_CONFIG_HOME/psd"
 PSDCONF="$PSDCONFDIR/psd.conf"
@@ -25,22 +25,22 @@ VOLATILE="$XDG_RUNTIME_DIR"
 PID_FILE="$VOLATILE/psd.pid"
 
 if [[ ! -d "$SHAREDIR" ]]; then
-	echo -e " ${RED}ERROR:${NRM}${BLD} Missing ${BLU}$SHAREDIR${NRM}${BLD} - reinstall the package to use profile-sync-daemon."${NRM}
+	echo -e " ${RED}ERROR:${NRM}${BLD} Missing ${BLU}$SHAREDIR${NRM}${BLD} - reinstall the package to use profile-sync-daemon.${NRM}"
 	exit 1
 fi
 
 if [[ ! -d "$SHAREDIR/browsers" ]]; then
-	echo -e " ${RED}ERROR:${NRM}${BLD} Missing ${BLU}$SHAREDIR/browsers${NRM}${BLD} - reinstall the package to use profile-sync-daemon."${NRM}
+	echo -e " ${RED}ERROR:${NRM}${BLD} Missing ${BLU}$SHAREDIR/browsers${NRM}${BLD} - reinstall the package to use profile-sync-daemon.${NRM}"
 	exit 1
 fi
 
 if [[ $EUID -eq 0 ]]; then
-	echo -e " ${RED}WARNING:${NRM}${BLD} Do not call ${BLU}$0${NRM}${BLD} as root."${NRM}
+	echo -e " ${RED}WARNING:${NRM}${BLD} Do not call ${BLU}$0${NRM}${BLD} as root.${NRM}"
 	exit 1
 fi
 
 if [[ ! -d "$XDG_RUNTIME_DIR" ]]; then
-	echo -e " ${RED}ERROR:${NRM}${BLD} Cannot find XDG_RUNTIME_DIR which should be set by systemd."${NRM}
+	echo -e " ${RED}ERROR:${NRM}${BLD} Cannot find XDG_RUNTIME_DIR which should be set by systemd.${NRM}"
 	exit 1
 fi
 
@@ -53,13 +53,13 @@ if [[ -f "$PSDCONF" ]]; then
 		if egrep -q -v '^$|^#|^[^ ]*=[^;]*' "$PSDCONF"; then
 			# something that isn't a blank line, comment, or variable present
 			# so exit
-			echo -e " ${RED}ERROR:${NRM}${BLD} Syntax error(s) detected in ${BLU}$PSDCONF${NRM}${BLD} - edit and try again."${NRM}
-			echo -e "${NRM}${BLD}Line number: offending comment"${NRM}
+			echo -e " ${RED}ERROR:${NRM}${BLD} Syntax error(s) detected in ${BLU}$PSDCONF${NRM}${BLD} - edit and try again.${NRM}"
+			echo -e "${NRM}${BLD}Line number: offending comment${NRM}"
 			egrep -vn '^$|^#|^[^ ]*=[^;]*' "$PSDCONF"
 			exit 1
 		fi
 	fi
-	. $PSDCONF
+	. "$PSDCONF"
 elif [[ -d "$HOME/.psd" ]]; then
 	# first check to see if a legacy ~/.psd is present and then move it to the
 	# new location
@@ -68,12 +68,12 @@ elif [[ -d "$HOME/.psd" ]]; then
 	rm -rf "$HOME/.psd"
 	echo " The use of $HOME/.psd is deprecated. Existing config has been moved to $PSDCONFDIR"
 	# source it again retaining any user options
-	[[ -f "$PSDCONF" ]] && . $PSDCONF
+	[[ -f "$PSDCONF" ]] && . "$PSDCONF"
 else
 	mkdir -p "$PSDCONFDIR"
 	if [[ -f "$SHAREDIR/psd.conf" ]]; then
 		cp "$SHAREDIR/psd.conf" "$PSDCONFDIR"
-		echo -e " First time running psd so please edit ${BLU}$PSDCONF${NRM}${BLD} to your liking and run again."${NRM}
+		echo -e " First time running psd so please edit ${BLU}$PSDCONF${NRM}${BLD} to your liking and run again.${NRM}"
 		exit 0
 	fi
 fi
@@ -89,7 +89,7 @@ if [[ -f "$PID_FILE" ]]; then
 	if [[ -f "$PSDCONFDIR/.psd.conf" ]]; then
 		PSDCONF="$PSDCONFDIR/.psd.conf"
 		unset USE_OVERLAYFS BROWSERS USE_BACKUPS
-		. $PSDCONF
+		. "$PSDCONF"
 		# defining VOLATILE in the config is deprecated since v6.16
 		VOLATILE="$XDG_RUNTIME_DIR"
 	fi
@@ -144,7 +144,7 @@ fi
 # get distro name
 # first try os-release
 if [[ -f /etc/os-release ]]; then
-	source /etc/os-release
+	. /etc/os-release
 	if [[ -n "$PRETTY_NAME" ]]; then
 		distro="$PRETTY_NAME"
 	elif [[ -n "$NAME" ]]; then
@@ -161,31 +161,30 @@ else
 fi
 
 header() {
-	[[ -z "$distro" ]] && echo -e "${BLD}Profile-sync-daemon v$VERS"${NRM} ||
-		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $distro"${NRM}
+	[[ -z "$distro" ]] && echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}" ||
+		echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $distro${NRM}"
 	echo
 }
 
 dep_check() {
 	# checks for dependencies and that psd.conf is setup correctly
 	command -v rsync >/dev/null 2>&1 || {
-	echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
+	echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!${NRM}" >&2; exit 1; }
 	command -v modinfo >/dev/null 2>&1 || {
-	echo -e " ${BLD}I require modinfo but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
+	echo -e " ${BLD}I require modinfo but it's not installed. ${RED}Aborting!${NRM}" >&2; exit 1; }
 	command -v awk >/dev/null 2>&1 || {
-	echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!"${NRM} >&2; exit 1; }
+	echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!${NRM}" >&2; exit 1; }
 	if [[ $OLFS -eq 1 ]]; then
 		[[ $OLFSVER -ge 22 ]] || {
-		youare=$(logname)
-		echo -e " ${BLD}Your kernel requires either the ${BLU}overlay${NRM}${BLD} or ${BLU}overlayfs${NRM}${BLD} module to use"${NRM}
-		echo -e " ${BLD}to use psd's in overlay mode. Cannot find either in your kernel so compile it in and"${NRM}
-		echo -e " ${BLD}try again or remove the option from ${BLU}$PSDCONF${NRM}${BLD}. ${RED}Aborting!"${NRM} >&2; exit 1;}
+		echo -e " ${BLD}Your kernel requires either the ${BLU}overlay${NRM}${BLD} or ${BLU}overlayfs${NRM}${BLD} module to use${NRM}"
+		echo -e " ${BLD}to use psd's in overlay mode. Cannot find either in your kernel so compile it in and${NRM}"
+		echo -e " ${BLD}try again or remove the option from ${BLU}$PSDCONF${NRM}${BLD}. ${RED}Aborting!${NRM}" >&2; exit 1;}
 	fi
 
 	if [[ -f /etc/psd.conf ]]; then
-		echo -e "${BLD} This version of psd does not support /etc/psd.conf since it runs as your user."${NRM}
-		echo -e "${BLD} Recommend that you remove /etc/psd.conf and run it in systemd's user mode:"${NRM}
-		echo -e "${BLD}   systemd --user <action> psd.service"${NRM}
+		echo -e "${BLD} This version of psd does not support /etc/psd.conf since it runs as your user.${NRM}"
+		echo -e "${BLD} Recommend that you remove /etc/psd.conf and run it in systemd's user mode:${NRM}"
+		echo -e "${BLD}   systemd --user <action> psd.service${NRM}"
 		exit 1
 	fi
 }
@@ -199,10 +198,10 @@ config_check() {
 		[[ $? -ne 0 ]] && FAILCODE=1
 
 		if [[ $FAILCODE -ne 0 ]]; then
-			echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, $user needs sudo access to ${BLU}/usr/bin/psd-overlay-helper${NRM}${BLD}"${NRM}
+			echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, $user needs sudo access to ${BLU}/usr/bin/psd-overlay-helper${NRM}${BLD}${NRM}"
 			echo
-			echo -e " ${BLD}Add the following line to the end of ${BLU}/etc/sudoers${NRM}${BLD} to enable this functionality:"${NRM}
-			echo -e "  ${BLD}$user ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper"${NRM}
+			echo -e " ${BLD}Add the following line to the end of ${BLU}/etc/sudoers${NRM}${BLD} to enable this functionality:${NRM}"
+			echo -e "  ${BLD}$user ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper${NRM}"
 			exit 1
 		fi
 	fi
@@ -210,7 +209,7 @@ config_check() {
 	for browser in $(echo "$BROWSERS"); do
 		if [[ ! -f "$SHAREDIR/browsers/$browser" ]]; then
 			# user defined an invalid browser
-			echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser. Check config file for typos: ${NRM}${BLU}$PSDCONF"${NRM}
+			echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser. Check config file for typos: ${NRM}${BLU}$PSDCONF${NRM}"
 			exit 1
 		fi
 	done
@@ -236,9 +235,9 @@ ungraceful_state_check() {
 			if [[ -h "$DIR" ]]; then
 				# symlinked browser profiles are not supported so bail if one is detected
 				if [[ -d $(readlink "$DIR") ]]; then
-					echo -e " ${RED}Warning!"${NRM}
-					echo -e " ${BLD}${BLU}$DIR${NRM}${BLD} appears to be a symlink but these are not supported."${NRM}
-					echo -e " ${BLD}Please make the browser profile a live directory and try again. Exiting."${NRM}
+					echo -e " ${RED}Warning!${NRM}"
+					echo -e " ${BLD}${BLU}$DIR${NRM}${BLD} appears to be a symlink but these are not supported.${NRM}"
+					echo -e " ${BLD}Please make the browser profile a live directory and try again. Exiting.${NRM}"
 					exit 1
 				else
 					echo "Ungraceful state detected for $DIR so fixing"
@@ -264,7 +263,7 @@ ungraceful_state_check() {
 
 					if [[ $CRRE -eq 1 ]]; then
 						opts="-a --reflink=auto"
-						cp $opts "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
+						cp "$opts" "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
 					fi
 
 					mv --no-target-directory "$TARGETTOKEEP" "$DIR"
@@ -276,7 +275,7 @@ ungraceful_state_check() {
 
 					if [[ $CRRE -eq 1 ]]; then
 						opts="-a --reflink=auto"
-						cp $opts "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+						cp "$opts" "$BACKUP" "$BACKUP-crashrecovery-$NOW"
 						mv --no-target-directory "$BACKUP" "$DIR"
 					fi
 				fi
@@ -296,14 +295,14 @@ cleanup() {
 			DIR="$item"
 			CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*') )
 			if [[ ${#CRASHArr[@]} -gt 0 ]]; then
-				echo -e ${BLD}"Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR"${NRM}
+				echo -e "${BLD}Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR${NRM}"
 				for backup in "${CRASHArr[@]}"; do
-					echo -e ${BLD}${RED}" $backup"${NRM}
+					echo -e "${BLD}${RED} $backup${NRM}"
 					rm -rf "$backup"
 				done
 				unset CRASHArr
 			else
-				echo -e ${BLD}"Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}"${NRM}
+				echo -e "${BLD}Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}${NRM}"
 			fi
 			echo
 		done
@@ -314,7 +313,7 @@ load_env_for() {
 	browser="$1"
 
 	homedir=$HOME
-	group="$(id -g $user)"
+	group=$(id -g "$user")
 
 	### Arrays
 	# profileArr is transient used to store profile paths parsed from
@@ -362,17 +361,17 @@ dup_check() {
 			# browser is on system so check profiles
 			#
 			# check that the LAST DIRECTORY in the full path is unique
-			unique_count=$(echo ${DIRArr[@]##*/} | sed 's/ /\n/g' | sort -u | wc -l)
+			unique_count=$(echo "${DIRArr[@]##*/}" | sed 's/ /\n/g' | sort -u | wc -l)
 			# no problems so do nothing
 			[[ ${#DIRArr[@]} -eq $unique_count ]] && continue
 
-			echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again."${NRM}
+			echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again.${NRM}"
 			# clip of the 'heftig-' to give correct path
 			[[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"
 			profile_ini="$homedir/.mozilla/$browser/profiles.ini"
 			[[ "$browser" = "palemoon" ]] &&
 				profile_ini="$homedir/.moonchild productions/pale moon/profiles.ini"
-			echo -e " ${BLD}Must have unique last directories in ${BLU}${profile_ini}${NRM}${BLD} to use psd."${NRM}
+			echo -e " ${BLD}Must have unique last directories in ${BLU}${profile_ini}${NRM}${BLD} to use psd.${NRM}"
 			exit 1
 		fi
 	done
@@ -422,14 +421,14 @@ do_sync_for() {
 		if [[ -d "$DIR" ]]; then
 			# retain permissions on sync target
 			PREFIXP=$(stat -c %a "$DIR")
-			[[ -r "$TMP" ]] || install -dm$PREFIXP --owner=$user --group=$group "$TMP"
+			[[ -r "$TMP" ]] || install -dm"$PREFIXP" --owner="$user" --group="$group" "$TMP"
 
 			if [[ $OLFS -eq 1 ]]; then
 				if [[ $OLFSVER -eq 23 ]]; then
-					[[ -r "$UPPER" ]] || install -dm$PREFIXP --owner=$user --group=$group "$UPPER"
-					[[ -r "$WORK" ]] || install -dm$PREFIXP --owner=$user --group=$group "$WORK"
+					[[ -r "$UPPER" ]] || install -dm"$PREFIXP" --owner="$user" --group="$group" "$UPPER"
+					[[ -r "$WORK" ]] || install -dm"$PREFIXP" --owner="$user" --group="$group" "$WORK"
 				elif [[ $OLFSVER -eq 22 ]]; then
-					[[ -r "$UPPER" ]] || install -dm$PREFIXP --owner=$user --group=$group "$UPPER"
+					[[ -r "$UPPER" ]] || install -dm"$PREFIXP" --owner="$user" --group="$group" "$UPPER"
 				fi
 			fi
 
@@ -465,10 +464,10 @@ do_sync_for() {
 				# now browser can start
 				[[ $(readlink "$DIR") = "/dev/null" ]] && unlink "$DIR"
 				ln -s "$TMP" "$DIR"
-				chown -h $user:$group "$DIR"
+				chown -h "$user":"$group" "$DIR"
 				touch "$DIR/.flagged"
 			fi
-			echo -e "${BLD}$browser $REPORT successful"${NRM}
+			echo -e "${BLD}$browser $REPORT successful${NRM}"
 		else
 			if [[ ! -d "$homedir" ]] ; then
 				echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
@@ -503,7 +502,7 @@ do_sync() {
 
 local browser
 for browser in $BROWSERS; do
-	do_sync_for $browser &
+	do_sync_for "$browser" &
 done
 systemd-notify --ready --status="Waiting sync for ${browser}..."
 wait
@@ -540,7 +539,7 @@ do_unsync() {
 						rm -rf "$TMP" "$UPPER" "$WORK"
 				fi
 				[[ -d "$TMP" ]] && rm -rf "$TMP"
-				echo -e "${BLD}$browser unsync successful"${NRM}
+				echo -e "${BLD}$browser unsync successful${NRM}"
 			else
 				if [[ ! -d "$homedir" ]] ; then
 					echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
@@ -558,20 +557,20 @@ parse() {
 		resync_state=$(systemctl --user is-active psd-resync.timer)
 		[[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
 		[[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
-		echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}."${NRM}
-		echo -e " ${BLD}Systemd resync-timer is currently ${resync_color}$resync_state${NRM}${BLD}."${NRM}
+		echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}.${NRM}"
+		echo -e " ${BLD}Systemd resync-timer is currently ${resync_color}$resync_state${NRM}${BLD}.${NRM}"
 	else
 		# using other init system + cron job for resync
 		[[ "$resync_state" = "present" ]] && resync_color=${GRN} || resync_color=${RED}
 		echo -e " ${BLD}Daemon pid file is $([[ -f $PID_FILE ]] &&
-			echo -e ${GRN}present${NRM}${BLD} || echo -e ${RED}not present${NRM}${BLD})."${NRM}
-		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}."${NRM}
+			echo -e ${GRN}present${NRM}${BLD} || echo -e ${RED}not present${NRM}${BLD}).${NRM}"
+		echo -e " ${BLD}Resync cronjob is ${resync_color}${resync_state}${NRM}${BLD}.${NRM}"
 	fi
 	[[ $OLFS -eq 1 ]] &&
-		echo -e "${BLD} Overlayfs v$OLFSVER is currently ${GRN}active${NRM}${BLD}."${NRM} ||
-		echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}."${NRM}
+		echo -e "${BLD} Overlayfs v$OLFSVER is currently ${GRN}active${NRM}${BLD}.${NRM}" ||
+		echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}.${NRM}"
 	echo
-	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD}:"${NRM}
+	echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD}:${NRM}"
 	echo
 	local browser
 	for browser in $BROWSERS; do
@@ -598,34 +597,34 @@ parse() {
 				# profile dir size
 				psize=$(du -Dh --max-depth=0 "$DIR" 2>/dev/null | awk '{ print $1 }')
 				echo -en " ${BLD}browser/psname:"
-				echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME"${NRM}
+				echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME${NRM}"
 				echo -en " ${BLD}owner/group id:"
-				echo -e "$(tput cr)$(tput cuf 17) $user/$group"${NRM}
+				echo -e "$(tput cr)$(tput cuf 17) $user/$group${NRM}"
 				echo -en " ${BLD}sync target:"
-				echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR"${NRM}
+				echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR${NRM}"
 				if [[ $warn -eq 1 ]]; then
-					echo -e "$(tput cr)$(tput cuf 17) ${RED} Permissions are $TRUEP on this profile."${NRM}
-					echo -e "$(tput cr)$(tput cuf 17) ${RED} Recommend a setting of 700 for increased privacy!"${NRM}
+					echo -e "$(tput cr)$(tput cuf 17) ${RED} Permissions are $TRUEP on this profile.${NRM}"
+					echo -e "$(tput cr)$(tput cuf 17) ${RED} Recommend a setting of 700 for increased privacy!${NRM}"
 					warn=
 				fi
 				echo -en " ${BLD}tmpfs dir:"
-				echo -e "$(tput cr)$(tput cuf 17) ${GRN}$VOLATILE/$user-$browser$suffix"${NRM}
+				echo -e "$(tput cr)$(tput cuf 17) ${GRN}$VOLATILE/$user-$browser$suffix${NRM}"
 				echo -en " ${BLD}profile size:"
-				echo -e "$(tput cr)$(tput cuf 17) $psize"${NRM}
+				echo -e "$(tput cr)$(tput cuf 17) $psize${NRM}"
 				if [[ $OLFS -eq 1 ]]; then
 					rwsize=$(du -Dh --max-depth=0 "$UPPER" 2>/dev/null | awk '{ print $1 }')
 					echo -en " ${BLD}overlayfs size:"
-					echo -e "$(tput cr)$(tput cuf 17) $rwsize"${NRM}
+					echo -e "$(tput cr)$(tput cuf 17) $rwsize${NRM}"
 				fi
 				echo -en " ${BLD}recovery dirs:"
 				if [[ "${#CRASHArr[@]}" -eq 0 ]]; then
-					echo -e "$(tput cr)$(tput cuf 17) none"${NRM}
+					echo -e "$(tput cr)$(tput cuf 17) none${NRM}"
 				else
-					echo -e "$(tput cr)$(tput cuf 17) ${RED}${#CRASHArr[@]}${NRM}${BLD} <- delete with the c option"${NRM}
+					echo -e "$(tput cr)$(tput cuf 17) ${RED}${#CRASHArr[@]}${NRM}${BLD} <- delete with the c option${NRM}"
 					for backup in "${CRASHArr[@]}"; do
 						psize=$(du -Dh --max-depth=0 "$backup" 2>/dev/null | awk '{ print $1 }')
 						echo -en " ${BLD} dir path/size:"
-						echo -e "$(tput cr)$(tput cuf 17) ${BLU}$backup ${NRM}${BLD}($psize)"${NRM}
+						echo -e "$(tput cr)$(tput cuf 17) ${BLU}$backup ${NRM}${BLD}($psize)${NRM}"
 					done
 				fi
 				unset CRASHArr
@@ -673,25 +672,25 @@ case "$1" in
 	*)
 		header
 		echo -e " ${BLD}$0 ${NRM}${GRN}[option]${NRM}"
-		echo -e " ${BLD} ${NRM}${GRN}preview${NRM}${BLD}	Parse config file (${NRM}${BLU}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed."${NRM}
-		echo -e " ${BLD} ${NRM}${GRN}clean${NRM}${BLD}		Clean (delete without prompting) ALL crashrecovery dirs for all profiles."${NRM}
+		echo -e " ${BLD} ${NRM}${GRN}preview${NRM}${BLD}	Parse config file (${NRM}${BLU}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed.${NRM}"
+		echo -e " ${BLD} ${NRM}${GRN}clean${NRM}${BLD}		Clean (delete without prompting) ALL crashrecovery dirs for all profiles.${NRM}"
 		echo
-		echo -e " ${BLD}It is ${RED}HIGHLY DISCOURAGED${NRM}${BLD} to directly call $0 to sync, resync, or to unsync."${NRM}
+		echo -e " ${BLD}It is ${RED}HIGHLY DISCOURAGED${NRM}${BLD} to directly call $0 to sync, resync, or to unsync.${NRM}"
 		echo
 		if [[ -f /usr/lib/systemd/user/psd.service ]]; then
-			echo -e " ${BLD}Instead, use systemd to start/stop profile-sync-daemon."${NRM}
+			echo -e " ${BLD}Instead, use systemd to start/stop profile-sync-daemon.${NRM}"
 			echo
-			echo -e " ${BLD}systemctl --user ${NRM}${GRN}[option]${NRM}${BLD} psd"${NRM}
-			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}		Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}
-			echo -e " ${BLD} ${NRM}${GRN}stop${NRM}${BLD}		Turn off daemon; remove symlinks and rotate tmpfs data back to disc."${NRM}
-			echo -e " ${BLD} ${NRM}${GRN}enable${NRM}${BLD}	Autostart daemon when system comes up."${NRM}
-			echo -e " ${BLD} ${NRM}${GRN}disable${NRM}${BLD}	Remove daemon from the list of autostart daemons."${NRM}
+			echo -e " ${BLD}systemctl --user ${NRM}${GRN}[option]${NRM}${BLD} psd${NRM}"
+			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}		Turn on daemon; make symlinks and actively manage targets in tmpfs.${NRM}"
+			echo -e " ${BLD} ${NRM}${GRN}stop${NRM}${BLD}		Turn off daemon; remove symlinks and rotate tmpfs data back to disc.${NRM}"
+			echo -e " ${BLD} ${NRM}${GRN}enable${NRM}${BLD}	Autostart daemon when system comes up.${NRM}"
+			echo -e " ${BLD} ${NRM}${GRN}disable${NRM}${BLD}	Remove daemon from the list of autostart daemons.${NRM}"
 		elif [[ -f /etc/init.d/psd ]]; then
-			echo -e " ${BLD}Instead, use the init system to start/stop profile-sync-daemon."${NRM}
+			echo -e " ${BLD}Instead, use the init system to start/stop profile-sync-daemon.${NRM}"
 			echo
-			echo -e " ${BLD}sudo service psd ${NRM}${GRN}[option]${NRM}${BLD} or /etc/init.d/psd ${NRM}${GRN}[option]"${NRM}
-			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}	Turn on daemon; make symlinks and actively manage targets in tmpfs."${NRM}
-			echo -e " ${BLD} ${NRM}${GRN}stop${NRM}${BLD}	Turn off daemon; remove symlinks and rotate tmpfs data back to disc."${NRM}
+			echo -e " ${BLD}sudo service psd ${NRM}${GRN}[option]${NRM}${BLD} or /etc/init.d/psd ${NRM}${GRN}[option]${NRM}"
+			echo -e " ${BLD} ${NRM}${GRN}start${NRM}${BLD}	Turn on daemon; make symlinks and actively manage targets in tmpfs.${NRM}"
+			echo -e " ${BLD} ${NRM}${GRN}stop${NRM}${BLD}	Turn off daemon; remove symlinks and rotate tmpfs data back to disc.${NRM}"
 		fi
 		;;
 esac
