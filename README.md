@@ -67,7 +67,6 @@ To build from source, see the included INSTALL text document.
 * ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch: in the [AUR](https://aur.archlinux.org/packages/profile-sync-daemon).
 
 * ![logo](http://s18.postimg.org/w5jvz71mt/chakra.jpg "chakra logo")Chakra: in the [CCR](http://chakraos.org/ccr/packages.php?ID=5008).
-* ![logo](http://s30.postimg.org/auetslwfh/opensuse.jpg "open suse")OpenSUSE: packaged by [Overman79](https://build.opensuse.org/package/show/home:ZaWertun:utility/profile-sync-daemon).
 * ![logo](http://wiki.codeblocks.org/images/8/8b/Slackware-logo_32.png "slack logo")Slackware: on [slackbuilds](http://slackbuilds.org/apps/profile-sync-daemon/).
 * ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu: in [graysky's PPA](https://github.com/graysky2/profile-sync-daemon#ubuntu-users).
 
