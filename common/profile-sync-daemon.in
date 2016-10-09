@@ -398,7 +398,7 @@ kill_browsers() {
 				pkill -SIGKILL -u "$user" "$PSNAME"
 			fi
 
-			x=$(( $x + 1 ))
+			x=$(( x + 1 ))
 			sleep .05
 		done
 	done
@@ -505,10 +505,8 @@ do_sync() {
 
 local browser
 for browser in "${BROWSERS[@]}"; do
-	do_sync_for "$browser" &
+	do_sync_for "$browser"
 done
-systemd-notify --ready --status="Waiting sync for ${browser}..."
-wait
 }
 
 do_unsync() {

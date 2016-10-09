@@ -7,10 +7,9 @@ RequiresMountsFor=/home/
 After=winbindd.service
 
 [Service]
-Type=notify
-NotifyAccess=all
+Type=oneshot
 RemainAfterExit=yes
-# just call /bin/true and let psd-resync.service do it for speed
+# just call /bin/true and let psd-resync.service do it
 ExecStart=/bin/true
 ExecStop=/usr/bin/profile-sync-daemon unsync
 
