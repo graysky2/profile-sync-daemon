@@ -1,5 +1,5 @@
-if [[ -d $homedir/.mozilla/firefox ]]; then
-    profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/firefox/profiles.ini |
+if [[ -d $HOME/.mozilla/firefox ]]; then
+    profileArr=( $(grep '[P,p]'ath= $HOME/.mozilla/firefox/profiles.ini |
     sed 's/[P,p]ath=//') )
     index=0
     PSNAME="$browser"
@@ -10,7 +10,7 @@ if [[ -d $homedir/.mozilla/firefox ]]; then
         else
             # we need to append the default path to give a
             # fully qualified path
-            DIRArr[index]="$homedir/.mozilla/firefox/$profileItem"
+            DIRArr[index]="$HOME/.mozilla/firefox/$profileItem"
         fi
         index=$index+1
     done

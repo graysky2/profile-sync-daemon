@@ -1,6 +1,6 @@
 # https://bbs.archlinux.org/viewtopic.php?id=117157
-if [[ -d $homedir/.mozilla/aurora ]]; then
-    profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/aurora/profiles.ini |
+if [[ -d $HOME/.mozilla/aurora ]]; then
+    profileArr=( $(grep '[P,p]'ath= $HOME/.mozilla/aurora/profiles.ini |
     sed 's/[P,p]ath=//') )
     index=0
     PSNAME="aurora"
@@ -11,7 +11,7 @@ if [[ -d $homedir/.mozilla/aurora ]]; then
         else
             # we need to append the default path to give a fully
             # qualified path
-            DIRArr[index]="$homedir/.mozilla/aurora/$profileItem"
+            DIRArr[index]="$HOME/.mozilla/aurora/$profileItem"
         fi
         index=$index+1
     done

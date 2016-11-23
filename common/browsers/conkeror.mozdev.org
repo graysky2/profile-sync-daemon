@@ -1,2 +1,2 @@
-DIRArr[0]="$homedir/.$browser"
+DIRArr[0]="$HOME/.$browser"
 PSNAME="xulrunner"

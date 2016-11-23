@@ -1,5 +1,5 @@
-[[ -d $homedir/.kde4/share/apps/$browser ]] &&
-    DIRArr[0]="$homedir/.kde4/share/apps/$browser"
-[[ -d $homedir/.kde/share/apps/$browser ]] &&
-    DIRArr[0]="$homedir/.kde/share/apps/$browser"
+[[ -d $HOME/.kde4/share/apps/$browser ]] &&
+    DIRArr[0]="$HOME/.kde4/share/apps/$browser"
+[[ -d $HOME/.kde/share/apps/$browser ]] &&
+    DIRArr[0]="$HOME/.kde/share/apps/$browser"
 PSNAME="$browser"

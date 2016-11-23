@@ -1,5 +1,5 @@
-if [[ -d $homedir/.mozilla/seamonkey ]]; then
-    profileArr=( $(grep '[P,p]'ath= $homedir/.mozilla/seamonkey/profiles.ini |
+if [[ -d $HOME/.mozilla/seamonkey ]]; then
+    profileArr=( $(grep '[P,p]'ath= $HOME/.mozilla/seamonkey/profiles.ini |
     sed 's/[P,p]ath=//') )
     index=0
     PSNAME="$browser"
@@ -10,7 +10,7 @@ if [[ -d $homedir/.mozilla/seamonkey ]]; then
         else
             # we need to append the default path to give a fully
             # qualified path
-            DIRArr[index]="$homedir/.mozilla/seamonkey/$profileItem"
+            DIRArr[index]="$HOME/.mozilla/seamonkey/$profileItem"
         fi
         index=$index+1
     done

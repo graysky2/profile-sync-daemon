@@ -1,2 +1,2 @@
-DIRArr[0]="$homedir/.config/vivaldi-snapshot"
+DIRArr[0]="$XDG_CONFIG_HOME/vivaldi-snapshot"
 PSNAME="vivaldi-bin"

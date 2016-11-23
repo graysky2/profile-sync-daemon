@@ -1,4 +1,4 @@
 # version 26 moved the profile dir but keep this for older versions
-DIRArr[0]="$homedir/.$browser"
-DIRArr[1]="$homedir/.config/$browser"
+DIRArr[0]="$HOME/.$browser"
+DIRArr[1]="$XDG_CONFIG_HOME/$browser"
 PSNAME="$browser"

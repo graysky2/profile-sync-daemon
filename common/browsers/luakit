@@ -1,2 +1,2 @@
-DIRArr[0]="$homedir/.local/share/$browser"
+DIRArr[0]="$HOME/.local/share/$browser"
 PSNAME="$browser"

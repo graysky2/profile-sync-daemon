@@ -1,2 +1,2 @@
-DIRArr[0]="$homedir/.config/otter"
+DIRArr[0]="$XDG_CONFIG_HOME/otter"
 PSNAME="$browser"
