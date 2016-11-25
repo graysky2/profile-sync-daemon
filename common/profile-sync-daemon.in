@@ -95,6 +95,20 @@ if [[ -f "$PID_FILE" ]]; then
   fi
 fi
 
+# define default number of crash-recovery snapshots to save if the user did not
+# and check that it is an integer if user did define it
+if [[ -z "$BACKUP_LIMIT" ]]; then
+  BACKUP_LIMIT=5
+else
+  if [[ "$BACKUP_LIMIT" =~ ^[0-9]+$ ]]; then
+    # correctly setup
+    /bin/true
+  else
+    echo -e " ${RED}ERROR:${NRM}${BLD} Bad value for BACKUP_LIMIT detected!${NRM}"
+    exit 1
+  fi
+fi
+
 # BROWSERS defined as string var so redefine it as an array
 if [[ -z "$BROWSERS" ]]; then
   BROWSERS=( $(find "$SHAREDIR/browsers" -type f -printf "%f\n") )
@@ -296,7 +310,7 @@ cleanup() {
     load_env_for "$browser"
     for item in "${DIRArr[@]}"; do
       DIR="$item"
-      CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*') )
+      CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
       if [[ ${#CRASHArr[@]} -gt 0 ]]; then
         echo -e "${BLD}Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR${NRM}"
         for backup in "${CRASHArr[@]}"; do
@@ -509,6 +523,19 @@ for browser in "${BROWSERS[@]}"; do
 done
 }
 
+enforce() {
+  local browser
+  for browser in "${BROWSERS[@]}"; do
+    CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
+    if [[ ${#CRASHArr[@]} -gt $BACKUP_LIMIT ]]; then
+      for remove in "${CRASHArr[@]:$BACKUP_LIMIT}"; do
+        rm -rf "$remove"
+      done
+    fi
+    unset CRASHArr
+  done
+}
+
 do_unsync() {
   rm -f "$PID_FILE" "$PSDCONFDIR/.psd.conf"
 
@@ -576,7 +603,7 @@ parse() {
       fi
       UPPER="$VOLATILE/$user-$browser${suffix}-rw"
       if [[ -d "$DIR" ]]; then
-        CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*') )
+        CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
         # get permissions on profile dir and be smart about it since symlinks are all 777
         [[ -f $PID_FILE ]] && TRUEP=$(stat -c %a "$BACKUP") || TRUEP=$(stat -c %a "$DIR")
         # since $XDG_RUNTIME_DIR is 700 by default so pass on by
@@ -652,6 +679,7 @@ case "$1" in
       running_check
       ungraceful_state_check
       do_sync
+      enforce
     fi
     ;;
   unsync)
