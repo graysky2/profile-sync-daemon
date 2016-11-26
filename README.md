@@ -7,23 +7,6 @@ Always backup your browser profile(s) before using psd for the first time.
 ##Users of eCryptFS
 User of eCryptFS are encouraged not to use psd unless willing to help troubleshoot suspected browser corruption. See [#158](https://github.com/graysky2/profile-sync-daemon/issues/158).
 
-##NOTE FOR VERSION 6
-My desktop distro (Arch) switched to systemd a while ago and other big ones (Fedora, Debian, Ubuntu) have followed suite. With the release of psd version 6.x I will no longer be supporting alternative init systems such as upstart and openrc. It is too complex for me to maintain and test multiple configurations on non-native init systems for me.
-
-Also of note for version 6.x is that no longer does psd run in as a system service. It now runs as a user service.
-This is much more simple and means that:
-* There is no more need for `/etc/psd.conf` and the USERS array therein.
-* Different users can have their own config files that THEY own (`~/.psd/psd.conf`).
-* Encrypted $HOME should be supported under this model (NOT yet implemented).
-
-Update instructions from version 5.x:
-* Stop psd v5.7x and close your browsers.
-* Build the package linked above and install it.
-* Run psd to create your `~/.config/psd/psd.conf` and then edit it as you normally would.
-* Check it in parse mode `psd p` and if happy with the output, run it via systemd usermode: `systemctl --user start psd` (and optionally enable it).
-
-Note that if you're using overlayfs mode, your user needs to have sudo right to /usr/bin/psd-overlay-helper or else psd will refuse to run in overlayfs mode.
-
 ##Supported Browsers
 * Chromium
 * Conkeror
@@ -55,7 +38,7 @@ To build from source, see the included INSTALL text document.
 
 ##Installation from Distro Packages
 ### Officially Packaged
-* ![logo](http://gnulinuxvagos.es/public/style_extra/downloads_traffic_images/os_Antergos.png "antergos logo")Antergos: in the official [repos](http://build.antergos.com/browse/main#).
+* ![logo](http://gnulinuxvagos.es/public/style_extra/downloads_traffic_images/os_Antergos.png "antergos logo")Antergos: in the official [repos](http://build.antergos.com/package/profile-sync-daemon).
 * ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian jesse+: in the official [repos](https://packages.debian.org/unstable/profile-sync-daemon).
 * ![logo](https://s19.postimg.org/sjwaizg8j/zebrapig_head.png "exherbo logo")Exherbo: in the official [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
 * ![logo](http://s9.postimg.org/p5f1tscxn/fedora.jpg "fedora logo")Fedora: in the official [repos](http://koji.fedoraproject.org/koji/packageinfo?packageID=16307).
@@ -92,3 +75,22 @@ To add the PPA (personal package archive) to your Ubuntu system (packages availa
 
 ###Other Distros
 If you are interested in packaging psd for your favorite distro, please contact me.
+
+##NOTE FOR VERSION 6
+My desktop distro (Arch) switched to systemd a while ago and other big ones (Fedora, Debian, Ubuntu) have followed suite. With the release of psd version 6.x I will no longer be supporting alternative init systems such as upstart and openrc. It is too complex for me to maintain and test multiple configurations on non-native init systems for me.
+
+Also of note for version 6.x is that no longer does psd run in as a system service. It now runs as a user service.
+This is much more simple and means that:
+* There is no more need for `/etc/psd.conf` and the USERS array therein.
+* Different users can have their own config files that THEY own (`~/.psd/psd.conf`).
+* Encrypted $HOME should be supported under this model (NOT yet implemented).
+
+Update instructions from version 5.x:
+* Stop psd v5.7x and close your browsers.
+* Build the package linked above and install it.
+* Run psd to create your `~/.config/psd/psd.conf` and then edit it as you normally would.
+* Check it in parse mode `psd p` and if happy with the output, run it via systemd usermode: `systemctl --user start psd` (and optionally enable it).
+
+Note that if you're using overlayfs mode, your user needs to have sudo right to /usr/bin/psd-overlay-helper or else psd will refuse to run in overlayfs mode.
+
+
