@@ -310,14 +310,18 @@ cleanup() {
     load_env_for "$browser"
     for item in "${DIRArr[@]}"; do
       DIR="$item"
-      CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
+
+      local CRASHArr=()
+      while IFS= read -d '' -r backup; do
+        CRASHArr=("${CRASHArr[@]}" "$backup")
+      done < <(find "${DIR%/*}" -type d -name '*crashrecovery*' -print0 | sort -r -z)
+
       if [[ ${#CRASHArr[@]} -gt 0 ]]; then
         echo -e "${BLD}Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR${NRM}"
         for backup in "${CRASHArr[@]}"; do
           echo -e "${BLD}${RED} $backup${NRM}"
           rm -rf "$backup"
         done
-        unset CRASHArr
       else
         echo -e "${BLD}Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}${NRM}"
       fi
@@ -526,13 +530,16 @@ done
 enforce() {
   local browser
   for browser in "${BROWSERS[@]}"; do
-    CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
+    local CRASHArr=()
+    while IFS= read -d '' -r backup; do
+      CRASHArr=("${CRASHArr[@]}" "$backup")
+    done < <(find "${DIR%/*}" -type d -name '*crashrecovery*' -print0 | sort -r -z)
+
     if [[ ${#CRASHArr[@]} -gt $BACKUP_LIMIT ]]; then
       for remove in "${CRASHArr[@]:$BACKUP_LIMIT}"; do
         rm -rf "$remove"
       done
     fi
-    unset CRASHArr
   done
 }
 
@@ -603,7 +610,11 @@ parse() {
       fi
       UPPER="$VOLATILE/$user-$browser${suffix}-rw"
       if [[ -d "$DIR" ]]; then
-        CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
+        local CRASHArr=()
+        while IFS= read -d '' -r backup; do
+          CRASHArr=("${CRASHArr[@]}" "$backup")
+        done < <(find "${DIR%/*}" -type d -name '*crashrecovery*' -print0 | sort -r -z)
+
         # get permissions on profile dir and be smart about it since symlinks are all 777
         [[ -f $PID_FILE ]] && TRUEP=$(stat -c %a "$BACKUP") || TRUEP=$(stat -c %a "$DIR")
         # since $XDG_RUNTIME_DIR is 700 by default so pass on by
@@ -646,7 +657,6 @@ parse() {
             echo -e "$(tput cr)$(tput cuf 17) ${BLU}$backup ${NRM}${BLD}($psize)${NRM}"
           done
         fi
-        unset CRASHArr
         echo
       fi
     done
