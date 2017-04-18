@@ -1,13 +1,13 @@
-#Profile-sync-daemon
+# Profile-sync-daemon
 Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browser's profile in tmpfs and to periodically sync it back to your physical disc (HDD/SSD). This is accomplished via a symlinking step and an innovative use of rsync to maintain back-up and synchronization between the two. One of the major design goals of psd is a completely transparent user experience.
 
-##Good Advice
+## Good Advice
 Always backup your browser profile(s) before using psd for the first time.
 
-##Users of eCryptFS
+## Users of eCryptFS
 User of eCryptFS are encouraged not to use psd unless willing to help troubleshoot suspected browser corruption. See [#158](https://github.com/graysky2/profile-sync-daemon/issues/158).
 
-##Supported Browsers
+## Supported Browsers
 * Chromium
 * Conkeror
 * Epiphany
@@ -30,13 +30,13 @@ User of eCryptFS are encouraged not to use psd unless willing to help troublesho
 * Surf (http://surf.suckless.org/)
 * Vivaldi-browser and Vivaldi-browser-snapshot
 
-##Documentation
+## Documentation
 Consult the man page or the wiki page: https://wiki.archlinux.org/index.php/Profile-sync-daemon
 
-##Installation from Source
+## Installation from Source
 To build from source, see the included INSTALL text document.
 
-##Installation from Distro Packages
+## Installation from Distro Packages
 ### Officially Packaged
 * ![logo](http://gnulinuxvagos.es/public/style_extra/downloads_traffic_images/os_Antergos.png "antergos logo")Antergos: in the official [repos](http://build.antergos.com/package/profile-sync-daemon).
 * ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian jesse+: in the official [repos](https://packages.debian.org/unstable/profile-sync-daemon).
@@ -53,17 +53,17 @@ To build from source, see the included INSTALL text document.
 * ![logo](http://wiki.codeblocks.org/images/8/8b/Slackware-logo_32.png "slack logo")Slackware: on [slackbuilds](http://slackbuilds.org/apps/profile-sync-daemon/).
 * ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu: in [graysky's PPA](https://github.com/graysky2/profile-sync-daemon#ubuntu-users).
 
-###Debian Users
+### Debian Users
 Since June of 2016, Profile-sync-daemon is in the official repos for Users of jesse+! [Reference](https://tracker.debian.org/pkg/profile-sync-daemon).
 
     sudo apt-get install profile-sync-daemon
 
-###Fedora Users
+### Fedora Users
 Since June of 2013, Profile-sync-daemon is in the official repos! [Reference](https://bugzilla.redhat.com/show_bug.cgi?id=968253).
 
     sudo yum install profile-sync-daemon
 
-###Ubuntu Users
+### Ubuntu Users
 Since June of 2016, Profile-sync-daemon is in the official repos for users of Yakkety+ (16.10+)! [Reference](https://launchpad.net/ubuntu/+source/profile-sync-daemon).
 
 Others must be using AT LEAST Ubuntu 15.04 (Vivid) or have systemd as your init system to use these packages!
@@ -73,10 +73,10 @@ To add the PPA (personal package archive) to your Ubuntu system (packages availa
     sudo apt-get update
     sudo apt-get install profile-sync-daemon
 
-###Other Distros
+### Other Distros
 If you are interested in packaging psd for your favorite distro, please contact me.
 
-##NOTE FOR VERSION 6
+## NOTE FOR VERSION 6
 My desktop distro (Arch) switched to systemd a while ago and other big ones (Fedora, Debian, Ubuntu) have followed suite. With the release of psd version 6.x I will no longer be supporting alternative init systems such as upstart and openrc. It is too complex for me to maintain and test multiple configurations on non-native init systems for me.
 
 Also of note for version 6.x is that no longer does psd run in as a system service. It now runs as a user service.
