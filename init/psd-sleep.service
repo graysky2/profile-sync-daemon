@@ -2,17 +2,15 @@
 Description=Profile-sync-daemon
 Documentation=man:psd(1) man:profile-sync-daemon(1)
 Documentation=https://wiki.archlinux.org/index.php/Profile-sync-daemon
-Wants=psd-resync.service
+Before=sleep.target
+StopWhenUnneeded=yes
 RequiresMountsFor=/home/
-After=winbindd.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-# just call /bin/true and let psd-resync.service do it
-ExecStart=/bin/true
-ExecStop=/usr/bin/profile-sync-daemon unsync
+ExecStart=/usr/bin/profile-sync-daemon unsync
+ExecStop=/usr/bin/profile-sync-daemon resync
 
 [Install]
-WantedBy=default.target
-Also=psd-sleep.service
+WantedBy=sleep.target
