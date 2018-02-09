@@ -1,8 +1,6 @@
 DEPENDENCIES
  bash >=4.0
- coreutils
- findutils
- kmod
+ find
  rsync
  systemd
 
