@@ -310,7 +310,13 @@ cleanup() {
     load_env_for "$browser"
     for item in "${DIRArr[@]}"; do
       DIR="$item"
-      CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
+      # per profile crashrecovery handling
+      if [[ ${#profileArr[@]} -gt 1 ]]; then
+        profileName="$(basename ${DIR})"
+        CRASHArr=( $(find "${DIR%/*}" -type d -name "${profileName}-*crashrecovery*"|sort -r) )
+      else
+        CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
+      fi
       if [[ ${#CRASHArr[@]} -gt 0 ]]; then
         echo -e "${BLD}Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR${NRM}"
         for backup in "${CRASHArr[@]}"; do
@@ -526,7 +532,14 @@ done
 enforce() {
   local browser
   for browser in "${BROWSERS[@]}"; do
-    CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
+    load_env_for "$browser"
+    # per profile crashrecovery handling
+    if [[ ${#profileArr[@]} -gt 1 ]]; then
+      profileName="$(basename ${DIR})"
+      CRASHArr=( $(find "${DIR%/*}" -type d -name "${profileName}-*crashrecovery*"|sort -r) )
+    else
+      CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
+    fi
     if [[ ${#CRASHArr[@]} -gt $BACKUP_LIMIT ]]; then
       for remove in "${CRASHArr[@]:$BACKUP_LIMIT}"; do
         rm -rf "$remove"
@@ -603,7 +616,13 @@ parse() {
       fi
       UPPER="$VOLATILE/$user-$browser${suffix}-rw"
       if [[ -d "$DIR" ]]; then
-        CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
+        # per profile crashrecovery handling
+        if [[ ${#profileArr[@]} -gt 1 ]]; then
+          profileName="$(basename ${DIR})"
+          CRASHArr=( $(find "${DIR%/*}" -type d -name "${profileName}-*crashrecovery*"|sort -r) )
+        else
+          CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
+        fi
         # get permissions on profile dir and be smart about it since symlinks are all 777
         [[ -f $PID_FILE ]] && TRUEP=$(stat -c %a "$BACKUP") || TRUEP=$(stat -c %a "$DIR")
         # since $XDG_RUNTIME_DIR is 700 by default so pass on by
