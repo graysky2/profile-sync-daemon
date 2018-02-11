@@ -90,7 +90,7 @@ fi
 if [[ -f "$PID_FILE" ]]; then
   if [[ -f "$PSDCONFDIR/.psd.conf" ]]; then
     PSDCONF="$PSDCONFDIR/.psd.conf"
-    unset USE_OVERLAYFS BROWSERS USE_BACKUPS
+    unset USE_OVERLAYFS BROWSERS USE_BACKUPS BACKUP_LIMIT
     . "$PSDCONF"
     # defining VOLATILE in the config is deprecated since v6.16
     VOLATILE="$XDG_RUNTIME_DIR"
@@ -675,6 +675,11 @@ parse() {
           rwsize=$(du -Dh --max-depth=0 "$UPPER" 2>/dev/null | awk '{ print $1 }')
           echo -en " ${BLD}overlayfs size:"
           echo -e "$(tput cr)$(tput cuf 17) $rwsize${NRM}"
+        fi
+        if [[ $BACKUP_LIMIT -ne 5 ]]; then
+          # only print if not the hardcoded default
+          echo -en " ${BLD}backup limit:"
+          echo -e "$(tput cr)$(tput cuf 17) $BACKUP_LIMIT${NRM}"
         fi
         echo -en " ${BLD}recovery dirs:"
         if [[ "${#CRASHArr[@]}" -eq 0 ]]; then
