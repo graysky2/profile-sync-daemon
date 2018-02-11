@@ -4,15 +4,15 @@ if [[ -d $HOME/.mozilla/seamonkey ]]; then
     index=0
     PSNAME="$browser"
     for profileItem in ${profileArr[@]}; do
-        if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
+        if [[ $(echo "$profileItem" | cut -c1) = "/" ]]; then
             # path is not relative
-            DIRArr[index]="$profileItem"
+            DIRArr[$index]="$profileItem"
         else
             # we need to append the default path to give a fully
             # qualified path
-            DIRArr[index]="$HOME/.mozilla/seamonkey/$profileItem"
+            DIRArr[$index]="$HOME/.mozilla/seamonkey/$profileItem"
         fi
-        index=$index+1
+        let index=${index}+1
     done
 fi
 
