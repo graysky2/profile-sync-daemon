@@ -1,6 +1,6 @@
 if [[ -d $HOME/.moonchild\ productions/pale\ moon ]]; then
-    profileArr=( $(grep '[P,p]'ath= $HOME/.moonchild\ productions/pale\ moon/profiles.ini |
-    sed 's/[P,p]ath=//') )
+    profileArr=( $(grep '[Pp]'ath= $HOME/.moonchild\ productions/pale\ moon/profiles.ini |
+    sed 's/[Pp]ath=//') )
     index=0
     PSNAME="$browser"
     for profileItem in ${profileArr[@]}; do

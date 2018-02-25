@@ -1,7 +1,7 @@
 # https://bbs.archlinux.org/viewtopic.php?id=117157
 if [[ -d $HOME/.mozilla/aurora ]]; then
-    profileArr=( $(grep '[P,p]'ath= $HOME/.mozilla/aurora/profiles.ini |
-    sed 's/[P,p]ath=//') )
+    profileArr=( $(grep '[Pp]'ath= $HOME/.mozilla/aurora/profiles.ini |
+    sed 's/[Pp]ath=//') )
     index=0
     PSNAME="aurora"
     for profileItem in ${profileArr[@]}; do

@@ -1,6 +1,6 @@
 if [[ -d $HOME/.mozilla/seamonkey ]]; then
-    profileArr=( $(grep '[P,p]'ath= $HOME/.mozilla/seamonkey/profiles.ini |
-    sed 's/[P,p]ath=//') )
+    profileArr=( $(grep '[Pp]'ath= $HOME/.mozilla/seamonkey/profiles.ini |
+    sed 's/[Pp]ath=//') )
     index=0
     PSNAME="$browser"
     for profileItem in ${profileArr[@]}; do
