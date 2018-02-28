@@ -1,0 +1,3 @@
+[[ -d $XDG_CONFIG_HOME/$browser ]] &&
+    DIRArr[0]="$XDG_CONFIG_HOME/$browser"
+PSNAME="$browser"
