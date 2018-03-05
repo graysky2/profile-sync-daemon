@@ -1,9 +1,7 @@
 if [[ -d $HOME/.mozilla/firefox ]]; then
-    profileArr=( $(grep '[P,p]'ath= $HOME/.mozilla/firefox/profiles.ini |
-    sed 's/[P,p]ath=//') )
     index=0
     PSNAME="$browser"
-    for profileItem in ${profileArr[@]}; do
+    while read -r profileItem; do
         if [[ $(echo $profileItem | cut -c1) = "/" ]]; then
             # path is not relative
             DIRArr[index]="$profileItem"
@@ -13,7 +11,7 @@ if [[ -d $HOME/.mozilla/firefox ]]; then
             DIRArr[index]="$HOME/.mozilla/firefox/$profileItem"
         fi
         index=$index+1
-    done
+    done < <(grep '[P,p]'ath= $HOME/.mozilla/firefox/profiles.ini | sed 's/[P,p]ath=//')
 fi
 
 check_suffix=1
