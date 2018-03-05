@@ -392,7 +392,7 @@ dup_check() {
       # browser is on system so check profiles
       #
       # check that the LAST DIRECTORY in the full path is unique
-      unique_count=$(echo "${DIRArr[@]##*/}" | sed 's/ /\n/g' | sort -u | wc -l)
+      unique_count=$(printf "%s\n" "${DIRArr[@]##*/}" | sort -u | wc -l)
       # no problems so do nothing
       [[ ${#DIRArr[@]} -eq $unique_count ]] && continue
 
