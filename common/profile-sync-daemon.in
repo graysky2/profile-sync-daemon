@@ -102,7 +102,7 @@ if [[ -z "$BACKUP_LIMIT" ]]; then
 else
   if [[ "$BACKUP_LIMIT" =~ ^[0-9]+$ ]]; then
     # correctly setup
-    /bin/true
+    true
   else
     echo -e " ${RED}ERROR:${NRM}${BLD} Bad value for BACKUP_LIMIT detected!${NRM}"
     exit 1
