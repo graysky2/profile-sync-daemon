@@ -41,24 +41,19 @@ To build from source, see the included INSTALL text document.
 * ![logo](http://gnulinuxvagos.es/public/style_extra/downloads_traffic_images/os_Antergos.png "antergos logo")Antergos: in the official [repos](http://build.antergos.com/package/profile-sync-daemon).
 * ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian jesse+: in the official [repos](https://packages.debian.org/unstable/profile-sync-daemon).
 * ![logo](https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Logo_Exherbo.svg/32px-Logo_Exherbo.svg.png "exherbo logo")Exherbo: in the official [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
-* ![logo](https://www.monitorix.org/imgs/fedora.png "fedora logo")Fedora: in the official [repos](http://koji.fedoraproject.org/koji/packageinfo?packageID=16307).
 * ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo: in the official [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
 * ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu 16.10+: in the universe [repo](http://packages.ubuntu.com/yakkety/profile-sync-daemon).
 
 ### User Packaged
 * ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch: in the [AUR](https://aur.archlinux.org/packages/profile-sync-daemon).
 * ![logo](https://i.postimg.cc/4x1Wtnkr/Chakra-shiny.png "chakra logo")Chakra: in the [CCR](https://ccr.chakralinux.org/packages.php?O=0&K=profile-sync-daemon).
+* ![logo](https://www.monitorix.org/imgs/fedora.png "fedora logo")Fedora: in [Copr](https://copr.fedorainfracloud.org/coprs/szasza/Profile-sync-daemon/).
 * ![logo](http://wiki.codeblocks.org/images/8/8b/Slackware-logo_32.png "slack logo")Slackware: on [slackbuilds](http://slackbuilds.org/apps/profile-sync-daemon/).
 
 ### Debian Users
 Since June of 2016, Profile-sync-daemon is in the official repos for Users of jesse+! [Reference](https://tracker.debian.org/pkg/profile-sync-daemon).
 
     sudo apt-get install profile-sync-daemon
-
-### Fedora Users
-Since June of 2013, Profile-sync-daemon is in the official repos! [Reference](https://bugzilla.redhat.com/show_bug.cgi?id=968253).
-
-    sudo yum install profile-sync-daemon
 
 ### Ubuntu Users
 Since June of 2016, Profile-sync-daemon is in the official repos for users of Yakkety+ (16.10+)! [Reference](https://launchpad.net/ubuntu/+source/profile-sync-daemon).
