@@ -264,10 +264,17 @@ ungraceful_state_check() {
         else
           echo "Ungraceful state detected for $DIR so fixing"
           unlink "$DIR"
+          # refuse to start browser while recovery
+          ln -s /dev/null "$DIR"
         fi
       fi
 
       if [[ -d "$BACKUP" ]]; then
+        if [[ -d $DIR ]]; then
+          echo "Unexpected state detected: we has $BACKUP, but $DIR already exists. Trying move $DIR to $DIR" "$DIR-old-profile-$NOW"
+          mv --no-target-directory "$DIR" "$DIR-old-profile-$NOW"
+        fi
+
         if [[ -d "$BACK_OVFS" ]]; then
           # always snapshot the most recent of these two dirs...
           # if using overlayfs $BACK_OVFS and $BACKUP should be compared
@@ -288,6 +295,7 @@ ungraceful_state_check() {
             cp $opts "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
           fi
 
+          unlink "$DIR"
           mv --no-target-directory "$TARGETTOKEEP" "$DIR"
           rm -rf "$BACKUP"
         else
@@ -298,6 +306,7 @@ ungraceful_state_check() {
           if [[ $CRRE -eq 1 ]]; then
             opts="-a --reflink=auto"
             cp $opts "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+            unlink "$DIR"
             mv --no-target-directory "$BACKUP" "$DIR"
           fi
         fi
