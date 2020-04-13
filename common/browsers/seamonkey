@@ -11,7 +11,7 @@ if [[ -d $HOME/.mozilla/seamonkey ]]; then
             DIRArr[index]="$HOME/.mozilla/seamonkey/$profileItem"
         fi
         index=$index+1
-    done < <(grep '[P,p]'ath= "$HOME"/.mozilla/firefox/profiles.ini | sed 's/[P,p]ath=//')
+    done < <(grep '[Pp]'ath= "$HOME"/.mozilla/firefox/profiles.ini | sed 's/[Pp]ath=//')
 fi
 
 check_suffix=1
