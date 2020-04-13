@@ -5,6 +5,8 @@
 # Inspired by some code originally written by Colin Verot
 #
 
+# shellcheck disable=1090
+
 # needed for debian 8.x
 [[ -h /sbin ]] || PATH=$PATH:/sbin
 
@@ -50,12 +52,12 @@ if [[ -f "$PSDCONF" ]]; then
     # do nothing if psd is currently running, otherwise
     # make sure only comments and variables/arrays are defined to prevent
     # problems like issue #166
-    if egrep -q -v '^$|^#|^[^ ]*=[^;]*' "$PSDCONF"; then
+    if grep -Eqv '^$|^#|^[^ ]*=[^;]*' "$PSDCONF"; then
       # something that isn't a blank line, comment, or variable present
       # so exit
       echo -e " ${RED}ERROR:${NRM}${BLD} Syntax error(s) detected in ${BLU}$PSDCONF${NRM}${BLD} - edit and try again.${NRM}"
       echo -e "${NRM}${BLD}Line number: offending comment${NRM}"
-      egrep -vn '^$|^#|^[^ ]*=[^;]*' "$PSDCONF"
+      grep -Evn '^$|^#|^[^ ]*=[^;]*' "$PSDCONF"
       exit 1
     fi
   fi
@@ -111,9 +113,9 @@ fi
 
 # BROWSERS defined as string var so redefine it as an array
 if [[ -z "$BROWSERS" ]]; then
-  BROWSERS=( $(find "$SHAREDIR/browsers" -type f -printf "%f\n") )
+  mapfile -t BROWSERS < <(find "$SHAREDIR/browsers" -type f -printf "%f\n")
 else
-  BROWSERS=( $BROWSERS )
+  IFS=' ' read -r -a BROWSERS <<< "$BROWSERS"
 fi
 
 # simple function to determine user intent rather than using a null value
@@ -151,11 +153,13 @@ fi
 
 if [[ -z $OLFSVER ]]; then
   # if neither is hardcoded, see if either module is available
-  modinfo overlayfs &>/dev/null
-  [[ $? -eq 0 ]] && OLFSVER=22
+  if modinfo overlayfs &>/dev/null; then
+    OLFSVER=22
+  fi
 
-  modinfo overlay &>/dev/null
-  [[ $? -eq 0 ]] && OLFSVER=23
+  if modinfo overlay &>/dev/null; then
+    OLFSVER=23
+  fi
 fi
 
 # get distro name
@@ -216,8 +220,9 @@ config_check() {
     # user must have sudo rights to call /usr/bin/mount
     # and /usr/bin/umount to use overlay mode
 
-    sudo -kn psd-overlay-helper &>/dev/null
-    [[ $? -ne 0 ]] && FAILCODE=1
+    if ! sudo -kn psd-overlay-helper &>/dev/null; then
+      FAILCODE=1
+    fi
 
     if [[ $FAILCODE -ne 0 ]]; then
       echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, $user needs sudo access to ${BLU}/usr/bin/psd-overlay-helper${NRM}${BLD}${NRM}"
@@ -291,8 +296,7 @@ ungraceful_state_check() {
             TARGETTOKEEP="$BACKUP"
 
           if [[ $CRRE -eq 1 ]]; then
-            opts="-a --reflink=auto"
-            cp $opts "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
+            cp -a --reflink=auto "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
           fi
 
           unlink "$DIR"
@@ -304,8 +308,7 @@ ungraceful_state_check() {
           # at all which can be treated the same way
 
           if [[ $CRRE -eq 1 ]]; then
-            opts="-a --reflink=auto"
-            cp $opts "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+            cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
             unlink "$DIR"
             mv --no-target-directory "$BACKUP" "$DIR"
           fi
@@ -392,7 +395,7 @@ dup_check() {
     load_env_for "$browser"
     if suffix_needed "$browser"; then
       # nothing to check
-      [[ -z "${DIRArr[@]}" ]] && continue
+      [[ -z "${DIRArr[*]}" ]] && continue
       # browser is on system so check profiles
       #
       # check that the LAST DIRECTORY in the full path is unique
@@ -486,8 +489,7 @@ do_sync_for() {
         # initial sync
         REPORT="sync"
         if [[ $OLFS -eq 1 ]]; then
-          sudo psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$UPPER" -w "$WORK" -d "$TMP" mountup
-          if [[ $? -ne 0 ]]; then
+          if ! sudo psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$UPPER" -w "$WORK" -d "$TMP" mountup; then
             echo -e "Error in trying to mount $TMP - this should not happen!"
             exit 1
           fi
@@ -523,17 +525,19 @@ do_sync() {
   # while psd is running to keep any edits made to the "live" psd.conf from
   # potentially orphaning the snapshot copies thus preserving the data
 
-  [[ -f "$PSDCONFDIR/.psd.conf" ]] || {
-  echo "# Automatically generated file; DO NOT EDIT!" > "$PSDCONFDIR/.psd.conf"
-  echo "# The purpose is to snapshot the settings used when psd was activated." >> "$PSDCONFDIR/.psd.conf"
-  echo "# Any edits to the live config: $PSDCONFDIR/psd.conf" >> "$PSDCONFDIR/.psd.conf"
-  echo "# will be applied the _next_ time psd is activated." >> "$PSDCONFDIR/.psd.conf"
-  echo "#" >> "$PSDCONFDIR/.psd.conf"
-  echo "USE_OVERLAYFS=\"$USE_OVERLAYFS\"" >> "$PSDCONFDIR/.psd.conf"
-  echo "BROWSERS=\"${BROWSERS[*]}\"" >> "$PSDCONFDIR/.psd.conf"
-  echo "USE_BACKUPS=\"$USE_BACKUPS\"" >> "$PSDCONFDIR/.psd.conf"
+  if [[ ! -f "$PSDCONFDIR/.psd.conf" ]]; then
+    {
+      echo "# Automatically generated file; DO NOT EDIT!"
+      echo "# The purpose is to snapshot the settings used when psd was activated."
+      echo "# Any edits to the live config: $PSDCONFDIR/psd.conf"
+      echo "# will be applied the _next_ time psd is activated."
+      echo "#"
+      echo "USE_OVERLAYFS=\"$USE_OVERLAYFS\""
+      echo "BROWSERS=\"${BROWSERS[*]}\""
+      echo "USE_BACKUPS=\"$USE_BACKUPS\""
+    } >> "$PSDCONFDIR/.psd.conf"
   chmod 400 "$PSDCONFDIR/.psd.conf"
-}
+  fi
 
 local browser
 for browser in "${BROWSERS[@]}"; do
