@@ -4,13 +4,13 @@ if [[ -d $HOME/.mozilla/seamonkey ]]; then
     while read -r profileItem; do
         if [[ $(echo "$profileItem" | cut -c1) = "/" ]]; then
             # path is not relative
-            DIRArr[index]="$profileItem"
+            DIRArr[$index]="$profileItem"
         else
             # we need to append the default path to give a
             # fully qualified path
-            DIRArr[index]="$HOME/.mozilla/seamonkey/$profileItem"
+            DIRArr[$index]="$HOME/.mozilla/seamonkey/$profileItem"
         fi
-        index=$index+1
+        (( index=index+1 ))
     done < <(grep '[Pp]'ath= "$HOME"/.mozilla/firefox/profiles.ini | sed 's/[Pp]ath=//')
 fi
 
