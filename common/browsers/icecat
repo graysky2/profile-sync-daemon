@@ -1,9 +1,7 @@
 if [[ -d $HOME/.mozilla/icecat ]]; then
-    profileArr=( $(grep '[P,p]'ath= $HOME/.mozilla/icecat/profiles.ini |
-    sed 's/[P,p]ath=//') )
     index=0
     PSNAME="$browser"
-    for profileItem in ${profileArr[@]}; do
+    while read -r profileItem; do
         if [[ $(echo "$profileItem" | cut -c1) = "/" ]]; then
             # path is not relative
             DIRArr[$index]="$profileItem"
@@ -12,8 +10,8 @@ if [[ -d $HOME/.mozilla/icecat ]]; then
             # fully qualified path
             DIRArr[$index]="$HOME/.mozilla/icecat/$profileItem"
         fi
-        let index=${index}+1
-    done
+        (( index=index+1 ))
+    done < <(grep '[Pp]'ath= "$HOME"/.mozilla/firefox/profiles.ini | sed 's/[Pp]ath=//')
 fi
 
 check_suffix=1

@@ -5,6 +5,8 @@
 # Inspired by some code originally written by Colin Verot
 #
 
+# shellcheck disable=1090
+
 # needed for debian 8.x
 [[ -h /sbin ]] || PATH=$PATH:/sbin
 
@@ -50,12 +52,12 @@ if [[ -f "$PSDCONF" ]]; then
     # do nothing if psd is currently running, otherwise
     # make sure only comments and variables/arrays are defined to prevent
     # problems like issue #166
-    if egrep -q -v '^$|^#|^[^ ]*=[^;]*' "$PSDCONF"; then
+    if grep -Eqv '^$|^#|^[^ ]*=[^;]*' "$PSDCONF"; then
       # something that isn't a blank line, comment, or variable present
       # so exit
       echo -e " ${RED}ERROR:${NRM}${BLD} Syntax error(s) detected in ${BLU}$PSDCONF${NRM}${BLD} - edit and try again.${NRM}"
       echo -e "${NRM}${BLD}Line number: offending comment${NRM}"
-      egrep -vn '^$|^#|^[^ ]*=[^;]*' "$PSDCONF"
+      grep -Evn '^$|^#|^[^ ]*=[^;]*' "$PSDCONF"
       exit 1
     fi
   fi
@@ -88,7 +90,7 @@ fi
 if [[ -f "$PID_FILE" ]]; then
   if [[ -f "$PSDCONFDIR/.psd.conf" ]]; then
     PSDCONF="$PSDCONFDIR/.psd.conf"
-    unset USE_OVERLAYFS BROWSERS USE_BACKUPS
+    unset USE_OVERLAYFS BROWSERS USE_BACKUPS BACKUP_LIMIT
     . "$PSDCONF"
     # defining VOLATILE in the config is deprecated since v6.16
     VOLATILE="$XDG_RUNTIME_DIR"
@@ -102,7 +104,7 @@ if [[ -z "$BACKUP_LIMIT" ]]; then
 else
   if [[ "$BACKUP_LIMIT" =~ ^[0-9]+$ ]]; then
     # correctly setup
-    /bin/true
+    true
   else
     echo -e " ${RED}ERROR:${NRM}${BLD} Bad value for BACKUP_LIMIT detected!${NRM}"
     exit 1
@@ -111,9 +113,9 @@ fi
 
 # BROWSERS defined as string var so redefine it as an array
 if [[ -z "$BROWSERS" ]]; then
-  BROWSERS=( $(find "$SHAREDIR/browsers" -type f -printf "%f\n") )
+  mapfile -t BROWSERS < <(find "$SHAREDIR/browsers" -type f -printf "%f\n")
 else
-  BROWSERS=( $BROWSERS )
+  IFS=' ' read -r -a BROWSERS <<< "$BROWSERS"
 fi
 
 # simple function to determine user intent rather than using a null value
@@ -151,11 +153,13 @@ fi
 
 if [[ -z $OLFSVER ]]; then
   # if neither is hardcoded, see if either module is available
-  modinfo overlayfs &>/dev/null
-  [[ $? -eq 0 ]] && OLFSVER=22
+  if modinfo overlayfs &>/dev/null; then
+    OLFSVER=22
+  fi
 
-  modinfo overlay &>/dev/null
-  [[ $? -eq 0 ]] && OLFSVER=23
+  if modinfo overlay &>/dev/null; then
+    OLFSVER=23
+  fi
 fi
 
 # get distro name
@@ -178,24 +182,38 @@ else
 fi
 
 header() {
-  [[ -z "$distro" ]] && echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}" ||
+  if [[ -z "$distro" ]]; then
+    echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}"
+  else
     echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $distro${NRM}"
-  echo
+    echo
+  fi
 }
 
 dep_check() {
   # checks for dependencies and that psd.conf is setup correctly
-  command -v rsync >/dev/null 2>&1 || {
-  echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!${NRM}" >&2; exit 1; }
-  command -v modinfo >/dev/null 2>&1 || {
-  echo -e " ${BLD}I require modinfo but it's not installed. ${RED}Aborting!${NRM}" >&2; exit 1; }
-  command -v awk >/dev/null 2>&1 || {
-  echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!${NRM}" >&2; exit 1; }
+  if ! command -v rsync >/dev/null 2>&1; then
+    echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!${NRM}"
+    exit 1
+  fi
+  # https://github.com/graysky2/profile-sync-daemon/issues/253
+  if ! command -v modinfo >/dev/null 2>&1; then
+    if ! command -v /sbin/modinfo >/dev/null 2>&1; then
+      echo -e " ${BLD}I require modinfo but it's not installed. ${RED}Aborting!${NRM}" >&2
+      exit 1
+    fi
+  fi
+  if ! command -v awk >/dev/null 2>&1; then
+    echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!${NRM}" >&2
+    exit 1
+  fi
   if [[ $OLFS -eq 1 ]]; then
     [[ $OLFSVER -ge 22 ]] || {
-    echo -e " ${BLD}Your kernel requires either the ${BLU}overlay${NRM}${BLD} or ${BLU}overlayfs${NRM}${BLD} module to use${NRM}"
-    echo -e " ${BLD}to use psd's in overlay mode. Cannot find either in your kernel so compile it in and${NRM}"
-    echo -e " ${BLD}try again or remove the option from ${BLU}$PSDCONF${NRM}${BLD}. ${RED}Aborting!${NRM}" >&2; exit 1;}
+      echo -e " ${BLD}Your kernel requires either the ${BLU}overlay${NRM}${BLD} or ${BLU}overlayfs${NRM}${BLD} module to use${NRM}"
+          echo -e " ${BLD}to use psd's in overlay mode. Cannot find either in your kernel so compile it in and${NRM}"
+          echo -e " ${BLD}try again or remove the option from ${BLU}$PSDCONF${NRM}${BLD}. ${RED}Aborting!${NRM}" >&2
+          exit 1
+        }
   fi
 
   if [[ -f /etc/psd.conf ]]; then
@@ -211,8 +229,9 @@ config_check() {
     # user must have sudo rights to call /usr/bin/mount
     # and /usr/bin/umount to use overlay mode
 
-    sudo -kn psd-overlay-helper &>/dev/null
-    [[ $? -ne 0 ]] && FAILCODE=1
+    if ! sudo -kn psd-overlay-helper &>/dev/null; then
+      FAILCODE=1
+    fi
 
     if [[ $FAILCODE -ne 0 ]]; then
       echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, $user needs sudo access to ${BLU}/usr/bin/psd-overlay-helper${NRM}${BLD}${NRM}"
@@ -259,10 +278,17 @@ ungraceful_state_check() {
         else
           echo "Ungraceful state detected for $DIR so fixing"
           unlink "$DIR"
+          # refuse to start browser while recovery
+          ln -s /dev/null "$DIR"
         fi
       fi
 
       if [[ -d "$BACKUP" ]]; then
+        if [[ -d $DIR ]]; then
+          echo "Unexpected state detected: we has $BACKUP, but $DIR already exists. Trying move $DIR to $DIR" "$DIR-old-profile-$NOW"
+          mv --no-target-directory "$DIR" "$DIR-old-profile-$NOW"
+        fi
+
         if [[ -d "$BACK_OVFS" ]]; then
           # always snapshot the most recent of these two dirs...
           # if using overlayfs $BACK_OVFS and $BACKUP should be compared
@@ -279,10 +305,10 @@ ungraceful_state_check() {
             TARGETTOKEEP="$BACKUP"
 
           if [[ $CRRE -eq 1 ]]; then
-            opts="-a --reflink=auto"
-            cp $opts "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
+            cp -a --reflink=auto "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
           fi
 
+          unlink "$DIR"
           mv --no-target-directory "$TARGETTOKEEP" "$DIR"
           rm -rf "$BACKUP"
         else
@@ -291,8 +317,8 @@ ungraceful_state_check() {
           # at all which can be treated the same way
 
           if [[ $CRRE -eq 1 ]]; then
-            opts="-a --reflink=auto"
-            cp $opts "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+            cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+            unlink "$DIR"
             mv --no-target-directory "$BACKUP" "$DIR"
           fi
         fi
@@ -310,14 +336,18 @@ cleanup() {
     load_env_for "$browser"
     for item in "${DIRArr[@]}"; do
       DIR="$item"
-      CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
+
+      local CRASHArr=()
+      while IFS= read -d '' -r backup; do
+        CRASHArr=("${CRASHArr[@]}" "$backup")
+      done < <(find "${DIR%/*}" -type d -name '*crashrecovery*' -print0 | sort -r -z)
+
       if [[ ${#CRASHArr[@]} -gt 0 ]]; then
         echo -e "${BLD}Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR${NRM}"
         for backup in "${CRASHArr[@]}"; do
           echo -e "${BLD}${RED} $backup${NRM}"
           rm -rf "$backup"
         done
-        unset CRASHArr
       else
         echo -e "${BLD}Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}${NRM}"
       fi
@@ -351,7 +381,7 @@ running_check() {
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
     [[ -z "$PSNAME" ]] && continue
-    if pgrep -u "$user" "$PSNAME" &>/dev/null; then
+    if pgrep -u "$user" "\<$PSNAME\>" &>/dev/null; then
       echo "Refusing to start; $browser is running by $user!"
       exit 1
     fi
@@ -374,11 +404,11 @@ dup_check() {
     load_env_for "$browser"
     if suffix_needed "$browser"; then
       # nothing to check
-      [[ -z "${DIRArr[@]}" ]] && continue
+      [[ -z "${DIRArr[*]}" ]] && continue
       # browser is on system so check profiles
       #
       # check that the LAST DIRECTORY in the full path is unique
-      unique_count=$(echo "${DIRArr[@]##*/}" | sed 's/ /\n/g' | sort -u | wc -l)
+      unique_count=$(printf "%s\n" "${DIRArr[@]##*/}" | sort -u | wc -l)
       # no problems so do nothing
       [[ ${#DIRArr[@]} -eq $unique_count ]] && continue
 
@@ -386,10 +416,11 @@ dup_check() {
       # clip of the 'heftig-' to give correct path
       [[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"
       profile_ini="$homedir/.mozilla/$browser/profiles.ini"
-      [[ "$browser" = "palemoon" ]] &&
+      if [[ "$browser" = "palemoon" ]]; then
         profile_ini="$homedir/.moonchild productions/pale moon/profiles.ini"
-      echo -e " ${BLD}Must have unique last directories in ${BLU}${profile_ini}${NRM}${BLD} to use psd.${NRM}"
-      exit 1
+        echo -e " ${BLD}Must have unique last directories in ${BLU}${profile_ini}${NRM}${BLD} to use psd.${NRM}"
+        exit 1
+      fi
     fi
   done
 }
@@ -404,12 +435,12 @@ kill_browsers() {
     local x=1
     while [[ $x -le 60 ]]; do
       [[ -n "$PSNAME" ]] || break
-      pgrep -u "$user" "$PSNAME" &>/dev/null || break
+      pgrep -u "$user" "\<$PSNAME\>" &>/dev/null || break
 
       if [[ $x -le 5 ]]; then
-        pkill -SIGTERM -u "$user" "$PSNAME"
+        pkill -SIGTERM -u "$user" "\<$PSNAME\>"
       else
-        pkill -SIGKILL -u "$user" "$PSNAME"
+        pkill -SIGKILL -u "$user" "\<$PSNAME\>"
       fi
 
       x=$(( x + 1 ))
@@ -468,8 +499,7 @@ do_sync_for() {
         # initial sync
         REPORT="sync"
         if [[ $OLFS -eq 1 ]]; then
-          sudo psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$UPPER" -w "$WORK" -d "$TMP" mountup
-          if [[ $? -ne 0 ]]; then
+          if ! sudo psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$UPPER" -w "$WORK" -d "$TMP" mountup; then
             echo -e "Error in trying to mount $TMP - this should not happen!"
             exit 1
           fi
@@ -505,34 +535,39 @@ do_sync() {
   # while psd is running to keep any edits made to the "live" psd.conf from
   # potentially orphaning the snapshot copies thus preserving the data
 
-  [[ -f "$PSDCONFDIR/.psd.conf" ]] || {
-  echo "# Automatically generated file; DO NOT EDIT!" > "$PSDCONFDIR/.psd.conf"
-  echo "# The purpose is to snapshot the settings used when psd was activated." >> "$PSDCONFDIR/.psd.conf"
-  echo "# Any edits to the live config: $PSDCONFDIR/psd.conf" >> "$PSDCONFDIR/.psd.conf"
-  echo "# will be applied the _next_ time psd is activated." >> "$PSDCONFDIR/.psd.conf"
-  echo "#" >> "$PSDCONFDIR/.psd.conf"
-  echo "USE_OVERLAYFS=\"$USE_OVERLAYFS\"" >> "$PSDCONFDIR/.psd.conf"
-  echo "BROWSERS=\"${BROWSERS[*]}\"" >> "$PSDCONFDIR/.psd.conf"
-  echo "USE_BACKUPS=\"$USE_BACKUPS\"" >> "$PSDCONFDIR/.psd.conf"
+  if [[ ! -f "$PSDCONFDIR/.psd.conf" ]]; then
+    {
+      echo "# Automatically generated file; DO NOT EDIT!"
+      echo "# The purpose is to snapshot the settings used when psd was activated."
+      echo "# Any edits to the live config: $PSDCONFDIR/psd.conf"
+      echo "# will be applied the _next_ time psd is activated."
+      echo "#"
+      echo "USE_OVERLAYFS=\"$USE_OVERLAYFS\""
+      echo "BROWSERS=\"${BROWSERS[*]}\""
+      echo "USE_BACKUPS=\"$USE_BACKUPS\""
+    } >> "$PSDCONFDIR/.psd.conf"
   chmod 400 "$PSDCONFDIR/.psd.conf"
-}
+  fi
 
-local browser
-for browser in "${BROWSERS[@]}"; do
-  do_sync_for "$browser"
-done
+  local browser
+  for browser in "${BROWSERS[@]}"; do
+    do_sync_for "$browser"
+  done
 }
 
 enforce() {
   local browser
   for browser in "${BROWSERS[@]}"; do
-    CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
+    local CRASHArr=()
+    while IFS= read -d '' -r backup; do
+      CRASHArr=("${CRASHArr[@]}" "$backup")
+    done < <(find "${DIR%/*}" -type d -name '*crashrecovery*' -print0 | sort -r -z)
+
     if [[ ${#CRASHArr[@]} -gt $BACKUP_LIMIT ]]; then
       for remove in "${CRASHArr[@]:$BACKUP_LIMIT}"; do
         rm -rf "$remove"
       done
     fi
-    unset CRASHArr
   done
 }
 
@@ -585,9 +620,11 @@ parse() {
   [[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
   echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}.${NRM}"
   echo -e " ${BLD}Systemd resync-timer is currently ${resync_color}$resync_state${NRM}${BLD}.${NRM}"
-  [[ $OLFS -eq 1 ]] &&
-    echo -e "${BLD} Overlayfs v$OLFSVER is currently ${GRN}active${NRM}${BLD}.${NRM}" ||
+  if [[ $OLFS -eq 1 ]]; then
+    echo -e "${BLD} Overlayfs v$OLFSVER is currently ${GRN}active${NRM}${BLD}.${NRM}"
+  else
     echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}.${NRM}"
+  fi
   echo
   echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD}:${NRM}"
   echo
@@ -603,7 +640,11 @@ parse() {
       fi
       UPPER="$VOLATILE/$user-$browser${suffix}-rw"
       if [[ -d "$DIR" ]]; then
-        CRASHArr=( $(find "${DIR%/*}" -type d -name '*crashrecovery*'|sort -r) )
+        local CRASHArr=()
+        while IFS= read -d '' -r backup; do
+          CRASHArr=("${CRASHArr[@]}" "$backup")
+        done < <(find "${DIR%/*}" -type d -name '*crashrecovery*' -print0 | sort -r -z)
+
         # get permissions on profile dir and be smart about it since symlinks are all 777
         [[ -f $PID_FILE ]] && TRUEP=$(stat -c %a "$BACKUP") || TRUEP=$(stat -c %a "$DIR")
         # since $XDG_RUNTIME_DIR is 700 by default so pass on by
@@ -635,6 +676,11 @@ parse() {
           echo -en " ${BLD}overlayfs size:"
           echo -e "$(tput cr)$(tput cuf 17) $rwsize${NRM}"
         fi
+        if [[ $BACKUP_LIMIT -ne 5 ]]; then
+          # only print if not the hardcoded default
+          echo -en " ${BLD}backup limit:"
+          echo -e "$(tput cr)$(tput cuf 17) $BACKUP_LIMIT${NRM}"
+        fi
         echo -en " ${BLD}recovery dirs:"
         if [[ "${#CRASHArr[@]}" -eq 0 ]]; then
           echo -e "$(tput cr)$(tput cuf 17) none${NRM}"
@@ -646,7 +692,6 @@ parse() {
             echo -e "$(tput cr)$(tput cuf 17) ${BLU}$backup ${NRM}${BLD}($psize)${NRM}"
           done
         fi
-        unset CRASHArr
         echo
       fi
     done
