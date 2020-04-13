@@ -182,15 +182,20 @@ else
 fi
 
 header() {
-  [[ -z "$distro" ]] && echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}" ||
+  if [[ -z "$distro" ]]; then
+    echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}"
+  else
     echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $distro${NRM}"
-  echo
+    echo
+  fi
 }
 
 dep_check() {
   # checks for dependencies and that psd.conf is setup correctly
-  command -v rsync >/dev/null 2>&1 || {
-  echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!${NRM}" >&2; exit 1; }
+  if ! command -v rsync >/dev/null 2>&1; then
+    echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!${NRM}"
+    exit 1
+  fi
   # https://github.com/graysky2/profile-sync-daemon/issues/253
   if ! command -v modinfo >/dev/null 2>&1; then
     if ! command -v /sbin/modinfo >/dev/null 2>&1; then
@@ -198,13 +203,17 @@ dep_check() {
       exit 1
     fi
   fi
-  command -v awk >/dev/null 2>&1 || {
-  echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!${NRM}" >&2; exit 1; }
+  if ! command -v awk >/dev/null 2>&1; then
+    echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!${NRM}" >&2
+    exit 1
+  fi
   if [[ $OLFS -eq 1 ]]; then
     [[ $OLFSVER -ge 22 ]] || {
-    echo -e " ${BLD}Your kernel requires either the ${BLU}overlay${NRM}${BLD} or ${BLU}overlayfs${NRM}${BLD} module to use${NRM}"
-    echo -e " ${BLD}to use psd's in overlay mode. Cannot find either in your kernel so compile it in and${NRM}"
-    echo -e " ${BLD}try again or remove the option from ${BLU}$PSDCONF${NRM}${BLD}. ${RED}Aborting!${NRM}" >&2; exit 1;}
+      echo -e " ${BLD}Your kernel requires either the ${BLU}overlay${NRM}${BLD} or ${BLU}overlayfs${NRM}${BLD} module to use${NRM}"
+          echo -e " ${BLD}to use psd's in overlay mode. Cannot find either in your kernel so compile it in and${NRM}"
+          echo -e " ${BLD}try again or remove the option from ${BLU}$PSDCONF${NRM}${BLD}. ${RED}Aborting!${NRM}" >&2
+          exit 1
+        }
   fi
 
   if [[ -f /etc/psd.conf ]]; then
@@ -407,10 +416,11 @@ dup_check() {
       # clip of the 'heftig-' to give correct path
       [[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"
       profile_ini="$homedir/.mozilla/$browser/profiles.ini"
-      [[ "$browser" = "palemoon" ]] &&
+      if [[ "$browser" = "palemoon" ]]; then
         profile_ini="$homedir/.moonchild productions/pale moon/profiles.ini"
-      echo -e " ${BLD}Must have unique last directories in ${BLU}${profile_ini}${NRM}${BLD} to use psd.${NRM}"
-      exit 1
+        echo -e " ${BLD}Must have unique last directories in ${BLU}${profile_ini}${NRM}${BLD} to use psd.${NRM}"
+        exit 1
+      fi
     fi
   done
 }
@@ -539,10 +549,10 @@ do_sync() {
   chmod 400 "$PSDCONFDIR/.psd.conf"
   fi
 
-local browser
-for browser in "${BROWSERS[@]}"; do
-  do_sync_for "$browser"
-done
+  local browser
+  for browser in "${BROWSERS[@]}"; do
+    do_sync_for "$browser"
+  done
 }
 
 enforce() {
@@ -610,9 +620,11 @@ parse() {
   [[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
   echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}.${NRM}"
   echo -e " ${BLD}Systemd resync-timer is currently ${resync_color}$resync_state${NRM}${BLD}.${NRM}"
-  [[ $OLFS -eq 1 ]] &&
-    echo -e "${BLD} Overlayfs v$OLFSVER is currently ${GRN}active${NRM}${BLD}.${NRM}" ||
+  if [[ $OLFS -eq 1 ]]; then
+    echo -e "${BLD} Overlayfs v$OLFSVER is currently ${GRN}active${NRM}${BLD}.${NRM}"
+  else
     echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}.${NRM}"
+  fi
   echo
   echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD}:${NRM}"
   echo
