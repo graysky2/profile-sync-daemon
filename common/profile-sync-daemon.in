@@ -111,11 +111,13 @@ else
   fi
 fi
 
-# BROWSERS defined as string var so redefine it as an array
 if [[ -z "$BROWSERS" ]]; then
   mapfile -t BROWSERS < <(find "$SHAREDIR/browsers" -type f -printf "%f\n")
 else
-  IFS=' ' read -r -a BROWSERS <<< "$BROWSERS"
+  if ! declare -p BROWSERS | grep -q 'declare \-a'; then
+    # did not setup as array so redefine it here
+    IFS=' ' read -r -a BROWSERS <<< "$BROWSERS"
+  fi
 fi
 
 # simple function to determine user intent rather than using a null value
