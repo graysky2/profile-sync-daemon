@@ -11,7 +11,7 @@ if [[ -d $HOME/.moonchild\ productions/pale\ moon ]]; then
             DIRArr[$index]="$HOME/.moonchild productions/pale moon/$profileItem"
         fi
         (( index=index+1 ))
-    done < <(grep '[Pp]'ath= "$HOME"/.mozilla/firefox/profiles.ini | sed 's/[Pp]ath=//')
+    done < <(grep '[Pp]'ath= "$HOME"/.moonchild\ productions/pale\ moon/profiles.ini | sed 's/[Pp]ath=//')
 fi
 
 check_suffix=1
