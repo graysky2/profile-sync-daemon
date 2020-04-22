@@ -383,7 +383,7 @@ running_check() {
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
     [[ -z "$PSNAME" ]] && continue
-    if pgrep -u "$user" "\<$PSNAME\>" &>/dev/null; then
+    if pgrep -x -u "$user" "$PSNAME" &>/dev/null; then
       echo "Refusing to start; $browser is running by $user!"
       exit 1
     fi
@@ -437,12 +437,12 @@ kill_browsers() {
     local x=1
     while [[ $x -le 60 ]]; do
       [[ -n "$PSNAME" ]] || break
-      pgrep -u "$user" "\<$PSNAME\>" &>/dev/null || break
+      pgrep -x -u "$user" "$PSNAME" &>/dev/null || break
 
       if [[ $x -le 5 ]]; then
-        pkill -SIGTERM -u "$user" "\<$PSNAME\>"
+        pkill -x -SIGTERM -u "$user" "$PSNAME"
       else
-        pkill -SIGKILL -u "$user" "\<$PSNAME\>"
+        pkill -x -SIGKILL -u "$user" "$PSNAME"
       fi
 
       x=$(( x + 1 ))
