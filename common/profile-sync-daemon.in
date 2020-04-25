@@ -5,7 +5,7 @@
 # Inspired by some code originally written by Colin Verot
 #
 
-# shellcheck disable=1090
+# shellcheck disable=1090,2154
 
 # needed for debian 8.x
 [[ -h /sbin ]] || PATH=$PATH:/sbin
@@ -164,32 +164,9 @@ if [[ -z $OLFSVER ]]; then
   fi
 fi
 
-# get distro name
-# first try os-release
-if [[ -f /etc/os-release ]]; then
-  . /etc/os-release
-  if [[ -n "$PRETTY_NAME" ]]; then
-    distro="$PRETTY_NAME"
-  elif [[ -n "$NAME" ]]; then
-    distro="$NAME"
-  fi
-else
-  # if not os-release try issue
-  if [[ -n $(sed 's| \\.*$||' /etc/issue | head -n 1) ]]; then
-    distro="$(sed 's| \\.*$||' /etc/issue | head -n 1)"
-  else
-    # fuck it
-    distro=
-  fi
-fi
-
 header() {
-  if [[ -z "$distro" ]]; then
-    echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}"
-  else
-    echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}${BLD} on $distro${NRM}"
-    echo
-  fi
+  echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}"
+  echo
 }
 
 dep_check() {
@@ -398,7 +375,7 @@ suffix_needed() {
 }
 
 dup_check() {
-  # only for firefox, icecat, seamonkey, palemoon, and aurora
+  # only for firefox, icecat, seamonkey, and palemoon
   # the LAST directory in the profile MUST be unique
   # make sure there are no duplicates in ~/.mozilla/<browser>/profiles.ini
   local browser
