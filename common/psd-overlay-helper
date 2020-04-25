@@ -4,20 +4,23 @@ readonly IFS=$' \t\n'
 
 while getopts :v:l:u:w:d: OPT; do
   case $OPT in
-    v|+v)
+    v)
       declare -ir OLFSVER=$OPTARG
       ;;
-    l|+l)
+    l)
       readonly BACKUP=$OPTARG
       ;;
-    u|+u)
+    u)
       readonly UPPER=$OPTARG
       ;;
-    w|+w)
+    w)
       readonly WORK=$OPTARG
       ;;
-    d|+d)
+    d)
       readonly TMP=$OPTARG
+      ;;
+    *)
+      exit 1
       ;;
   esac
 done
