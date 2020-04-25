@@ -9,7 +9,7 @@ After=winbindd.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-# psd-resync.service will do the (re)sync due to Wants=psd-resync.service
+ExecStart=/usr/bin/profile-sync-daemon startup
 ExecStop=/usr/bin/profile-sync-daemon unsync
 
 [Install]

@@ -716,6 +716,17 @@ case "$1" in
     header
     cleanup
     ;;
+  startup)
+    # target for psd.service's ExecStart= for consistent error handling
+    if [[ ! -f $PID_FILE ]]; then
+      dep_check
+      config_check
+      dup_check
+      running_check
+      ungraceful_state_check
+      echo -e "${BLD}psd startup check successful${NRM}"
+    fi
+    ;;
   sync|resync)
     if [[ -f $PID_FILE ]]; then
       do_sync
