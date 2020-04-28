@@ -186,6 +186,10 @@ dep_check() {
     echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!${NRM}" >&2
     exit 1
   fi
+  if ! command -v gdbus >/dev/null 2>&1; then
+    echo -e " ${BLD}I require gdbus but it's not installed. ${RED}Aborting!${NRM}"
+    exit 1
+  fi
   if [[ $OLFS -eq 1 ]]; then
     [[ $OLFSVER -ge 22 ]] || {
       echo -e " ${BLD}Your kernel requires either the ${BLU}overlay${NRM}${BLD} or ${BLU}overlayfs${NRM}${BLD} module to use${NRM}"
@@ -604,6 +608,12 @@ parse() {
   else
     echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}.${NRM}"
   fi
+  psd_suspend_sync_state=$(pgrep -cf "psd-suspend-sync")
+  if [[ "$psd_suspend_sync_state" != 0 ]]; then
+    echo -e "${BLD} Sync on sleep protection is currently ${GRN}active${NRM}${BLD}.${NRM}"
+  else
+    echo -e "${BLD} Sync on sleep protection is currently ${RED}inactive${NRM}${BLD}.${NRM}"
+  fi
   echo
   echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD}:${NRM}"
   echo
@@ -677,6 +687,22 @@ parse() {
   done
 }
 
+take_inhibit_lock() {
+  # ensure we only take one lock at a time
+  release_inhibit_lock
+  # background this to avoid hanging on startup
+  systemd-inhibit \
+    --mode="delay" \
+    --what="sleep" \
+    --who="profile-sync-daemon" \
+    --why="psd resync on suspend" \
+    /usr/bin/psd-suspend-sync &
+}
+
+release_inhibit_lock() {
+  [[ "$(pgrep -cf "psd-suspend-sync")" != 0 ]] && pkill -f psd-suspend-sync
+}
+
 case "$1" in
   p|P|Parse|parse|Preview|preview|debug)
     dep_check
@@ -695,14 +721,25 @@ case "$1" in
     ;;
   startup)
     # target for psd.service's ExecStart= for consistent error handling
+    # also handles taking initial inhibit-lock
     if [[ ! -f $PID_FILE ]]; then
       dep_check
       config_check
       dup_check
       running_check
       ungraceful_state_check
+      take_inhibit_lock
       echo -e "${BLD}psd startup check successful${NRM}"
     fi
+    ;;
+    suspend-sync)
+      # system preparing for sleep mode, resync when psd is active
+      psd_state=$(systemctl --user is-active psd)
+      [[ "$psd_state" = "active" ]] && do_sync
+      ;;
+  recycle-inhibit-lock)
+    # take inhibit lock for next suspend cycle
+    take_inhibit_lock
     ;;
   sync|resync)
     if [[ -f $PID_FILE ]]; then
@@ -722,6 +759,7 @@ case "$1" in
       do_sync
       kill_browsers
       do_unsync
+      release_inhibit_lock
     fi
     ;;
   *)
