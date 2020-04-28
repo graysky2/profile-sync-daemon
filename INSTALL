@@ -2,6 +2,7 @@ DEPENDENCIES
  bash >=4.0
  coreutils
  findutils
+ glib2
  kmod
  rsync
  systemd
