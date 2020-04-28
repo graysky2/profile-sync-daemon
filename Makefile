@@ -1,4 +1,4 @@
-VERSION = 6.38
+VERSION = 6.39b
 PN = profile-sync-daemon
 
 PREFIX ?= /usr
@@ -30,6 +30,7 @@ install-bin: common/$(PN)
 	$(INSTALL_DIR) "$(DESTDIR)$(BINDIR)"
 	$(INSTALL_PROGRAM) common/$(PN) "$(DESTDIR)$(BINDIR)/$(PN)"
 	$(INSTALL_PROGRAM) common/psd-overlay-helper "$(DESTDIR)$(BINDIR)/psd-overlay-helper"
+	$(INSTALL_PROGRAM) common/psd-suspend-sync "$(DESTDIR)$(BINDIR)/psd-suspend-sync"
 	ln -s $(PN) "$(DESTDIR)$(BINDIR)/psd"
 	$(INSTALL_DIR) "$(DESTDIR)$(ZSHDIR)"
 	$(INSTALL_DATA) common/zsh-completion "$(DESTDIR)/$(ZSHDIR)/_psd"
@@ -64,6 +65,7 @@ uninstall-bin:
 	$(RM) "$(DESTDIR)$(BINDIR)/psd"
 	$(RM) "$(DESTDIR)$(ZSHDIR)/_psd"
 	$(RM) "$(DESTDIR)$(BINDIR)/psd-overlay-helper"
+	$(RM) "$(DESTDIR)$(BINDIR)/psd-suspend-sync"
 	$(RM) "$(DESTDIR)$(SHAREDIR)/psd.conf"
 	$(RM) -rf "$(DESTDIR)$(SHAREDIR)/browsers"
 	rmdir "$(DESTDIR)$(SHAREDIR)"
