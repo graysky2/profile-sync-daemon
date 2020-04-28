@@ -142,7 +142,7 @@ case "${USE_BACKUPS,,}" in
     ;;
 esac
 
-# determine is we are using overlayfs (v22 and below) or overlay (v23 and above)
+# determine if we are using overlayfs (v22 and below) or overlay (v23 and above)
 # since mount should call modprobe on invocation, check to see if either
 # module is in the tree using modinfo
 
@@ -264,7 +264,7 @@ ungraceful_state_check() {
 
       if [[ -d "$BACKUP" ]]; then
         if [[ -d $DIR ]]; then
-          echo "Unexpected state detected: we has $BACKUP, but $DIR already exists. Trying move $DIR to $DIR" "$DIR-old-profile-$NOW"
+          echo "Unexpected state detected: we have $BACKUP, but $DIR already exists. Trying move $DIR to $DIR" "$DIR-old-profile-$NOW"
           mv --no-target-directory "$DIR" "$DIR-old-profile-$NOW"
         fi
 
@@ -505,7 +505,6 @@ do_sync_for() {
     fi
   done
 }
-
 
 do_sync() {
   touch "$PID_FILE"
