@@ -1,0 +1,31 @@
+#!/bin/bash
+
+#
+# psd sync on suspend
+# https://github.com/graysky2/profile-sync-daemon/issues/231
+#
+
+dbus_interface="org.freedesktop.login1"
+dbus_member="PrepareForSleep"
+
+# system suspends when 'PrepareForSleep' signal is 'true':
+# ... /org/freedesktop/login1: org.freedesktop.login1.Manager.PrepareForSleep (true,) ...
+# system resumes when 'PrepareForSleep' signal is 'false'
+# ... /org/freedesktop/login1: org.freedesktop.login1.Manager.PrepareForSleep (false,) ...
+gdbus monitor --system --dest "$dbus_interface" | \
+    while read -r line; do
+	if [[ "$line" =~ $dbus_member ]]; then
+	    if [[ "$line" =~ "true" ]]; then
+		### SUSPEND ###
+		logger "[psd-suspend-sync] Issueing suspend-sync request..."
+		/usr/bin/profile-sync-daemon suspend-sync
+		# the lock will be released now
+	    elif [[ "$line" =~ "false" ]]; then
+		### RESUME ###
+		logger "[psd-suspend-sync] re-taking inhibit lock..."
+		/usr/bin/profile-sync-daemon recycle-inhibit-lock
+	    fi
+	fi
+    done
+
+#exit 0
