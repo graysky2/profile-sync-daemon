@@ -616,21 +616,30 @@ do_unsync() {
 parse() {
   psd_state=$(systemctl --user is-active psd)
   resync_state=$(systemctl --user is-active psd-resync.timer)
-  [[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
-  [[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
-  echo -e " ${BLD}Systemd service is currently ${psd_color}$psd_state${NRM}${BLD}.${NRM}"
-  echo -e " ${BLD}Systemd resync-timer is currently ${resync_color}$resync_state${NRM}${BLD}.${NRM}"
-  if [[ $OLFS -eq 1 ]]; then
-    echo -e "${BLD} Overlayfs v$OLFSVER is currently ${GRN}active${NRM}${BLD}.${NRM}"
-  else
-    echo -e "${BLD} Overlayfs technology is currently ${RED}inactive${NRM}${BLD}.${NRM}"
-  fi
   psd_suspend_sync_state=$(pgrep -cf "psd-suspend-sync")
   if [[ "$psd_suspend_sync_state" != 0 ]]; then
-    echo -e "${BLD} Sync on sleep protection is currently ${GRN}active${NRM}${BLD}.${NRM}"
+    psss_state="enabled"
   else
-    echo -e "${BLD} Sync on sleep protection is currently ${RED}inactive${NRM}${BLD}.${NRM}"
+    psss_state="disabled"
   fi
+  if [[ $OLFS -eq 1 ]]; then
+    olfs_color="${GRN}"
+    ofls_state="enabled"
+  else
+    olfs_color="${RED}"
+    ofls_state="disabled"
+  fi
+  [[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
+  [[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
+  [[ "$psd_suspend_sync_state" != 0 ]] && psss_color="${GRN}" || psss_color="${RED}"
+  echo -en " ${BLD}systemd service:"
+  echo -e "$(tput cr)$(tput cuf 17) ${psd_color}$psd_state${NRM}${BLD}${NRM}"
+  echo -en " ${BLD}resync-timer:"
+  echo -e "$(tput cr)$(tput cuf 17) ${resync_color}$resync_state${NRM}${BLD}${NRM}"
+  echo -en " ${BLD}sync on sleep:"
+  echo -e "$(tput cr)$(tput cuf 17) ${psss_color}$psss_state${NRM}${BLD}${NRM}"
+  echo -en " ${BLD}use overlayfs:"
+  echo -e "$(tput cr)$(tput cuf 17) ${olfs_color}$ofls_state${NRM}${BLD}${NRM}"
   echo
   echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD}:${NRM}"
   echo
