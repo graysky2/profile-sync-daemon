@@ -90,7 +90,7 @@ fi
 if [[ -f "$PID_FILE" ]]; then
   if [[ -f "$PSDCONFDIR/.psd.conf" ]]; then
     PSDCONF="$PSDCONFDIR/.psd.conf"
-    unset USE_OVERLAYFS BROWSERS USE_BACKUPS BACKUP_LIMIT
+    unset USE_OVERLAYFS USE_SUSPSYNC BROWSERS USE_BACKUPS BACKUP_LIMIT
     . "$PSDCONF"
     # defining VOLATILE in the config is deprecated since v6.16
     VOLATILE="$XDG_RUNTIME_DIR"
@@ -127,6 +127,16 @@ case "${USE_OVERLAYFS,,}" in
     ;;
   *)
     OLFS=0
+    ;;
+esac
+
+# simple function to determine user intent rather than using a null value
+case "${USE_SUSPSYNC,,}" in
+  y|yes|true|t|on|1|enabled|enable|use)
+    SUSPSYNC=1
+    ;;
+  *)
+    SUSPSYNC=0
     ;;
 esac
 
@@ -187,8 +197,10 @@ dep_check() {
     exit 1
   fi
   if ! command -v gdbus >/dev/null 2>&1; then
-    echo -e " ${BLD}I require gdbus but it's not installed. ${RED}Aborting!${NRM}"
-    exit 1
+    if [[ $SUSPSYNC -eq 1 ]]; then
+      echo -e " ${BLD}I require gdbus but it's not installed. ${RED}Aborting!${NRM}"
+      exit 1
+    fi
   fi
   if [[ $OLFS -eq 1 ]]; then
     [[ $OLFSVER -ge 22 ]] || {
@@ -526,6 +538,7 @@ do_sync() {
       echo "# will be applied the _next_ time psd is activated."
       echo "#"
       echo "USE_OVERLAYFS=\"$USE_OVERLAYFS\""
+      echo "USE_SUSPSYNC=\"$USE_SUSPSYNC\""
       echo "BROWSERS=\"${BROWSERS[*]}\""
       echo "USE_BACKUPS=\"$USE_BACKUPS\""
     } >> "$PSDCONFDIR/.psd.conf"
@@ -728,7 +741,7 @@ case "$1" in
       dup_check
       running_check
       ungraceful_state_check
-      take_inhibit_lock
+      [[ $SUSPSYNC -eq 1 ]] && take_inhibit_lock
       echo -e "${BLD}psd startup check successful${NRM}"
     fi
     ;;
@@ -759,7 +772,7 @@ case "$1" in
       do_sync
       kill_browsers
       do_unsync
-      release_inhibit_lock
+      [[ $SUSPSYNC -eq 1 ]] && release_inhibit_lock
     fi
     ;;
   *)
