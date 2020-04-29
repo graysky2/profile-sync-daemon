@@ -2,7 +2,7 @@ DEPENDENCIES
  bash >=4.0
  coreutils
  findutils
- glib2
+ glib2 (optional for suspend-sync support via gdbus)
  kmod
  rsync
  systemd
