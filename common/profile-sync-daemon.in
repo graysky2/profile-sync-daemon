@@ -707,13 +707,9 @@ parse() {
 take_inhibit_lock() {
   # ensure we only take one lock at a time
   release_inhibit_lock
+
   # background this to avoid hanging on startup
-  systemd-inhibit \
-    --mode="delay" \
-    --what="sleep" \
-    --who="profile-sync-daemon" \
-    --why="psd resync on suspend" \
-    /usr/bin/psd-suspend-sync &
+  systemd-inhibit --mode="delay" --what="sleep" --who="profile-sync-daemon" --why="psd resync on suspend" /usr/bin/psd-suspend-sync &
 }
 
 release_inhibit_lock() {
@@ -738,7 +734,6 @@ case "$1" in
     ;;
   startup)
     # target for psd.service's ExecStart= for consistent error handling
-    # also handles taking initial inhibit-lock
     if [[ ! -f $PID_FILE ]]; then
       dep_check
       config_check
@@ -749,11 +744,12 @@ case "$1" in
       echo -e "${BLD}psd startup check successful${NRM}"
     fi
     ;;
-    suspend-sync)
+  suspend-sync)
+    if [[ -f $PID_FILE ]]; then
       # system preparing for sleep mode, resync when psd is active
-      psd_state=$(systemctl --user is-active psd)
-      [[ "$psd_state" = "active" ]] && do_sync
-      ;;
+      do_sync
+    fi
+    ;;
   recycle-inhibit-lock)
     # take inhibit lock for next suspend cycle
     take_inhibit_lock
