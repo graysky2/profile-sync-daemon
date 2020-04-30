@@ -111,14 +111,19 @@ else
   fi
 fi
 
+# scope to sync defined in BROWSERS array or from list of supported browsers
 if [[ -z "$BROWSERS" ]]; then
   mapfile -t BROWSERS < <(find "$SHAREDIR/browsers" -type f -printf "%f\n")
 else
   if ! declare -p BROWSERS | grep -q 'declare \-a'; then
     # did not setup as array so redefine it here
-    IFS=' ' read -r -a BROWSERS <<< "$BROWSERS"
+    IFS=' ' read -r -a BROWSERS <<< "${BROWSERS[$@]}"
   fi
 fi
+
+# remove duplicate elements if user accidentally polluted array with same entries
+# https://stackoverflow.com/questions/13648410/how-can-i-get-unique-values-from-an-array-in-bash
+readarray -t BROWSERS < <(printf '%s\n' "${BROWSERS[@]}" | awk '!x[$0]++')
 
 # simple function to determine user intent rather than using a null value
 case "${USE_OVERLAYFS,,}" in
