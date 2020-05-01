@@ -71,8 +71,7 @@ uninstall-bin:
 uninstall-man:
 	$(RM) -f "$(DESTDIR)$(MANDIR)/$(PN).1.gz"
 	$(RM) -f "$(DESTDIR)$(MANDIR)/psd.1.gz"
-	$(RM) -f "$(DESTDIR)$(MANDIR)/$(PN).1"
-	$(RM) -f "$(DESTDIR)$(MANDIR)/psd.1"
+	$(RM) -f "$(DESTDIR)$(MANDIR)/psd-overlay-helper.1.gz"
 
 uninstall-systemd:
 	$(RM) "$(DESTDIR)$(INITDIR_SYSTEMD)/psd.service"
