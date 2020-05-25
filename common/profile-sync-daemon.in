@@ -7,8 +7,8 @@
 
 # shellcheck disable=1090,2154
 
-# needed for debian 8.x
-[[ -h /sbin ]] || PATH=$PATH:/sbin
+# needed for debian >=8.x
+PATH=$PATH:/sbin
 
 BLD="\e[01m"
 RED="\e[01;31m"
@@ -190,12 +190,9 @@ dep_check() {
     echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!${NRM}"
     exit 1
   fi
-  # https://github.com/graysky2/profile-sync-daemon/issues/253
   if ! command -v modinfo >/dev/null 2>&1; then
-    if ! command -v /sbin/modinfo >/dev/null 2>&1; then
-      echo -e " ${BLD}I require modinfo but it's not installed. ${RED}Aborting!${NRM}" >&2
-      exit 1
-    fi
+    echo -e " ${BLD}I require modinfo but it's not installed. ${RED}Aborting!${NRM}" >&2
+    exit 1
   fi
   if ! command -v awk >/dev/null 2>&1; then
     echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!${NRM}" >&2
