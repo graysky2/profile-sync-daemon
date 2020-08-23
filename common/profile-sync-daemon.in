@@ -113,7 +113,12 @@ fi
 
 # scope to sync defined in BROWSERS array or from list of supported browsers
 if [[ -z "$BROWSERS" ]]; then
-  mapfile -t BROWSERS < <(find "$SHAREDIR/browsers" -type f -printf "%f\n")
+  read -r -d '' TMP_SCRIPT <<EOF
+    find "$SHAREDIR/browsers" -type f -printf "%f\n";
+    find "$PSDCONFDIR/browsers" -type f -printf "%f\n"
+EOF
+
+  mapfile -t BROWSERS < <(bash -c "$TMP_SCRIPT" | sort | uniq)
 else
   if ! declare -p BROWSERS | grep -q 'declare \-a'; then
     # did not setup as array so redefine it here
@@ -240,7 +245,7 @@ config_check() {
   fi
 
   for browser in "${BROWSERS[@]}"; do
-    if [[ ! -f "$SHAREDIR/browsers/$browser" ]]; then
+    if [[ ! -f "$SHAREDIR/browsers/$browser" ]] && [[ ! -f "$PSDCONFDIR/browsers/$browser" ]]; then
       # user defined an invalid browser
       echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser. Check config file for typos: ${NRM}${BLU}$PSDCONF${NRM}"
       exit 1
@@ -368,7 +373,11 @@ load_env_for() {
   unset DIRArr
 
   unset PSNAME
-  . "$SHAREDIR/browsers/$browser"
+  if [[ -f "$PSDCONFDIR/browsers/$browser" ]]; then
+    . "$PSDCONFDIR/browsers/$browser"
+  else
+    . "$SHAREDIR/browsers/$browser"
+  fi
 }
 
 running_check() {
@@ -388,7 +397,11 @@ running_check() {
 suffix_needed() {
   browser=$1
   unset check_suffix
-  . "$SHAREDIR/browsers/$browser"
+  if [[ -f "$PSDCONFDIR/browsers/$browser" ]]; then
+    . "$PSDCONFDIR/browsers/$browser"
+  else
+    . "$SHAREDIR/browsers/$browser"
+  fi
   [[ -n "$check_suffix" ]]
 }
 
