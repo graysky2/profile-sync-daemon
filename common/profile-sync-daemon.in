@@ -715,7 +715,7 @@ take_inhibit_lock() {
   release_inhibit_lock
 
   # background this to avoid hanging on startup
-  systemd-inhibit --mode="delay" --what="sleep" --who="profile-sync-daemon" --why="psd resync on suspend" /usr/bin/psd-suspend-sync &
+  /usr/bin/psd-suspend-sync &
 }
 
 release_inhibit_lock() {
