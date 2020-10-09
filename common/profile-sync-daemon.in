@@ -84,8 +84,8 @@ fi
 # version 6.03 renames this file so if older version is running then
 # rotate the old name to the new one
 
-[[ -f "$PSDCONFDIR/.$user@$(hostname).pid.conf" ]] &&
-  mv "$PSDCONFDIR/.$user@$(hostname).pid.conf" "$PSDCONFDIR/.psd.conf"
+[[ -f "$PSDCONFDIR/.$user@$(uname -n).pid.conf" ]] &&
+  mv "$PSDCONFDIR/.$user@$(uname -n).pid.conf" "$PSDCONFDIR/.psd.conf"
 
 if [[ -f "$PID_FILE" ]]; then
   if [[ -f "$PSDCONFDIR/.psd.conf" ]]; then
