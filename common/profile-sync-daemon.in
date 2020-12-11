@@ -9,17 +9,27 @@
 
 # needed for debian >=8.x
 PATH=$PATH:/sbin
-
-BLD="\e[01m"
-RED="\e[01;31m"
-GRN="\e[01;32m"
-BLU="\e[01;34m"
-NRM="\e[00m"
+if [[ ! -t 1 ]] ; then
+# Thx D. Clayton: https://stackoverflow.com/questions/911168/how-can-i-detect-if-my-shell-script-is-running-through-a-pipe		
+# No 'echo' ANSI escape codes
+  BLD=''
+  RED=''
+  GRN=''
+  BLU=''
+  NRM=''
+else
+  BLD="\e[01m"
+  RED="\e[01;31m"
+  GRN="\e[01;32m"
+  BLU="\e[01;34m"
+  NRM="\e[00m"
+fi
 VERS="@VERSION@"
 
 user=$(id -un)
 HOME="$(getent passwd "$user" | cut -d: -f6)"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 PSDCONFDIR="$XDG_CONFIG_HOME/psd"
 PSDCONF="$PSDCONFDIR/psd.conf"
 SHAREDIR="/usr/share/psd"
@@ -117,7 +127,7 @@ if [[ -z "$BROWSERS" ]]; then
 else
   if ! declare -p BROWSERS | grep -q 'declare \-a'; then
     # did not setup as array so redefine it here
-    IFS=' ' read -r -a BROWSERS <<< "${BROWSERS[$@]}"
+    IFS=' ' read -r -a BROWSERS <<< "${BROWSERS[@]}"
   fi
 fi
 
@@ -484,7 +494,7 @@ do_sync_for() {
         ln -s /dev/null "$DIR"
       fi
 
-      # sync the tmpfs targets to the disc
+      # sync the tmpfs target to the non-tmpfs filesystem
       if [[ -e "$DIR"/.flagged ]]; then
         REPORT="resync"
         if [[ $OLFS -eq 1 ]]; then
@@ -595,8 +605,7 @@ do_unsync() {
         [[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
         if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
           rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$DIR/"
-          sudo psd-overlay-helper -d "$TMP" mountdown &&
-            rm -rf "$TMP" "$UPPER" "$WORK"
+          sudo psd-overlay-helper -d "$TMP" -w "$WORK" mountdown && rm -rf "$TMP" "$UPPER"
         fi
         [[ -d "$TMP" ]] && rm -rf "$TMP"
         echo -e "${BLD}$browser unsync successful${NRM}"
@@ -715,7 +724,7 @@ take_inhibit_lock() {
   release_inhibit_lock
 
   # background this to avoid hanging on startup
-  systemd-inhibit --mode="delay" --what="sleep" --who="profile-sync-daemon" --why="psd resync on suspend" /usr/bin/psd-suspend-sync &
+  /usr/bin/psd-suspend-sync &
 }
 
 release_inhibit_lock() {

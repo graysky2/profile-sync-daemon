@@ -7,20 +7,39 @@ dbus_member="PrepareForSleep"
 # ... /org/freedesktop/login1: org.freedesktop.login1.Manager.PrepareForSleep (true,) ...
 # system resumes when 'PrepareForSleep' signal is 'false'
 # ... /org/freedesktop/login1: org.freedesktop.login1.Manager.PrepareForSleep (false,) ...
-gdbus monitor --system --dest "$dbus_interface" | \
+dbus_process_sleep() {
+  local line
   while read -r line; do
     if [[ "$line" =~ $dbus_member ]]; then
-      if [[ "$line" =~ "true" ]]; then
+      if [[ "$line" =~ 'true' ]]; then
         ### SUSPEND ###
-        logger "[psd-suspend-sync] Issueing suspend-sync request..."
+        logger '[psd-suspend-sync] Issuing suspend-sync request...'
         /usr/bin/profile-sync-daemon suspend-sync
         # the lock will be released now
-      elif [[ "$line" =~ "false" ]]; then
+        break
+      elif [[ "$line" =~ 'false' ]]; then
         ### RESUME ###
-        logger "[psd-suspend-sync] re-taking inhibit lock..."
+        logger '[psd-suspend-sync] re-taking inhibit lock...'
         /usr/bin/profile-sync-daemon recycle-inhibit-lock
+        break
       fi
     fi
   done
+}
+
+coproc bus (
+  systemd-inhibit --mode="delay" --what="sleep" \
+    --who="profile-sync-daemon" --why="psd resync on suspend" \
+    gdbus monitor --system --dest "$dbus_interface"
+)
+
+# keeps the inhibitor running until the system is about to sleep
+dbus_process_sleep <& "${bus[0]}"
+
+# starts running before the system goes to sleep
+dbus_process_sleep < <(gdbus monitor --system --dest "$dbus_interface") &
+
+# kill the inhibitor so that the system can sleep
+[ -n "$bus_PID" ] && kill "$bus_PID"
 
 # vim:set ts=2 sw=2 et:

@@ -1,4 +1,4 @@
-VERSION = 6.42
+VERSION = 6.45
 PN = profile-sync-daemon
 
 PREFIX ?= /usr
@@ -29,21 +29,21 @@ install-bin: common/$(PN)
 	$(INSTALL_PROGRAM) common/$(PN) "$(DESTDIR)$(BINDIR)/$(PN)"
 	$(INSTALL_PROGRAM) common/psd-overlay-helper "$(DESTDIR)$(BINDIR)/psd-overlay-helper"
 	$(INSTALL_PROGRAM) common/psd-suspend-sync "$(DESTDIR)$(BINDIR)/psd-suspend-sync"
-	ln -s $(PN) "$(DESTDIR)$(BINDIR)/psd"
+	ln -sf $(PN) "$(DESTDIR)$(BINDIR)/psd"
 	$(INSTALL_DIR) "$(DESTDIR)$(ZSHDIR)"
 	$(INSTALL_DATA) common/zsh-completion "$(DESTDIR)/$(ZSHDIR)/_psd"
 	$(INSTALL_DIR) "$(DESTDIR)$(SHAREDIR)/browsers"
 	$(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(SHAREDIR)/psd.conf"
-	cp common/browsers/* "$(DESTDIR)$(SHAREDIR)/browsers"
+	$(INSTALL_DATA) common/browsers/* "$(DESTDIR)$(SHAREDIR)/browsers"
 	$(INSTALL_DIR) "$(DESTDIR)$(SHAREDIR)/contrib"
-	cp contrib/* "$(DESTDIR)$(SHAREDIR)/contrib"
+	$(INSTALL_DATA) contrib/* "$(DESTDIR)$(SHAREDIR)/contrib"
 
 install-man:
 	$(Q)echo -e '\033[1;32mInstalling manpage...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(MANDIR)"
 	$(INSTALL_DATA) doc/psd.1 "$(DESTDIR)$(MANDIR)/psd.1"
 	$(INSTALL_DATA) doc/psd-overlay-helper.1 "$(DESTDIR)$(MANDIR)/psd-overlay-helper.1"
-	ln -s psd.1 "$(DESTDIR)$(MANDIR)/$(PN).1"
+	ln -sf psd.1 "$(DESTDIR)$(MANDIR)/$(PN).1"
 
 install-systemd:
 	$(Q)echo -e '\033[1;32mInstalling systemd files...\033[0m'
@@ -66,9 +66,9 @@ uninstall-bin:
 	rmdir "$(DESTDIR)$(SHAREDIR)"
 
 uninstall-man:
-	$(RM) -f "$(DESTDIR)$(MANDIR)/$(PN).1.gz"
-	$(RM) -f "$(DESTDIR)$(MANDIR)/psd.1.gz"
-	$(RM) -f "$(DESTDIR)$(MANDIR)/psd-overlay-helper.1.gz"
+	$(RM) -f "$(DESTDIR)$(MANDIR)/$(PN).1"
+	$(RM) -f "$(DESTDIR)$(MANDIR)/psd.1"
+	$(RM) -f "$(DESTDIR)$(MANDIR)/psd-overlay-helper.1"
 
 uninstall-systemd:
 	$(RM) "$(DESTDIR)$(INITDIR_SYSTEMD)/psd.service"

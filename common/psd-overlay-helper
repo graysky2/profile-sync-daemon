@@ -49,7 +49,7 @@ case "$1" in
     fi
     ;;
   mountdown)
-    umount -l "$TMP"
+    umount "$TMP" && rm -rf "$WORK"
     ;;
   *)
     echo "Do not call this script directly; psd will do so for you. Thank you, come again."
