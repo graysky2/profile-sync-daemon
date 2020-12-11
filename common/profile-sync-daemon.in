@@ -20,6 +20,7 @@ VERS="@VERSION@"
 user=$(id -un)
 HOME="$(getent passwd "$user" | cut -d: -f6)"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 PSDCONFDIR="$XDG_CONFIG_HOME/psd"
 PSDCONF="$PSDCONFDIR/psd.conf"
 SHAREDIR="/usr/share/psd"
