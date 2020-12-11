@@ -595,8 +595,7 @@ do_unsync() {
         [[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
         if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
           rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$DIR/"
-          sudo psd-overlay-helper -d "$TMP" mountdown &&
-            rm -rf "$TMP" "$UPPER" "$WORK"
+          sudo psd-overlay-helper -d "$TMP" -w "$WORK" mountdown && rm -rf "$TMP" "$UPPER"
         fi
         [[ -d "$TMP" ]] && rm -rf "$TMP"
         echo -e "${BLD}$browser unsync successful${NRM}"
