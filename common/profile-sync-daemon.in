@@ -118,7 +118,7 @@ if [[ -z "$BROWSERS" ]]; then
 else
   if ! declare -p BROWSERS | grep -q 'declare \-a'; then
     # did not setup as array so redefine it here
-    IFS=' ' read -r -a BROWSERS <<< "${BROWSERS[$@]}"
+    IFS=' ' read -r -a BROWSERS <<< "${BROWSERS[@]}"
   fi
 fi
 
