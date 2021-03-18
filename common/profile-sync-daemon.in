@@ -329,6 +329,12 @@ ungraceful_state_check() {
 }
 
 cleanup() {
+  local keep_count=$1
+  if [ -z "$keep_count" ]
+  then
+    keep_count=0
+  fi
+
   local browser
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
@@ -340,15 +346,20 @@ cleanup() {
         CRASHArr=("${CRASHArr[@]}" "$backup")
       done < <(find "${DIR%/*}" -type d -name '*crashrecovery*' -print0 | sort -r -z)
 
-      if [[ ${#CRASHArr[@]} -gt 0 ]]; then
-        echo -e "${BLD}Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR${NRM}"
-        for backup in "${CRASHArr[@]}"; do
-          echo -e "${BLD}${RED} $backup${NRM}"
-          rm -rf "$backup"
-        done
-      else
-        echo -e "${BLD}Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}${NRM}"
+      let "remove_count=${#CRASHArr[@]} - keep_count"
+      if [[ remove_count -le 0 ]]; then
+        if [[ keep_count -eq 0 ]]; then
+          echo -e "${BLD}Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}${NRM}"
+        fi
+        continue
       fi
+
+      echo -e "${BLD}Deleting ${remove_count} crashrecovery dir(s) for profile ${BLU}$DIR${NRM}"
+
+      for backup in "${CRASHArr[@]:$keep_count}"; do
+        echo -e "${BLD}${RED} $backup${NRM}"
+        rm -rf "$backup"
+      done
       echo
     done
   done
@@ -554,19 +565,7 @@ do_sync() {
 }
 
 enforce() {
-  local browser
-  for browser in "${BROWSERS[@]}"; do
-    local CRASHArr=()
-    while IFS= read -d '' -r backup; do
-      CRASHArr=("${CRASHArr[@]}" "$backup")
-    done < <(find "${DIR%/*}" -type d -name '*crashrecovery*' -print0 | sort -r -z)
-
-    if [[ ${#CRASHArr[@]} -gt $BACKUP_LIMIT ]]; then
-      for remove in "${CRASHArr[@]:$BACKUP_LIMIT}"; do
-        rm -rf "$remove"
-      done
-    fi
-  done
+  cleanup $BACKUP_LIMIT
 }
 
 do_unsync() {
