@@ -43,10 +43,10 @@ To build from source, see the included INSTALL text document.
 * ![logo](https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Logo_Exherbo.svg/32px-Logo_Exherbo.svg.png "exherbo logo")Exherbo: in the official [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
 * ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo: in the official [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
 * ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu 16.10+: in the universe [repo](https://packages.ubuntu.com/search?keywords=profile-sync-daemon).
+* ![logo](https://www.monitorix.org/imgs/fedora.png "fedora logo")Fedora: in the official [repos](https://src.fedoraproject.org/rpms/profile-sync-daemon).
 
 ### User Packaged
 * ![logo](https://i.postimg.cc/4x1Wtnkr/Chakra-shiny.png "chakra logo")Chakra: in the [CCR](https://ccr.chakralinux.org/packages.php?O=0&K=profile-sync-daemon).
-* ![logo](https://www.monitorix.org/imgs/fedora.png "fedora logo")Fedora: in [Copr](https://copr.fedorainfracloud.org/coprs/szasza/Profile-sync-daemon/).
 * ![logo](http://wiki.codeblocks.org/images/8/8b/Slackware-logo_32.png "slack logo")Slackware: on [slackbuilds](http://slackbuilds.org/apps/profile-sync-daemon/).
 
 ### Other Distros

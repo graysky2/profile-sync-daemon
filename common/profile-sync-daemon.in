@@ -20,6 +20,7 @@ VERS="@VERSION@"
 user=$(id -un)
 HOME="$(getent passwd "$user" | cut -d: -f6)"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 PSDCONFDIR="$XDG_CONFIG_HOME/psd"
 PSDCONF="$PSDCONFDIR/psd.conf"
 SHAREDIR="/usr/share/psd"
@@ -66,7 +67,7 @@ elif [[ -d "$HOME/.psd" ]]; then
   # first check to see if a legacy ~/.psd is present and then move it to the
   # new location
   mkdir -p "$PSDCONFDIR"
-  rsync -ax "$HOME/.psd/" "$PSDCONFDIR/"
+  rsync -aX "$HOME/.psd/" "$PSDCONFDIR/"
   rm -rf "$HOME/.psd"
   echo " The use of $HOME/.psd is deprecated. Existing config has been moved to $PSDCONFDIR"
   # source it again retaining any user options
@@ -84,8 +85,8 @@ fi
 # version 6.03 renames this file so if older version is running then
 # rotate the old name to the new one
 
-[[ -f "$PSDCONFDIR/.$user@$(hostname).pid.conf" ]] &&
-  mv "$PSDCONFDIR/.$user@$(hostname).pid.conf" "$PSDCONFDIR/.psd.conf"
+[[ -f "$PSDCONFDIR/.$user@$(uname -n).pid.conf" ]] &&
+  mv "$PSDCONFDIR/.$user@$(uname -n).pid.conf" "$PSDCONFDIR/.psd.conf"
 
 if [[ -f "$PID_FILE" ]]; then
   if [[ -f "$PSDCONFDIR/.psd.conf" ]]; then
@@ -122,7 +123,7 @@ EOF
 else
   if ! declare -p BROWSERS | grep -q 'declare \-a'; then
     # did not setup as array so redefine it here
-    IFS=' ' read -r -a BROWSERS <<< "${BROWSERS[$@]}"
+    IFS=' ' read -r -a BROWSERS <<< "${BROWSERS[@]}"
   fi
 fi
 
@@ -608,8 +609,7 @@ do_unsync() {
         [[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
         if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
           rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$DIR/"
-          sudo psd-overlay-helper -d "$TMP" mountdown &&
-            rm -rf "$TMP" "$UPPER" "$WORK"
+          sudo psd-overlay-helper -d "$TMP" -w "$WORK" mountdown && rm -rf "$TMP" "$UPPER"
         fi
         [[ -d "$TMP" ]] && rm -rf "$TMP"
         echo -e "${BLD}$browser unsync successful${NRM}"
@@ -728,7 +728,7 @@ take_inhibit_lock() {
   release_inhibit_lock
 
   # background this to avoid hanging on startup
-  systemd-inhibit --mode="delay" --what="sleep" --who="profile-sync-daemon" --why="psd resync on suspend" /usr/bin/psd-suspend-sync &
+  /usr/bin/psd-suspend-sync &
 }
 
 release_inhibit_lock() {
