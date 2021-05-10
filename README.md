@@ -4,6 +4,11 @@ This is a fork of the original profile-sync-daemon by graysky2. The only modific
 ## Custom Browsers
 You can install new browser definitions or overrides to existing configurations (e.g. for configurations not supported by the official versions) in `$XDG_CONFIG_HOME/psd/browsers`. For examples of browser configurations look at the definitions in the `common/browsers` directory which contains all official browser definitions provided by graysky2 in the original version of this.
 
+## Installing this fork
+[@felipec](https://github.com/felipec) has created an aur package to install this fork at [https://aur.archlinux.org/packages/profile-sync-daemon-user/](https://aur.archlinux.org/packages/profile-sync-daemon-user).
+
+For other operating systems see the included INSTALL text document (unchanged compared to graysky2's version).
+
 Original README.md:
 
 # Profile-sync-daemon
