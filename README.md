@@ -1,6 +1,11 @@
 # This is a fork
 This is a fork of the original profile-sync-daemon by graysky2. The only modification I have made allows *user*-defined browsers in `$XDG_CONFIG_HOME/psd` and is also described in Pull Request [#271](https://github.com/graysky2/profile-sync-daemon/issues/271).
 
+## Custom Browsers
+You can install new browser definitions or overrides to existing configurations (e.g. for configurations not supported by the official versions) in `$XDG_CONFIG_HOME/psd/browsers`. For examples of browser configurations look at the definitions in the `common/browsers` directory which contains all official browser definitions provided by graysky2 in the original version of this.
+
+Original README.md:
+
 # Profile-sync-daemon
 Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browser's profile in tmpfs and to periodically sync it back to your physical disc (HDD/SSD). This is accomplished via a symlinking step and an innovative use of rsync to maintain back-up and synchronization between the two. One of the major design goals of psd is a completely transparent user experience.
 
@@ -54,6 +59,3 @@ To build from source, see the included INSTALL text document.
 
 ### Other Distros
 If you are interested in packaging psd for your favorite distro, please contact me.
-
-# Custom Browsers
-You can install new browser definitions or overrides to existing configurations (e.g. for configurations not supported by the official versions) in `$XDG_CONFIG_HOME/psd/browsers`. For examples of browser configurations look at the definitions in the `common/browsers` directory which contains all official browser definitions provided by graysky2 in the original version of this.
