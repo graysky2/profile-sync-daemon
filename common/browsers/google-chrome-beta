@@ -1,2 +1,6 @@
-DIRArr[0]="$XDG_CONFIG_HOME/$browser"
+if [[ -n "$CHROME_CONFIG_HOME" ]]; then
+    DIRArr[0]="$CHROME_CONFIG_HOME/$browser"
+else
+    DIRArr[0]="$XDG_CONFIG_HOME/$browser"
+fi
 PSNAME="chrome"
