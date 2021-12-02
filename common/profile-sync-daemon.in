@@ -713,13 +713,15 @@ parse() {
 take_inhibit_lock() {
   # ensure we only take one lock at a time
   release_inhibit_lock
-
-  # background this to avoid hanging on startup
   /usr/bin/psd-suspend-sync &
 }
 
 release_inhibit_lock() {
-  [[ "$(pgrep -cf "psd-suspend-sync")" != 0 ]] && pkill -f psd-suspend-sync
+  # user name is needed for multi-user systems
+  if [[ "$(pgrep -u "$user" -cf "gdbus monitor --system --dest org.freedesktop.login1")" != 0 ]]; then
+    pkill -u "$user" -f "gdbus monitor --system --dest org.freedesktop.login1"
+  fi
+  [[ "$(pgrep -u "$user" -cf "psd-suspend-sync")" != 0 ]] && pkill -u "$user" -f "psd-suspend-sync"
 }
 
 case "$1" in
@@ -755,10 +757,6 @@ case "$1" in
       # system preparing for sleep mode, resync when psd is active
       do_sync
     fi
-    ;;
-  recycle-inhibit-lock)
-    # take inhibit lock for next suspend cycle
-    take_inhibit_lock
     ;;
   sync|resync)
     if [[ -f $PID_FILE ]]; then
