@@ -2,13 +2,28 @@
 
 dbus_interface="org.freedesktop.login1"
 dbus_member="PrepareForSleep"
+# user name is needed for multi-user systems
+user=$(id -un)
+
+setting_inhibitor() {
+  # ensure we only take one lock at a time
+  if [[ "$(pgrep -u "$user" -cf "systemd-inhibit --mode=delay --what=sleep --who=profile-sync-daemon --why=psd resync on suspend")" != 0 ]]; then
+    pkill -u "$user" -f "systemd-inhibit --mode=delay --what=sleep --who=profile-sync-daemon --why=psd resync on suspend"
+  fi
+  # Note: the risk of malfunction would not have too much consequence,
+  # due to the option --mode = "delay" (timeout: InhibitDelayMaxSec = 5s)
+  systemd-inhibit --mode="delay" --what="sleep" --who="profile-sync-daemon" --why="psd resync on suspend" sleep inf  &
+  psd_inhibit_PID=$!
+}
+
+# take inhibit lock
+setting_inhibitor
 
 # system suspends when 'PrepareForSleep' signal is 'true':
 # ... /org/freedesktop/login1: org.freedesktop.login1.Manager.PrepareForSleep (true,) ...
 # system resumes when 'PrepareForSleep' signal is 'false'
 # ... /org/freedesktop/login1: org.freedesktop.login1.Manager.PrepareForSleep (false,) ...
-dbus_process_sleep() {
-  local line
+gdbus monitor --system --dest "$dbus_interface" | \
   while read -r line; do
     if [[ "$line" =~ $dbus_member ]]; then
       if [[ "$line" =~ 'true' ]]; then
@@ -16,30 +31,14 @@ dbus_process_sleep() {
         logger '[psd-suspend-sync] Issuing suspend-sync request...'
         /usr/bin/profile-sync-daemon suspend-sync
         # the lock will be released now
-        break
+        [[ ! -z "$psd_inhibit_PID" ]] && kill "$psd_inhibit_PID"
       elif [[ "$line" =~ 'false' ]]; then
         ### RESUME ###
         logger '[psd-suspend-sync] re-taking inhibit lock...'
-        /usr/bin/profile-sync-daemon recycle-inhibit-lock
-        break
+        # take inhibit lock for the next sleep cycle
+        setting_inhibitor
       fi
     fi
   done
-}
-
-coproc bus (
-  systemd-inhibit --mode="delay" --what="sleep" \
-    --who="profile-sync-daemon" --why="psd resync on suspend" \
-    gdbus monitor --system --dest "$dbus_interface"
-)
-
-# keeps the inhibitor running until the system is about to sleep
-dbus_process_sleep <& "${bus[0]}"
-
-# starts running before the system goes to sleep
-dbus_process_sleep < <(gdbus monitor --system --dest "$dbus_interface") &
-
-# kill the inhibitor so that the system can sleep
-[ ! -z "$bus_PID" ] && kill "$bus_PID"
 
 # vim:set ts=2 sw=2 et:
