@@ -40,6 +40,6 @@ dbus_process_sleep <& "${bus[0]}"
 dbus_process_sleep < <(gdbus monitor --system --dest "$dbus_interface") &
 
 # kill the inhibitor so that the system can sleep
-[ ! -z "$bus_PID" ] && kill "$bus_PID"
+[ -n "$bus_PID" ] && kill "$bus_PID"
 
 # vim:set ts=2 sw=2 et:
