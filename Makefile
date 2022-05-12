@@ -34,9 +34,9 @@ install-bin: common/$(PN)
 	$(INSTALL_DATA) common/zsh-completion "$(DESTDIR)/$(ZSHDIR)/_psd"
 	$(INSTALL_DIR) "$(DESTDIR)$(SHAREDIR)/browsers"
 	$(INSTALL_DATA) common/psd.conf "$(DESTDIR)$(SHAREDIR)/psd.conf"
-	cp common/browsers/* "$(DESTDIR)$(SHAREDIR)/browsers"
+	$(INSTALL_DATA) common/browsers/* "$(DESTDIR)$(SHAREDIR)/browsers"
 	$(INSTALL_DIR) "$(DESTDIR)$(SHAREDIR)/contrib"
-	cp contrib/* "$(DESTDIR)$(SHAREDIR)/contrib"
+	$(INSTALL_DATA) contrib/* "$(DESTDIR)$(SHAREDIR)/contrib"
 
 install-man:
 	$(Q)echo -e '\033[1;32mInstalling manpage...\033[0m'
