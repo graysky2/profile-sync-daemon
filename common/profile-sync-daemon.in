@@ -10,9 +10,7 @@
 # needed for debian >=8.x
 PATH=$PATH:/sbin
 
-if [[ -n "$LAUNCHED_BY_SYSTEMD" || "$1" =~ sync ]] ; then
-# This script was invoked by systemd or for sync purposes
-# Thx to notes-jj: https://serverfault.com/questions/926349/systemd-tell-if-script-was-run-by-systemd-or-by-user
+if [[ ! -t 1 ]] ; then
 # No 'echo' ANSI escape codes
   BLD=''
   RED=''
