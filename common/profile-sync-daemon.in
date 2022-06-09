@@ -10,11 +10,22 @@
 # needed for debian >=8.x
 PATH=$PATH:/sbin
 
-BLD="\e[01m"
-RED="\e[01;31m"
-GRN="\e[01;32m"
-BLU="\e[01;34m"
-NRM="\e[00m"
+if [[ -n "$LAUNCHED_BY_SYSTEMD" ]] ; then
+# This script was invoked by systemd
+# Thx to notes-jj: https://serverfault.com/questions/926349/systemd-tell-if-script-was-run-by-systemd-or-by-user
+# No 'echo' ANSI escape codes
+  BLD=''
+  RED=''
+  GRN=''
+  BLU=''
+  NRM=''
+else
+  BLD="\e[01m"
+  RED="\e[01;31m"
+  GRN="\e[01;32m"
+  BLU="\e[01;34m"
+  NRM="\e[00m"
+fi
 VERS="@VERSION@"
 
 user=$(id -un)
