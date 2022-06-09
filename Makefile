@@ -29,7 +29,7 @@ install-bin: common/$(PN)
 	$(INSTALL_PROGRAM) common/$(PN) "$(DESTDIR)$(BINDIR)/$(PN)"
 	$(INSTALL_PROGRAM) common/psd-overlay-helper "$(DESTDIR)$(BINDIR)/psd-overlay-helper"
 	$(INSTALL_PROGRAM) common/psd-suspend-sync "$(DESTDIR)$(BINDIR)/psd-suspend-sync"
-	ln -s $(PN) "$(DESTDIR)$(BINDIR)/psd"
+	ln -sf $(PN) "$(DESTDIR)$(BINDIR)/psd"
 	$(INSTALL_DIR) "$(DESTDIR)$(ZSHDIR)"
 	$(INSTALL_DATA) common/zsh-completion "$(DESTDIR)/$(ZSHDIR)/_psd"
 	$(INSTALL_DIR) "$(DESTDIR)$(SHAREDIR)/browsers"
@@ -43,7 +43,7 @@ install-man:
 	$(INSTALL_DIR) "$(DESTDIR)$(MANDIR)"
 	$(INSTALL_DATA) doc/psd.1 "$(DESTDIR)$(MANDIR)/psd.1"
 	$(INSTALL_DATA) doc/psd-overlay-helper.1 "$(DESTDIR)$(MANDIR)/psd-overlay-helper.1"
-	ln -s psd.1 "$(DESTDIR)$(MANDIR)/$(PN).1"
+	ln -sf psd.1 "$(DESTDIR)$(MANDIR)/$(PN).1"
 
 install-systemd:
 	$(Q)echo -e '\033[1;32mInstalling systemd files...\033[0m'
