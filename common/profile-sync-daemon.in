@@ -14,7 +14,7 @@ if [[ -n "$LAUNCHED_BY_SYSTEMD" ]] ; then
 # This script was invoked by systemd
 # Thx to notes-jj: https://serverfault.com/questions/926349/systemd-tell-if-script-was-run-by-systemd-or-by-user
 # No 'echo' ANSI escape codes
-	BLD=''
+  BLD=''
   RED=''
   GRN=''
   BLU=''
