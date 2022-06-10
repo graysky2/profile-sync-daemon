@@ -55,6 +55,10 @@ If you are interested in packaging psd for your favorite distro, please contact 
 ## logcheck
 Using logcheck? Here are some ways to filter out log lines:
 ```regexp
+=======
+```Regular Expression
+^\w{3} [ :0-9]{11} [._[:alnum:]-]+ profile-sync-daemon\[[0-9]+]\]: .*(google-chrome|firefox) (re|un)sync successful
+>>>>>>> 9662c1b (README formatting)
 ^\w{3} [ :0-9]{11} [._[:alnum:]-]+ profile-sync-daemon\[[0-9]+\]: psd startup check successful$
 ^\w{3} [ :0-9]{11} [._[:alnum:]-]+ profile-sync-daemon\[[0-9]+\]:[[:space:]]+[^[:space:]]+ (re|un)sync successful
 ^\w{3} [ :0-9]{11} [._[:alnum:]-]+ systemd\[[0-9]+\]: Started Timer for profile-sync-daemon
@@ -62,6 +66,4 @@ Using logcheck? Here are some ways to filter out log lines:
 ^\w{3} [ :0-9]{11} [._[:alnum:]-]+ profile-sync-daemon\[[0-9]+\]:[[:space:]]+[^[:space:]]+ (re|un)sync successful
 ^\w{3} [ :0-9]{11} [._[:alnum:]-]+ systemd\[[0-9]+\]: psd(-resync)?\.service: Consumed [0-9\.]+s CPU time\.$
 ^\w{3} [ :0-9]{11} [._[:alnum:]-]+ systemd\[[0-9]+\]: psd(-resync)\.timer: Succeeded\.$
-^\w{3} [ :0-9]{11} [._[:alnum:]-]+ systemd\[[0-9]+\]: run-user-[0-9]+-[^[:space:]]+: Succeeded\.$
-^\w{3} [ :0-9]{11} [._[:alnum:]-]+ sudo:[[:space:]]+guest : PWD=/home/guest ; USER=root ; COMMAND=/usr/bin/psd-overlay-helper
 ```
