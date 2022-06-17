@@ -10,8 +10,8 @@
 # needed for debian >=8.x
 PATH=$PATH:/sbin
 
-if [[ -n "$LAUNCHED_BY_SYSTEMD" ]] ; then
-# This script was invoked by systemd
+if [[ -n "$LAUNCHED_BY_SYSTEMD" || "$1" =~ sync ]] ; then
+# This script was invoked by systemd or for sync purposes
 # Thx to notes-jj: https://serverfault.com/questions/926349/systemd-tell-if-script-was-run-by-systemd-or-by-user
 # No 'echo' ANSI escape codes
   BLD=''
@@ -496,7 +496,7 @@ do_sync_for() {
         ln -s /dev/null "$DIR"
       fi
 
-      # sync the tmpfs targets to the disc
+      # sync the tmpfs target to the non-tmpfs filesystem
       if [[ -e "$DIR"/.flagged ]]; then
         REPORT="resync"
         if [[ $OLFS -eq 1 ]]; then
