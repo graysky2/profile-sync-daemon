@@ -9,8 +9,8 @@
 
 # needed for debian >=8.x
 PATH=$PATH:/sbin
-
 if [[ ! -t 1 ]] ; then
+# Thx D. Clayton: https://stackoverflow.com/questions/911168/how-can-i-detect-if-my-shell-script-is-running-through-a-pipe		
 # No 'echo' ANSI escape codes
   BLD=''
   RED=''
