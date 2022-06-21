@@ -9,10 +9,12 @@
 
 # needed for debian >=8.x
 PATH=$PATH:/sbin
-
-if [[ -n "$LAUNCHED_BY_SYSTEMD" || "$1" =~ sync ]] ; then
+#|| -n "$LAUNCHED_BY_SYSTEMD" || "$1" =~ sync ]]
+#if it works this way suppress the 'LAUNCHED_BY_SYSTEMD' variable
+if [[ ! -t 1 ]] ; then
 # This script was invoked by systemd or for sync purposes
 # Thx to notes-jj: https://serverfault.com/questions/926349/systemd-tell-if-script-was-run-by-systemd-or-by-user
+# and D. Clayton: https://stackoverflow.com/questions/911168/how-can-i-detect-if-my-shell-script-is-running-through-a-pipe		
 # No 'echo' ANSI escape codes
   BLD=''
   RED=''
