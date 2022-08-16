@@ -523,7 +523,7 @@ do_sync_for() {
           fi
         else
           # keep user from launching browser while rsync is active
-          rsync -aX --inplace --no-whole-file "$BACKUP/" "$TMP"
+          rsync -aX --inplace --no-whole-file --mkpath "$BACKUP/" "$TMP"
         fi
 
         # now browser can start
