@@ -105,7 +105,7 @@ if [[ -f "$PID_FILE" ]]; then
     unset USE_OVERLAYFS USE_SUSPSYNC BROWSERS USE_BACKUPS BACKUP_LIMIT
     . "$PSDCONF"
     # defining VOLATILE in the config is deprecated since v6.16
-    VOLATILE="$XDG_RUNTIME_DIR"
+    VOLATILE="$XDG_RUNTIME_DIR/psd"
   fi
 fi
 
