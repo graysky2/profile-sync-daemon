@@ -472,7 +472,7 @@ do_sync_for() {
     BACK_OVFS="$item-back-ovfs"
     infix=
     if infix_needed "$browser"; then
-      infix="snap.${browser%-in-snap}/"
+      infix="../snap.${browser%-in-snap}/"
     fi
     suffix=
     if suffix_needed "$browser"; then
@@ -601,7 +601,7 @@ do_unsync() {
       BACK_OVFS="$item-back-ovfs"
       infix=
       if infix_needed "$browser"; then
-        infix="snap.${browser%-in-snap}/"
+        infix="../snap.${browser%-in-snap}/"
       fi
       suffix=
       if suffix_needed "$browser"; then
@@ -672,7 +672,7 @@ parse() {
       BACKUP="$item-backup"
       infix=
       if infix_needed "$browser"; then
-        infix="snap.${browser%-in-snap}/"
+        infix="../snap.${browser%-in-snap}/"
       fi
       suffix=
       if suffix_needed "$browser"; then
