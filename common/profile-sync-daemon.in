@@ -650,7 +650,7 @@ do_unsync() {
 parse() {
   psd_state=$(systemctl --user is-active psd)
   resync_state=$(systemctl --user is-active psd-resync.timer)
-  psd_suspend_sync_state=$(pgrep -cf "psd-suspend-sync")
+  psd_suspend_sync_state=$(pgrep -f "psd-suspend-sync" | wc -l | tr -d ' ')
   if [[ "$psd_suspend_sync_state" != 0 ]]; then
     psss_state="enabled"
   else
@@ -756,7 +756,7 @@ take_inhibit_lock() {
 }
 
 release_inhibit_lock() {
-  [[ "$(pgrep -cf "psd-suspend-sync")" != 0 ]] && pkill -f psd-suspend-sync
+  [[ "$(pgrep -f "psd-suspend-sync" | wc -l | tr -d ' ')" != 0 ]] && pkill -f psd-suspend-sync
 }
 
 case "$1" in
