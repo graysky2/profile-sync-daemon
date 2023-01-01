@@ -294,8 +294,13 @@ ungraceful_state_check() {
 
       if [[ -d "$BACKUP" ]]; then
         if [[ -d $DIR ]]; then
-          echo "Unexpected state detected: we have $BACKUP, but $DIR already exists. Trying move $DIR to $DIR" "$DIR-old-profile-$NOW"
-          mv --no-target-directory "$DIR" "$DIR-old-profile-$NOW"
+          echo "Unexpected state detected: we have $BACKUP, but $DIR already exists. Trying move $DIR to $DIR-old-profile-$NOW"
+          if [[ ! -e "$DIR-old-profile-$NOW" ]]; then
+            mv "$DIR" "$DIR-old-profile-$NOW"
+          else
+            echo -e " ${RED}Error: ${NRM}${BLD}Unable to move $DIR to $DIR-old-profile-$NOW because destination already exists.${NRM}"
+            exit 1
+          fi
         fi
 
         if [[ -d "$BACK_OVFS" ]]; then
@@ -332,7 +337,12 @@ ungraceful_state_check() {
               cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
             fi
             rm "${DIR%/}"
-            mv --no-target-directory "$BACKUP" "$DIR"
+            if [[ ! -e "$DIR" ]]; then
+              mv "$BACKUP" "$DIR"
+            else
+              echo -e " ${RED}Error: ${NRM}${BLD}Unable to move $BACKUP to $DIR because the destination already exists.${NRM}"
+              exit 1
+            fi
           fi
         fi
       fi
@@ -495,9 +505,14 @@ do_sync_for() {
 
       # backup target and link to tmpfs container
       if [[ $(readlink "$DIR") != "$TMP" ]]; then
-        mv --no-target-directory "$DIR" "$BACKUP"
-        # refuse to start browser while initial sync
-        ln -s /dev/null "$DIR"
+        if [[ ! -e "$BACKUP" ]]; then
+          mv "$DIR" "$BACKUP"
+          # refuse to start browser while initial sync
+          ln -s /dev/null "$DIR"
+        else
+          echo -e " ${RED}Error: ${NRM}${BLD}Unable to move $DIR to $BACKUP because destination already exists.${NRM}"
+          exit 1
+        fi
       fi
 
       # sync the tmpfs targets to the disc
@@ -608,7 +623,14 @@ do_unsync() {
         # be sure to invoke a sync before an unsync
         #
         # restore original dirtree
-        [[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
+        if [[ -d "$BACKUP" ]]; then
+          if [[ ! -e "$DIR" ]]; then
+            mv "$BACKUP" "$DIR"
+          else
+            echo -e " ${RED}Error: ${NRM}${BLD}Unable to move $BACKUP to $DIR because destination already exists.${NRM}"
+            exit 1
+          fi
+        fi
         if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
           rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$DIR/"
           sudo psd-overlay-helper -d "$TMP" -w "$WORK" mountdown && rm -rf "$TMP" "$UPPER"
