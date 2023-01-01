@@ -326,7 +326,11 @@ ungraceful_state_check() {
           # at all which can be treated the same way
 
           if [[ $CRRE -eq 1 ]]; then
-            cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+            if [[ "$(uname -s)" =~ BSD ]]; then
+              cp -a "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+            else
+              cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+            fi
             rm "${DIR%/}"
             mv --no-target-directory "$BACKUP" "$DIR"
           fi
