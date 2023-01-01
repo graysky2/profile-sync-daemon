@@ -125,7 +125,7 @@ fi
 
 # scope to sync defined in BROWSERS array or from list of supported browsers
 if [[ -z "$BROWSERS" ]]; then
-  mapfile -t BROWSERS < <(find "$SHAREDIR/browsers" -type f -printf "%f\n")
+  mapfile -t BROWSERS < <(find "$SHAREDIR/browsers" -type f -exec basename {} \;)
 else
   if ! declare -p BROWSERS | grep -q 'declare -a'; then
     # did not setup as array so redefine it here
