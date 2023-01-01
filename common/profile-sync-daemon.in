@@ -202,7 +202,7 @@ dep_check() {
     echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!${NRM}"
     exit 1
   fi
-  if ! command -v modinfo >/dev/null 2>&1; then
+  if [[ $OLFS -eq 1 ]] && ! command -v modinfo >/dev/null 2>&1; then
     echo -e " ${BLD}I require modinfo but it's not installed. ${RED}Aborting!${NRM}" >&2
     exit 1
   fi
