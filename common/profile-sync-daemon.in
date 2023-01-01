@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
 # Profile-sync-daemon by graysky <graysky AT archlinux DOT us>
