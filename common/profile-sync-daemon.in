@@ -286,7 +286,7 @@ ungraceful_state_check() {
           exit 1
         else
           echo "Ungraceful state detected for $DIR so fixing"
-          unlink "$DIR"
+          rm "${DIR%/}"
           # refuse to start browser while recovery
           ln -s /dev/null "$DIR"
         fi
@@ -317,7 +317,7 @@ ungraceful_state_check() {
             cp -a --reflink=auto "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
           fi
 
-          unlink "$DIR"
+          rm "${DIR%/}"
           mv --no-target-directory "$TARGETTOKEEP" "$DIR"
           rm -rf "$BACKUP"
         else
@@ -327,7 +327,7 @@ ungraceful_state_check() {
 
           if [[ $CRRE -eq 1 ]]; then
             cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
-            unlink "$DIR"
+            rm "${DIR%/}"
             mv --no-target-directory "$BACKUP" "$DIR"
           fi
         fi
@@ -518,7 +518,7 @@ do_sync_for() {
         fi
 
         # now browser can start
-        [[ $(readlink "$DIR") = "/dev/null" ]] && unlink "$DIR"
+        [[ $(readlink "$DIR") = "/dev/null" ]] && rm "${DIR%/}"
         ln -s "$TMP" "$DIR"
         chown -h "$user":"$group" "$DIR"
         touch "$DIR/.flagged"
@@ -599,7 +599,7 @@ do_unsync() {
       WORK="$VOLATILE/.$user-$browser${suffix}"
       # check if user has browser profile
       if [[ -h "$DIR" ]]; then
-        unlink "$DIR"
+        rm "${DIR%/}"
         # this assumes that the backup is always updated so
         # be sure to invoke a sync before an unsync
         #
