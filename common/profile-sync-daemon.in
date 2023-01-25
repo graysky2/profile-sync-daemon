@@ -573,6 +573,7 @@ do_sync() {
       echo "USE_SUSPSYNC=\"$USE_SUSPSYNC\""
       echo "BROWSERS=\"${BROWSERS[*]}\""
       echo "USE_BACKUPS=\"$USE_BACKUPS\""
+      echo "BACKUP_LIMIT=\"$BACKUP_LIMIT\""
     } >> "$PSDCONFDIR/.psd.conf"
   chmod 400 "$PSDCONFDIR/.psd.conf"
   fi
