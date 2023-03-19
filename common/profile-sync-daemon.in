@@ -188,28 +188,6 @@ case "${USE_BACKUPS,,}" in
     ;;
 esac
 
-# determine if we are using overlayfs (v22 and below) or overlay (v23 and above)
-# since mount should call modprobe on invocation, check to see if either
-# module is in the tree using modinfo
-
-if [[ $OLFS -eq 1 ]]; then
-  # first check to see if either is hardcoded into the kernel
-  # and of course prefer version 23
-  [[ $(grep -ciE "overlayfs$" /proc/filesystems) -eq 1 ]] && OLFSVER=22
-  [[ $(grep -ciE "overlay$" /proc/filesystems) -eq 1 ]] && OLFSVER=23
-fi
-
-if [[ -z $OLFSVER ]]; then
-  # if neither is hardcoded, see if either module is available
-  if modinfo overlayfs &>/dev/null; then
-    OLFSVER=22
-  fi
-
-  if modinfo overlay &>/dev/null; then
-    OLFSVER=23
-  fi
-fi
-
 header() {
   echo -e "${BLD}Profile-sync-daemon v$VERS${NRM}"
   echo
@@ -235,14 +213,6 @@ dep_check() {
       exit 1
     fi
   fi
-  if [[ $OLFS -eq 1 ]]; then
-    [[ $OLFSVER -ge 22 ]] || {
-      echo -e " ${BLD}Your kernel requires either the ${BLU}overlay${NRM}${BLD} or ${BLU}overlayfs${NRM}${BLD} module to use${NRM}"
-          echo -e " ${BLD}to use psd's in overlay mode. Cannot find either in your kernel so compile it in and${NRM}"
-          echo -e " ${BLD}try again or remove the option from ${BLU}$PSDCONF${NRM}${BLD}. ${RED}Aborting!${NRM}" >&2
-          exit 1
-        }
-  fi
 
   if [[ -f /etc/psd.conf ]]; then
     echo -e "${BLD} This version of psd does not support /etc/psd.conf since it runs as your user.${NRM}"
@@ -254,18 +224,12 @@ dep_check() {
 
 config_check() {
   if [[ $OLFS -eq 1 ]]; then
-    # user must have sudo rights to call /usr/bin/mount
-    # and /usr/bin/umount to use overlay mode
-
-    if ! sudo -kn psd-overlay-helper &>/dev/null; then
+    if [[ ! -x /usr/bin/fuse-overlayfs ]]; then
       FAILCODE=1
     fi
 
     if [[ $FAILCODE -ne 0 ]]; then
-      echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, $user needs sudo access to ${BLU}/usr/bin/psd-overlay-helper${NRM}${BLD}${NRM}"
-      echo
-      echo -e " ${BLD}Add the following line to the end of ${BLU}/etc/sudoers${NRM}${BLD} to enable this functionality:${NRM}"
-      echo -e "  ${BLD}$user ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper${NRM}"
+      echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, install fuse-overlayfs${NRM}${BLD}${NRM}"
       exit 1
     fi
   fi
@@ -500,11 +464,11 @@ do_sync_for() {
       [[ -r "$TMP" ]] || install -dm"$PREFIXP" --owner="$user" --group="$group" "$TMP"
 
       if [[ $OLFS -eq 1 ]]; then
-        if [[ $OLFSVER -eq 23 ]]; then
-          [[ -r "$UPPER" ]] || install -dm"$PREFIXP" --owner="$user" --group="$group" "$UPPER"
-          [[ -r "$WORK" ]] || install -dm"$PREFIXP" --owner="$user" --group="$group" "$WORK"
-        elif [[ $OLFSVER -eq 22 ]]; then
-          [[ -r "$UPPER" ]] || install -dm"$PREFIXP" --owner="$user" --group="$group" "$UPPER"
+        if [[ ! -r "$UPPER" ]]; then
+          install -dm"$PREFIXP" --owner="$user" --group="$group" "$UPPER" || exit 2
+        fi
+        if [[ ! -r "$WORK" ]]; then
+          install -dm"$PREFIXP" --owner="$user" --group="$group" "$WORK" || exit 2
         fi
       fi
 
@@ -527,9 +491,8 @@ do_sync_for() {
         # initial sync
         REPORT="sync"
         if [[ $OLFS -eq 1 ]]; then
-          if ! sudo psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$UPPER" -w "$WORK" -d "$TMP" mountup; then
-            echo -e "Error in trying to mount $TMP - this should not happen!"
-            exit 1
+          if ! mountpoint -q "$TMP"; then
+            fuse-overlayfs -o lowerdir="$BACKUP",upperdir="$UPPER",workdir="$WORK" "$TMP" || exit 2
           fi
         else
           # keep user from launching browser while rsync is active
@@ -627,7 +590,8 @@ do_unsync() {
         [[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
         if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
           rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$DIR/"
-          sudo psd-overlay-helper -d "$TMP" -w "$WORK" mountdown && rm -rf "$TMP" "$UPPER"
+          fusermount -u "$TMP"
+          rm -rf "$TMP" "$UPPER" "$WORK"
         fi
         [[ -d "$TMP" ]] && rm -rf "$TMP"
         echo -e "${BLD}$browser unsync successful${NRM}"

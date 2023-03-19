@@ -27,7 +27,6 @@ install-bin: common/$(PN)
 	$(Q)echo -e '\033[1;32mInstalling main script...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(BINDIR)"
 	$(INSTALL_PROGRAM) common/$(PN) "$(DESTDIR)$(BINDIR)/$(PN)"
-	$(INSTALL_PROGRAM) common/psd-overlay-helper "$(DESTDIR)$(BINDIR)/psd-overlay-helper"
 	$(INSTALL_PROGRAM) common/psd-suspend-sync "$(DESTDIR)$(BINDIR)/psd-suspend-sync"
 	ln -sf $(PN) "$(DESTDIR)$(BINDIR)/psd"
 	$(INSTALL_DIR) "$(DESTDIR)$(ZSHDIR)"
@@ -42,7 +41,6 @@ install-man:
 	$(Q)echo -e '\033[1;32mInstalling manpage...\033[0m'
 	$(INSTALL_DIR) "$(DESTDIR)$(MANDIR)"
 	$(INSTALL_DATA) doc/psd.1 "$(DESTDIR)$(MANDIR)/psd.1"
-	$(INSTALL_DATA) doc/psd-overlay-helper.1 "$(DESTDIR)$(MANDIR)/psd-overlay-helper.1"
 	ln -sf psd.1 "$(DESTDIR)$(MANDIR)/$(PN).1"
 
 install-systemd:
@@ -58,7 +56,6 @@ uninstall-bin:
 	$(RM) "$(DESTDIR)$(BINDIR)/$(PN)"
 	$(RM) "$(DESTDIR)$(BINDIR)/psd"
 	$(RM) "$(DESTDIR)$(ZSHDIR)/_psd"
-	$(RM) "$(DESTDIR)$(BINDIR)/psd-overlay-helper"
 	$(RM) "$(DESTDIR)$(BINDIR)/psd-suspend-sync"
 	$(RM) "$(DESTDIR)$(SHAREDIR)/psd.conf"
 	$(RM) -rf "$(DESTDIR)$(SHAREDIR)/browsers"
@@ -68,7 +65,6 @@ uninstall-bin:
 uninstall-man:
 	$(RM) -f "$(DESTDIR)$(MANDIR)/$(PN).1"
 	$(RM) -f "$(DESTDIR)$(MANDIR)/psd.1"
-	$(RM) -f "$(DESTDIR)$(MANDIR)/psd-overlay-helper.1"
 
 uninstall-systemd:
 	$(RM) "$(DESTDIR)$(INITDIR_SYSTEMD)/psd.service"

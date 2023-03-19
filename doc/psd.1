@@ -25,7 +25,7 @@ $XDG_CONFIG_HOME/psd/psd.conf (referred to hereafter as "the config file") conta
 NOTE: edits made to the config file while psd is active will be applied only after the service has been restarted.
 .RS
 .IP \(bu 3
-Optionally enable the use of overlayfs to improve sync speed and to use a smaller memory footprint. Do this in the USE_OVERLAYFS variable. The user will require no password sudo rights to /usr/bin/psd-overlay-helper to use this option and the kernel must support overlayfs version 22 or higher. See the FAQ below for additional details.
+Optionally enable the use of overlayfs to improve sync speed and to use a smaller memory footprint. Do this in the USE_OVERLAYFS variable.
 .IP \(bu 3
 Optionally have psd resync to the filesystem prior to a sleep call. This can help in the event that the system does not properly wake up. Do this in the USE_SUSPSYNC variable.
 .IP \(bu 3
@@ -199,14 +199,6 @@ Q2: How do I enable overlayfs mode?
 .PP
 A2: First, be sure psd is not active or else any changes to the config file will be ignored until it is restarted. Overlayfs mode is enabled with the USE_OVERLAYFS= variable which should be set to "yes" in the config file. Psd will automatically detect the overlayfs version available to the kernel if it is configured to use one of them. It is recommended to run psd in preview mode to verify that the system can in fact use overlayfs.
 .PP
-Users wanting to use overlayfs mode MUST have sudo rights without password prompt to /usr/bin/psd-overlay-helper or global sudo rights without password prompt. If the user does not have global rights, add the following line to /etc/sudoers after any other lines defining sudo access. It is recommended to use /usr/bin/visudo as root to set this up:
-.PP
-.nf
-.fam C
- foo ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper
-
-.fam T
-.fi
 Q3: Why do I have another browser profile directory "foo-back-ovfs" when I enable overlayfs?
 .PP
 A3: The way overlayfs works is to mount a read-only base copy (so-called lower dir) of the profile, and manage the new data on top of that. In order to avoid resyncing to the read-only filesystem, a copy is used instead. So using overlayfs is a trade-off: faster initial sync times and less memory usage vs. disk space in the home dir.
