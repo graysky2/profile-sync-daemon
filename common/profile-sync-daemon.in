@@ -492,7 +492,10 @@ do_sync_for() {
         REPORT="sync"
         if [[ $OLFS -eq 1 ]]; then
           if ! mountpoint -q "$TMP"; then
-            fuse-overlayfs -o lowerdir="$BACKUP",upperdir="$UPPER",workdir="$WORK" "$TMP" || exit 2
+            fuse-overlayfs -o lowerdir="$BACKUP",upperdir="$UPPER",workdir="$WORK" "$TMP"
+            if ! mountpoint -q "$TMP"; then
+              exit 2
+            fi
           fi
         else
           # keep user from launching browser while rsync is active
