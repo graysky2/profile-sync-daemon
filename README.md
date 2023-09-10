@@ -38,7 +38,7 @@ To build from source, see the included INSTALL text document.
 
 ## Installation from Distro Packages
 ### Officially Packaged
-* Arch: in the community [repo](https://www.archlinux.org/packages/community/any/profile-sync-daemon/).
+* Arch: in the extra [repo](https://archlinux.org/packages/extra/any/profile-sync-daemon/).
 * Debian: in the official [repos](https://packages.debian.org/unstable/profile-sync-daemon).
 * Exherbo: in the official [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
 * Fedora: in the official [repos](https://src.fedoraproject.org/rpms/profile-sync-daemon).
