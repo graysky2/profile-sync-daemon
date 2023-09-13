@@ -38,16 +38,26 @@ To build from source, see the included INSTALL text document.
 
 ## Installation from Distro Packages
 ### Officially Packaged
-* ![logo](http://www.monitorix.org/imgs/archlinux.png "arch logo")Arch: in the community [repo](https://www.archlinux.org/packages/community/any/profile-sync-daemon/).
-* ![logo](http://freedos-32.sourceforge.net/lean/debian_logo.png "debian logo")Debian jesse+: in the official [repos](https://packages.debian.org/unstable/profile-sync-daemon).
-* ![logo](https://upload.wikimedia.org/wikipedia/commons/thumb/a/a0/Logo_Exherbo.svg/32px-Logo_Exherbo.svg.png "exherbo logo")Exherbo: in the official [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
-* ![logo](http://www.monitorix.org/imgs/gentoo.png "gentoo logo")Gentoo: in the official [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
-* ![logo](http://www.monitorix.org/imgs/ubuntu.png "ubuntu logo")Ubuntu 16.10+: in the universe [repo](https://packages.ubuntu.com/search?keywords=profile-sync-daemon).
-* ![logo](https://www.monitorix.org/imgs/fedora.png "fedora logo")Fedora: in the official [repos](https://src.fedoraproject.org/rpms/profile-sync-daemon).
+* Arch: in the extra [repo](https://archlinux.org/packages/extra/any/profile-sync-daemon/).
+* Debian: in the official [repos](https://packages.debian.org/unstable/profile-sync-daemon).
+* Exherbo: in the official [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
+* Fedora: in the official [repos](https://src.fedoraproject.org/rpms/profile-sync-daemon).
+* Gentoo: in the official [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
+* NixOS: in the official [repo](https://search.nixos.org/packages?channel=22.11&from=0&size=50&sort=relevance&type=packages&query=profile-sync).
+* Ubuntu: in Universe [repo](https://packages.ubuntu.com/search?keywords=profile-sync-daemon).
 
 ### User Packaged
-* ![logo](https://i.postimg.cc/4x1Wtnkr/Chakra-shiny.png "chakra logo")Chakra: in the [CCR](https://ccr.chakralinux.org/packages.php?O=0&K=profile-sync-daemon).
-* ![logo](http://wiki.codeblocks.org/images/8/8b/Slackware-logo_32.png "slack logo")Slackware: on [slackbuilds](http://slackbuilds.org/apps/profile-sync-daemon/).
+* Slackware: on [slackbuilds](http://slackbuilds.org/apps/profile-sync-daemon/).
 
 ### Other Distros
 If you are interested in packaging psd for your favorite distro, please contact me.
+
+## logcheck
+Using logcheck? Here are some ways to filter out log lines:
+```regexp
+^\w{3} [ :0-9]{11} [._[:alnum:]-]+ profile-sync-daemon\[[0-9]+]\]: .*(google-chrome|firefox) (re|un)sync successful
+^\w{3} [ :0-9]{11} [._[:alnum:]-]+ profile-sync-daemon\[[0-9]+\]: psd startup check successful$
+^\w{3} [ :0-9]{11} [._[:alnum:]-]+ systemd\[[0-9]+\]: Started Timer for profile-sync-daemon
+^\w{3} [ :0-9]{11} [._[:alnum:]-]+ systemd\[[0-9]+\]: psd(-resync)?\.service: Consumed [0-9\.]+s CPU time\.$
+^\w{3} [ :0-9]{11} [._[:alnum:]-]+ systemd\[[0-9]+\]: psd(-resync)\.timer: Succeeded\.$
+```

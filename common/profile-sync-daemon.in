@@ -10,22 +10,32 @@
 # needed for debian >=8.x
 PATH=$PATH:/sbin
 
-BLD="\e[01m"
-RED="\e[01;31m"
-GRN="\e[01;32m"
-BLU="\e[01;34m"
-NRM="\e[00m"
+if [[ -n "$LAUNCHED_BY_SYSTEMD" ]] ; then
+# This script was invoked by systemd
+# Thx to notes-jj: https://serverfault.com/questions/926349/systemd-tell-if-script-was-run-by-systemd-or-by-user
+# No 'echo' ANSI escape codes
+  BLD=''
+  RED=''
+  GRN=''
+  BLU=''
+  NRM=''
+else
+  BLD="\e[01m"
+  RED="\e[01;31m"
+  GRN="\e[01;32m"
+  BLU="\e[01;34m"
+  NRM="\e[00m"
+fi
 VERS="@VERSION@"
 
 user=$(id -un)
 HOME="$(getent passwd "$user" | cut -d: -f6)"
+TMPDIR="${TMPDIR:-/tmp}"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 PSDCONFDIR="$XDG_CONFIG_HOME/psd"
 PSDCONF="$PSDCONFDIR/psd.conf"
 SHAREDIR="/usr/share/psd"
-VOLATILE="$XDG_RUNTIME_DIR"
-PID_FILE="$VOLATILE/psd.pid"
 SUDO="sudo"
 DOASDIR="/usr/bin/doas"
 
@@ -44,10 +54,30 @@ if [[ $EUID -eq 0 ]]; then
   exit 1
 fi
 
-if [[ ! -d "$XDG_RUNTIME_DIR" ]]; then
+# Create an XDG_RUNTIME_DIR if not given one (i.e. running without DE)
+# See https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+if [[ -z "$XDG_RUNTIME_DIR" ]]; then
+  XDG_RUNTIME_DIR="${TMPDIR}/runtime-${user}"
+  echo -e " ${RED}WARNING:${NRM}${BLD} XDG_RUNTIME_DIR not set, defaulting to '${XDG_RUNTIME_DIR}'.${NRM}"
+  if [[ ! -d "$XDG_RUNTIME_DIR" ]] && ! mkdir "$XDG_RUNTIME_DIR"; then
+    echo -e " ${RED}ERROR:${NRM}${BLD} Unable to create runtime directory '${XDG_RUNTIME_DIR}'.${NRM}"
+    exit 1
+  fi
+  if ! chown "${user}" "${XDG_RUNTIME_DIR}"; then
+    echo -e " ${RED}ERROR:${NRM}${BLD} Unable to make user '${user}' owner of runtime directory '${XDG_RUNTIME_DIR}'.${NRM}"
+    exit 1
+  fi
+  if ! chmod 0700 "${XDG_RUNTIME_DIR}"; then
+    echo -e " ${RED}ERROR:${NRM}${BLD} Uname to make runtime directory '${XDG_RUNTIME_DIR}' only accessible to user '$user'.${NRM}"
+    exit 1
+  fi
+elif [[ ! -d "$XDG_RUNTIME_DIR" ]]; then
   echo -e " ${RED}ERROR:${NRM}${BLD} Cannot find XDG_RUNTIME_DIR which should be set by systemd.${NRM}"
   exit 1
 fi
+
+VOLATILE="$XDG_RUNTIME_DIR/psd"
+PID_FILE="$XDG_RUNTIME_DIR/psd.pid"
 
 # Setup check for config file
 if [[ -f "$PSDCONF" ]]; then
@@ -96,7 +126,7 @@ if [[ -f "$PID_FILE" ]]; then
     unset USE_OVERLAYFS USE_SUSPSYNC BROWSERS USE_BACKUPS BACKUP_LIMIT
     . "$PSDCONF"
     # defining VOLATILE in the config is deprecated since v6.16
-    VOLATILE="$XDG_RUNTIME_DIR"
+    VOLATILE="$XDG_RUNTIME_DIR/psd"
   fi
 fi
 
@@ -118,7 +148,7 @@ fi
 if [[ -z "$BROWSERS" ]]; then
   mapfile -t BROWSERS < <(find "$SHAREDIR/browsers" -type f -printf "%f\n")
 else
-  if ! declare -p BROWSERS | grep -q 'declare \-a'; then
+  if ! declare -p BROWSERS | grep -q 'declare -a'; then
     # did not setup as array so redefine it here
     IFS=' ' read -r -a BROWSERS <<< "${BROWSERS[@]}"
   fi
@@ -554,6 +584,7 @@ do_sync() {
       echo "USE_SUSPSYNC=\"$USE_SUSPSYNC\""
       echo "BROWSERS=\"${BROWSERS[*]}\""
       echo "USE_BACKUPS=\"$USE_BACKUPS\""
+      echo "BACKUP_LIMIT=\"$BACKUP_LIMIT\""
     } >> "$PSDCONFDIR/.psd.conf"
   chmod 400 "$PSDCONFDIR/.psd.conf"
   fi
