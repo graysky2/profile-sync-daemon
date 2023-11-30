@@ -27,19 +27,18 @@ dbus_process_sleep() {
   done
 }
 
-coproc bus (
+exec {gdbus_fd}< <(gdbus monitor --system --dest "$dbus_interface")
+gdbus_PID=$!
+trap 'exec {gdbus_fd}<&-; kill "$gdbus_PID"' EXIT
+
+{
+  # delay sleep until browser profiles are written to disk
   systemd-inhibit --mode="delay" --what="sleep" \
     --who="profile-sync-daemon" --why="psd resync on suspend" \
-    gdbus monitor --system --dest "$dbus_interface"
-)
+    cat | dbus_process_sleep
 
-# keeps the inhibitor running until the system is about to sleep
-dbus_process_sleep <& "${bus[0]}"
-
-# starts running before the system goes to sleep
-dbus_process_sleep < <(gdbus monitor --system --dest "$dbus_interface") &
-
-# kill the inhibitor so that the system can sleep
-[ -n "$bus_PID" ] && kill "$bus_PID"
+  # detect resume and restart the entire process
+  dbus_process_sleep
+} <&$gdbus_fd
 
 # vim:set ts=2 sw=2 et:
