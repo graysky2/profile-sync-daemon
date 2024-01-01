@@ -423,6 +423,11 @@ suffix_needed() {
   [[ -n "$check_suffix" ]]
 }
 
+infix_needed() {
+  browser=$1
+  [[ $browser == *"-in-snap" ]]
+}
+
 dup_check() {
   # only for firefox, icecat, seamonkey, and palemoon
   # the LAST directory in the profile MUST be unique
@@ -484,13 +489,17 @@ do_sync_for() {
     DIR="$item"
     BACKUP="$item-backup"
     BACK_OVFS="$item-back-ovfs"
+    infix=
+    if infix_needed "$browser"; then
+      infix="../snap.${browser%-in-snap}/"
+    fi
     suffix=
     if suffix_needed "$browser"; then
       suffix="-${item##*/}"
     fi
-    TMP="$VOLATILE/$user-$browser$suffix"
-    UPPER="$VOLATILE/$user-$browser${suffix}-rw"
-    WORK="$VOLATILE/.$user-$browser${suffix}"
+    TMP="$VOLATILE/$infix$user-$browser$suffix"
+    UPPER="$VOLATILE/$infix$user-$browser${suffix}-rw"
+    WORK="$VOLATILE/$infix.$user-$browser${suffix}"
     local REPORT
 
     # make tmpfs container
@@ -533,7 +542,7 @@ do_sync_for() {
           fi
         else
           # keep user from launching browser while rsync is active
-          rsync -aX --inplace --no-whole-file "$BACKUP/" "$TMP"
+          rsync -aX --inplace --no-whole-file --mkpath "$BACKUP/" "$TMP"
         fi
 
         # now browser can start
@@ -610,13 +619,17 @@ do_unsync() {
       DIR="$item"
       BACKUP="$item-backup"
       BACK_OVFS="$item-back-ovfs"
+      infix=
+      if infix_needed "$browser"; then
+        infix="../snap.${browser%-in-snap}/"
+      fi
       suffix=
       if suffix_needed "$browser"; then
         suffix="-${item##*/}"
       fi
-      TMP="$VOLATILE/$user-$browser$suffix"
-      UPPER="$VOLATILE/$user-$browser${suffix}-rw"
-      WORK="$VOLATILE/.$user-$browser${suffix}"
+      TMP="$VOLATILE/$infix$user-$browser$suffix"
+      UPPER="$VOLATILE/$infix$user-$browser${suffix}-rw"
+      WORK="$VOLATILE/$infix.$user-$browser${suffix}"
       # check if user has browser profile
       if [[ -h "$DIR" ]]; then
         unlink "$DIR"
@@ -677,11 +690,15 @@ parse() {
     for item in "${DIRArr[@]}"; do
       DIR="$item"
       BACKUP="$item-backup"
+      infix=
+      if infix_needed "$browser"; then
+        infix="../snap.${browser%-in-snap}/"
+      fi
       suffix=
       if suffix_needed "$browser"; then
         suffix="-${item##*/}"
       fi
-      UPPER="$VOLATILE/$user-$browser${suffix}-rw"
+      UPPER="$VOLATILE/$infix$user-$browser${suffix}-rw"
       if [[ -d "$DIR" ]]; then
         local CRASHArr=()
         while IFS= read -d '' -r backup; do
@@ -711,7 +728,7 @@ parse() {
           warn=
         fi
         echo -en " ${BLD}tmpfs dir:"
-        echo -e "$(tput cr)$(tput cuf 17) ${GRN}$VOLATILE/$user-$browser$suffix${NRM}"
+        echo -e "$(tput cr)$(tput cuf 17) ${GRN}$VOLATILE/$infix$user-$browser$suffix${NRM}"
         echo -en " ${BLD}profile size:"
         echo -e "$(tput cr)$(tput cuf 17) $psize${NRM}"
         if [[ $OLFS -eq 1 ]]; then
