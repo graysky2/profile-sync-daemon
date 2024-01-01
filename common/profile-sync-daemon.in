@@ -313,7 +313,7 @@ ungraceful_state_check() {
 
       if [[ -d "$BACKUP" ]]; then
         if [[ -d $DIR ]]; then
-          echo "Unexpected state detected: we have $BACKUP, but $DIR already exists. Trying move $DIR to $DIR" "$DIR-old-profile-$NOW"
+          echo "Unexpected state detected: we have $BACKUP, but $DIR already exists. Trying move $DIR to $DIR-old-profile-$NOW"
           mv --no-target-directory "$DIR" "$DIR-old-profile-$NOW"
         fi
 
@@ -325,10 +325,10 @@ ungraceful_state_check() {
           # at the time the user started psd could be many resync cycles
           # in the past
 
-          BACKUP_TIME=$(stat "$BACKUP" | grep Change | awk '{ print $2,$3 }')
-          BACK_OVFS_TIME=$(stat "$BACK_OVFS" | grep Change | awk '{ print $2,$3 }')
+          BACKUP_TIME=$(stat --format=%Z "$BACKUP")
+          BACK_OVFS_TIME=$(stat --format=%Z "$BACK_OVFS")
 
-          [[ $(date -d "$BACK_OVFS_TIME" "+%s") -ge $(date -d "$BACKUP_TIME" "+%s") ]] &&
+          [[ $BACK_OVFS_TIME -ge $BACKUP_TIME ]] &&
             TARGETTOKEEP="$BACK_OVFS" ||
             TARGETTOKEEP="$BACKUP"
 
@@ -359,6 +359,8 @@ ungraceful_state_check() {
 }
 
 cleanup() {
+  [[ "$#" -eq  "0" ]] && keep_count=0 || keep_count="$1"
+  # cleanup and enforce merged; cleanup need arg (nb backup to keep)
   local browser
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
@@ -368,17 +370,19 @@ cleanup() {
       local CRASHArr=()
       while IFS= read -d '' -r backup; do
         CRASHArr=("${CRASHArr[@]}" "$backup")
-      done < <(find "${DIR%/*}" -type d -name '*crashrecovery*' -print0 | sort -r -z)
+      done < <(find "${DIR%/*}" -maxdepth 1 -type d -name "${item##*/}*crashrecovery*" -print0 | sort -r -z)
 
-      if [[ ${#CRASHArr[@]} -gt 0 ]]; then
-        echo -e "${BLD}Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR${NRM}"
-        for backup in "${CRASHArr[@]}"; do
-          echo -e "${BLD}${RED} $backup${NRM}"
-          rm -rf "$backup"
-        done
-      else
-        echo -e "${BLD}Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}${NRM}"
+      remove_count=$(( ${#CRASHArr[@]} - keep_count ))
+      if [[ $remove_count -le 0 ]]; then
+        [[ $keep_count -eq 0 ]] && echo -e "${BLD}Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}${NRM}"
+        continue
       fi
+
+      echo -e "${BLD}Deleting ${remove_count} crashrecovery dir(s) for profile ${BLU}$DIR${NRM}"
+      for backup in "${CRASHArr[@]:$keep_count}"; do
+        echo -e "${BLD}${RED} $backup${NRM}"
+        rm -rf "$backup"
+      done
       echo
     done
   done
@@ -584,22 +588,6 @@ do_sync() {
   done
 }
 
-enforce() {
-  local browser
-  for browser in "${BROWSERS[@]}"; do
-    local CRASHArr=()
-    while IFS= read -d '' -r backup; do
-      CRASHArr=("${CRASHArr[@]}" "$backup")
-    done < <(find "${DIR%/*}" -type d -name '*crashrecovery*' -print0 | sort -r -z)
-
-    if [[ ${#CRASHArr[@]} -gt $BACKUP_LIMIT ]]; then
-      for remove in "${CRASHArr[@]:$BACKUP_LIMIT}"; do
-        rm -rf "$remove"
-      done
-    fi
-  done
-}
-
 do_unsync() {
   rm -f "$PID_FILE" "$PSDCONFDIR/.psd.conf"
 
@@ -686,7 +674,7 @@ parse() {
         local CRASHArr=()
         while IFS= read -d '' -r backup; do
           CRASHArr=("${CRASHArr[@]}" "$backup")
-        done < <(find "${DIR%/*}" -type d -name '*crashrecovery*' -print0 | sort -r -z)
+        done < <(find "${DIR%/*}" -maxdepth 1 -type d -name "${item##*/}*crashrecovery*" -print0 | sort -r -z)
 
         # get permissions on profile dir and be smart about it since symlinks are all 777
         [[ -f $PID_FILE ]] && TRUEP=$(stat -c %a "$BACKUP") || TRUEP=$(stat -c %a "$DIR")
@@ -761,6 +749,7 @@ case "$1" in
     ungraceful_state_check
     header
     parse
+    cleanup "$BACKUP_LIMIT"
     ;;
   c|C|clean|Clean)
     dep_check
@@ -777,6 +766,7 @@ case "$1" in
       dup_check
       running_check
       ungraceful_state_check
+      cleanup "$BACKUP_LIMIT"
       [[ $SUSPSYNC -eq 1 ]] && take_inhibit_lock
       echo -e "${BLD}psd startup check successful${NRM}"
     fi
@@ -801,7 +791,7 @@ case "$1" in
       running_check
       ungraceful_state_check
       do_sync
-      enforce
+      cleanup "$BACKUP_LIMIT"
     fi
     ;;
   unsync)
