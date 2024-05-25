@@ -368,7 +368,7 @@ cleanup() {
       local CRASHArr=()
       while IFS= read -d '' -r backup; do
         CRASHArr=("${CRASHArr[@]}" "$backup")
-      done < <(find "${DIR%/*}" -type d -name '*crashrecovery*' -print0 | sort -r -z)
+      done < <(find "${DIR%/*}" -maxdepth 1 -type d -name "${DIR##*/}-backup-crashrecovery-*" -print0 | sort -r -z)
 
       if [[ ${#CRASHArr[@]} -gt 0 ]]; then
         echo -e "${BLD}Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR${NRM}"
@@ -590,7 +590,7 @@ enforce() {
     local CRASHArr=()
     while IFS= read -d '' -r backup; do
       CRASHArr=("${CRASHArr[@]}" "$backup")
-    done < <(find "${DIR%/*}" -type d -name '*crashrecovery*' -print0 | sort -r -z)
+    done < <(find "${DIR%/*}" -maxdepth 1 -type d -name "${DIR##*/}-backup-crashrecovery-*" -print0 | sort -r -z)
 
     if [[ ${#CRASHArr[@]} -gt $BACKUP_LIMIT ]]; then
       for remove in "${CRASHArr[@]:$BACKUP_LIMIT}"; do
@@ -686,7 +686,7 @@ parse() {
         local CRASHArr=()
         while IFS= read -d '' -r backup; do
           CRASHArr=("${CRASHArr[@]}" "$backup")
-        done < <(find "${DIR%/*}" -type d -name '*crashrecovery*' -print0 | sort -r -z)
+        done < <(find "${DIR%/*}" -maxdepth 1 -type d -name "${DIR##*/}-backup-crashrecovery-*" -print0 | sort -r -z)
 
         # get permissions on profile dir and be smart about it since symlinks are all 777
         [[ -f $PID_FILE ]] && TRUEP=$(stat -c %a "$BACKUP") || TRUEP=$(stat -c %a "$DIR")
