@@ -6,8 +6,6 @@ if [[ -d "$HOME"/.librewolf ]]; then
             # path is not relative
             DIRArr[$index]="$profileItem"
         else
-            # we need to append the default path to give a
-            # fully qualified path
             DIRArr[$index]="$HOME/.librewolf/$profileItem"
         fi
         (( index=index+1 ))
