@@ -37,6 +37,13 @@ PSDCONFDIR="$XDG_CONFIG_HOME/psd"
 PSDCONF="$PSDCONFDIR/psd.conf"
 SHAREDIR="/usr/share/psd"
 
+# Use `doas` if available, assume `sudo` otherwise.
+if type doas &>/dev/null; then
+  SUDO=(doas -n)
+else
+  SUDO=(sudo -kn)
+fi
+
 if [[ ! -d "$SHAREDIR" ]]; then
   echo -e " ${RED}ERROR:${NRM}${BLD} Missing ${BLU}$SHAREDIR${NRM}${BLD} - reinstall the package to use profile-sync-daemon.${NRM}"
   exit 1
@@ -254,18 +261,19 @@ dep_check() {
 
 config_check() {
   if [[ $OLFS -eq 1 ]]; then
-    # user must have sudo rights to call /usr/bin/mount
+    # user must have sudo or doas rights to call /usr/bin/mount
     # and /usr/bin/umount to use overlay mode
 
-    if ! sudo -kn psd-overlay-helper &>/dev/null; then
-      FAILCODE=1
-    fi
-
-    if [[ $FAILCODE -ne 0 ]]; then
-      echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, $user needs sudo access to ${BLU}/usr/bin/psd-overlay-helper${NRM}${BLD}${NRM}"
+    if ! "${SUDO[@]}" /usr/bin/psd-overlay-helper &>/dev/null; then
+      echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, $user needs $SUDO access to ${BLU}psd-overlay-helper${NRM}"
       echo
-      echo -e " ${BLD}Add the following line to the end of ${BLU}/etc/sudoers${NRM}${BLD} to enable this functionality:${NRM}"
-      echo -e "  ${BLD}$user ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper${NRM}"
+      if [[ "${SUDO[0]##*/}" = *doas* ]]; then
+        echo -e " ${BLD}Add the following line to the end of ${BLU}/etc/sudoers${NRM}${BLD} to enable this functionality:${NRM}"
+        echo -e "  ${BLD}permit nopass $user as root cmd /usr/bin/psd-overlay-helper${NRM}"
+      else
+        echo -e " ${BLD}Add the following line to the end of ${BLU}/etc/doas.conf${NRM}${BLD} to enable this functionality:${NRM}"
+        echo -e "  ${BLD}$user ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper${NRM}"
+      fi
       exit 1
     fi
   fi
@@ -527,7 +535,7 @@ do_sync_for() {
         # initial sync
         REPORT="sync"
         if [[ $OLFS -eq 1 ]]; then
-          if ! sudo psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$UPPER" -w "$WORK" -d "$TMP" mountup; then
+          if ! "${SUDO[@]}" /usr/bin/psd-overlay-helper -v "$OLFSVER" -l "$BACKUP" -u "$UPPER" -w "$WORK" -d "$TMP" mountup; then
             echo -e "Error in trying to mount $TMP - this should not happen!"
             exit 1
           fi
@@ -627,7 +635,7 @@ do_unsync() {
         [[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
         if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
           rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$DIR/"
-          sudo psd-overlay-helper -d "$TMP" -w "$WORK" mountdown && rm -rf "$TMP" "$UPPER"
+          "${SUDO[@]}" /usr/bin/psd-overlay-helper -d "$TMP" -w "$WORK" mountdown && rm -rf "$TMP" "$UPPER"
         fi
         [[ -d "$TMP" ]] && rm -rf "$TMP"
         echo -e "${BLD}$browser unsync successful${NRM}"
