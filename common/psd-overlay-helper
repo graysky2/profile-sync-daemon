@@ -32,13 +32,13 @@ case "$1" in
   mountup)
     # write access to upper/workdir is required or do not overlay lowerdirs
     user=$(stat -c %U "$TMP")
-    if ! sudo -u "$user" test -w "$BACKUP"; then
+    if ! runuser -u "$user" -- test -w "$BACKUP"; then
       echo "User $user has no write permissions for $BACKUP. Aborting..." >&2
       exit 1
     fi
 
     user=$(stat -c %U "$UPPER")
-    if ! sudo -u "$user" test -w "$BACKUP"; then
+    if ! runuser -u "$user" -- test -w "$BACKUP"; then
       echo "User $user has no write permissions for $BACKUP. Aborting..." >&2
       exit 1
     fi
