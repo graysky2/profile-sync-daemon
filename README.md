@@ -18,7 +18,6 @@ User of eCryptFS are encouraged not to use psd unless willing to help troublesho
 * Icecat (GNU version of Firefox)
 * Iceweasel (Debian version of Firefox)
 * Inox (https://bbs.archlinux.org/viewtopic.php?id=198763)
-* Librewolf (https://librewolf.net/)
 * Luakit
 * Midori
 * Opera, Opera-Beta, Opera-Developer, and Opera-Legacy
