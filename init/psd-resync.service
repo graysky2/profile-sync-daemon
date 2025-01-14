@@ -8,7 +8,6 @@ BindsTo=psd.service
 Slice=background.slice
 Type=oneshot
 ExecStart=/usr/bin/profile-sync-daemon resync
-Environment=LAUNCHED_BY_SYSTEMD=1
 
 [Install]
 WantedBy=default.target
