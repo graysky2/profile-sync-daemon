@@ -1,0 +1,17 @@
+if [[ -d "$XDG_CONFIG_HOME"/mozilla/firefox ]]; then
+    index=0
+    PSNAME="$browser"
+    while read -r profileItem; do
+        if [[ $(echo "$profileItem" | cut -c1) = "/" ]]; then
+            # path is not relative
+            DIRArr[$index]="$profileItem"
+        else
+            # we need to append the default path to give a
+            # fully qualified path
+            DIRArr[$index]="$XDG_CONFIG_HOME/mozilla/firefox/$profileItem"
+        fi
+        (( index=index+1 ))
+    done < <(grep '[Pp]'ath= "$XDG_CONFIG_HOME"/mozilla/firefox/profiles.ini | sed 's/[Pp]ath=//')
+fi
+
+check_suffix=1
