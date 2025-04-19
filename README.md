@@ -28,6 +28,7 @@ User of eCryptFS are encouraged not to use psd unless willing to help troublesho
 * Rekonq
 * Seamonkey
 * Surf (http://surf.suckless.org/)
+* Waterfox
 * Vivaldi-browser and Vivaldi-browser-snapshot
 
 ## Documentation
