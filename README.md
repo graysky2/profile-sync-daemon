@@ -12,6 +12,7 @@ User of eCryptFS are encouraged not to use psd unless willing to help troublesho
 * Conkeror
 * Epiphany
 * Firefox (stable, beta, and aurora)
+* Firefox Flatpak (run `flatpak override --user org.mozilla.firefox --filesystem=/run/user/$UID/psd` once to give required access)
 * Firefox-trunk (this is an Ubuntu-only browser: http://www.webupd8.org/2011/05/install-firefox-nightly-from-ubuntu-ppa.html)
 * Google Chrome (stable, beta, and dev)
 * Heftig's version of Aurora (this is an Arch Linux-only browser: https://bbs.archlinux.org/viewtopic.php?id=117157)
