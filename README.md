@@ -11,6 +11,7 @@ User of eCryptFS are encouraged not to use psd unless willing to help troublesho
 * Chromium
 * Conkeror
 * Epiphany
+* [FireDragon](https://firedragon.garudalinux.org/)
 * Firefox (stable, beta, and aurora)
 * Firefox-trunk (this is an Ubuntu-only browser: http://www.webupd8.org/2011/05/install-firefox-nightly-from-ubuntu-ppa.html)
 * Google Chrome (stable, beta, and dev)
