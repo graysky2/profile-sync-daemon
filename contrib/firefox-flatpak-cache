@@ -1,3 +1,7 @@
+if ! flatpak override --user --show org.mozilla.firefox | grep -q "/run/user/$UID/psd"; then
+    flatpak override --user org.mozilla.firefox --filesystem=/run/user/$UID/psd
+fi
+
 if [[ -d "$HOME"/.var/app/org.mozilla.firefox/.mozilla/firefox ]] && [[ -d "$HOME"/.var/app/org.mozilla.firefox/cache/mozilla/firefox ]]; then
     index=0
     PSNAME="$browser"
