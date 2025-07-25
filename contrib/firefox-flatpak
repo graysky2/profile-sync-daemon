@@ -1,0 +1,21 @@
+if ! flatpak override --user --show org.mozilla.firefox | grep -q "/run/user/$UID/psd"; then
+    flatpak override --user org.mozilla.firefox --filesystem=/run/user/$UID/psd
+fi
+
+if [[ -d "$HOME"/.var/app/org.mozilla.firefox/.mozilla/firefox ]]; then
+    index=0
+    PSNAME="$browser"
+    while read -r profileItem; do
+        if [[ $(echo "$profileItem" | cut -c1) = "/" ]]; then
+            # path is not relative
+            DIRArr[$index]="$profileItem"
+        else
+            # we need to append the default path to give a
+            # fully qualified path
+            DIRArr[$index]="$HOME/.var/app/org.mozilla.firefox/.mozilla/firefox/$profileItem"
+        fi
+        (( index=index+1 ))
+    done < <(grep '[Pp]'ath= "$HOME"/.var/app/org.mozilla.firefox/.mozilla/firefox/profiles.ini | sed 's/[Pp]ath=//')
+fi
+
+check_suffix=1
