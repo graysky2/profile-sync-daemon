@@ -25,7 +25,7 @@ $XDG_CONFIG_HOME/psd/psd.conf (referred to hereafter as "the config file") conta
 NOTE: edits made to the config file while psd is active will be applied only after the service has been restarted.
 .RS
 .IP \(bu 3
-Optionally enable the use of overlayfs to improve sync speed and to use a smaller memory footprint. Do this in the USE_OVERLAYFS variable. The user will require no password sudo rights to /usr/bin/psd-overlay-helper to use this option and the kernel must support overlayfs version 22 or higher. See the FAQ below for additional details.
+Optionally enable the use of overlayfs to improve sync speed and to use a smaller memory footprint. Do this in the USE_OVERLAYFS variable. The user will require no-password sudo or doas rights to /usr/bin/psd-overlay-helper to use this option and the kernel must support overlayfs version 22 or higher. See the FAQ below for additional details.
 .IP \(bu 3
 Optionally have psd resync to the filesystem prior to a sleep call. This can help in the event that the system does not properly wake up. Do this in the USE_SUSPSYNC variable.
 .IP \(bu 3
@@ -199,11 +199,20 @@ Q2: How do I enable overlayfs mode?
 .PP
 A2: First, be sure psd is not active or else any changes to the config file will be ignored until it is restarted. Overlayfs mode is enabled with the USE_OVERLAYFS= variable which should be set to "yes" in the config file. Psd will automatically detect the overlayfs version available to the kernel if it is configured to use one of them. It is recommended to run psd in preview mode to verify that the system can in fact use overlayfs.
 .PP
-Users wanting to use overlayfs mode MUST have sudo rights without password prompt to /usr/bin/psd-overlay-helper or global sudo rights without password prompt. If the user does not have global rights, add the following line to /etc/sudoers after any other lines defining sudo access. It is recommended to use /usr/bin/visudo as root to set this up:
+Users wanting to use overlayfs mode MUST have sudo or doas rights without password prompt to /usr/bin/psd-overlay-helper, or global sudo/doas rights without password prompt. If the user does not have global rights, add the following line to /etc/sudoers after any other lines defining sudo access. It is recommended to use /usr/bin/visudo as root to set this up:
 .PP
 .nf
 .fam C
  foo ALL=(ALL) NOPASSWD: /usr/bin/psd-overlay-helper
+
+.fam T
+.fi
+.PP
+By default, doas will be used instead of sudo if it is installed; if so, you should add the following line to /etc/doas.conf:
+.PP
+.nf
+.fam C
+ permit nopass foo as root cmd /usr/bin/psd-overlay-helper
 
 .fam T
 .fi
