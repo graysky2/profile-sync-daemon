@@ -2,7 +2,7 @@
 Profile-sync-daemon (psd) is a tiny pseudo-daemon designed to manage your browser's profile in tmpfs and to periodically sync it back to your physical disc (HDD/SSD). This is accomplished via a symlinking step and an innovative use of rsync to maintain back-up and synchronization between the two. One of the major design goals of psd is a completely transparent user experience.
 
 ## Good Advice
-Always backup your browser profile(s) before using psd for the first time.
+Before using psd for the first time **stop (quit, exit) your browser then backup its profile(s)**.
 
 ## Users of eCryptFS
 User of eCryptFS are encouraged not to use psd unless willing to help troubleshoot suspected browser corruption. See [#158](https://github.com/graysky2/profile-sync-daemon/issues/158).
@@ -56,9 +56,13 @@ If you are interested in packaging psd for your favorite distro, please contact 
 ## logcheck
 Using logcheck? Here are some ways to filter out log lines:
 ```regexp
-^\w{3} [ :0-9]{11} [._[:alnum:]-]+ profile-sync-daemon\[[0-9]+]\]: .*(google-chrome|firefox) (re|un)sync successful
 ^\w{3} [ :0-9]{11} [._[:alnum:]-]+ profile-sync-daemon\[[0-9]+\]: psd startup check successful$
+^\w{3} [ :0-9]{11} [._[:alnum:]-]+ profile-sync-daemon\[[0-9]+\]:[[:space:]]+[^[:space:]]+ (re|un)sync successful
 ^\w{3} [ :0-9]{11} [._[:alnum:]-]+ systemd\[[0-9]+\]: Started Timer for profile-sync-daemon
+^\w{3} [ :0-9]{11} [._[:alnum:]-]+ profile-sync-daemon\[[0-9]+\]: psd startup check successful$
+^\w{3} [ :0-9]{11} [._[:alnum:]-]+ profile-sync-daemon\[[0-9]+\]:[[:space:]]+[^[:space:]]+ (re|un)sync successful
 ^\w{3} [ :0-9]{11} [._[:alnum:]-]+ systemd\[[0-9]+\]: psd(-resync)?\.service: Consumed [0-9\.]+s CPU time\.$
 ^\w{3} [ :0-9]{11} [._[:alnum:]-]+ systemd\[[0-9]+\]: psd(-resync)\.timer: Succeeded\.$
+^\w{3} [ :0-9]{11} [._[:alnum:]-]+ systemd\[[0-9]+\]: run-user-[0-9]+-[^[:space:]]+: Succeeded\.$
+^\w{3} [ :0-9]{11} [._[:alnum:]-]+ sudo:[[:space:]]+guest : PWD=/home/guest ; USER=root ; COMMAND=/usr/bin/psd-overlay-helper
 ```

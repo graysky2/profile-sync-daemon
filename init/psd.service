@@ -12,7 +12,6 @@ Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/bin/profile-sync-daemon startup
 ExecStop=/usr/bin/profile-sync-daemon unsync
-Environment=LAUNCHED_BY_SYSTEMD=1
 
 [Install]
 WantedBy=default.target
