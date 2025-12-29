@@ -1,17 +1,88 @@
-if [[ -d "$HOME"/.mozilla/firefox ]]; then
-    index=0
+basePath="$HOME/.mozilla/firefox"
+
+if [[ -d "${basePath}" ]]; then
+
     PSNAME="$browser"
-    while read -r profileItem; do
-        if [[ $(echo "$profileItem" | cut -c1) = "/" ]]; then
+    profiles_file=$(<"$basePath/profiles.ini")
+    DIRArr=()
+
+    function profiles_sections() {
+        local profiles_file="$1"
+        while IFS= read -r profileSection; do
+            if [[ "$profileSection" =~ ^\[([^]]+)\] ]]; then
+                echo "${BASH_REMATCH[1]}"
+            fi
+        done <<< "$profiles_file"
+    }
+
+    function relative_path() {
+        local path="$1"
+        local basePath="$2"
+
+        if [[ $path =~ ^/ ]]; then
             # path is not relative
-            DIRArr[$index]="$profileItem"
+            echo "$path"
         else
             # we need to append the default path to give a
             # fully qualified path
-            DIRArr[$index]="$HOME/.mozilla/firefox/$profileItem"
+            echo "$basePath/$path"
         fi
-        (( index=index+1 ))
-    done < <(grep '[Pp]'ath= "$HOME"/.mozilla/firefox/profiles.ini | sed 's/[Pp]ath=//')
+    }
+
+    # read profile items
+    while IFS= read -r sectionName; do
+        sectionPattern="^\[$sectionName\]"
+        unset path
+        unset storeID
+        inSection=0
+
+        while IFS= read -r profileItem; do
+            # Skip empty lines & whitespaces
+            if [[ -z "$profileItem" || "$profileItem" =~ ^\s*[#\;] ]]; then
+                continue
+            fi
+
+            # Find section
+            if [[ "$profileItem" =~ $sectionPattern ]]; then
+                inSection=1
+                continue
+            fi
+
+            # Find end of section
+            if [[ $inSection -eq 1 && "$profileItem" =~ ^\[[^]]+\] ]]; then
+                break
+            fi
+
+            # Find path key
+            if [[ $inSection -eq 1 && "$profileItem" =~ ^[Pp]ath=(.*) ]]; then
+                foundPath="${BASH_REMATCH[1]}"
+                path=$(relative_path "${foundPath}" "${basePath}")
+            fi
+
+            # Find StoreID key
+            if [[ $inSection -eq 1 && "$profileItem" =~ ^[Ss]tore[Ii][Dd]=(.*) ]]; then
+                storeID="${BASH_REMATCH[1]}"
+            fi
+        done <<< "$profiles_file"
+
+        # Skip if path not found
+        if [[ -z $path ]]; then
+            continue
+        fi
+
+        # Add profiles.ini path if no SQLite set, else find each profile in SQLite database
+        if [[ -z $storeID ]]; then
+            DIRArr+=("${path}")
+        else
+            while IFS= read -r storePath; do
+                DIRArr+=("$(relative_path "${storePath}" "${basePath}")")
+            done < <(sqlite3 "${basePath}/Profile Groups/$storeID.sqlite" "select path from Profiles;")
+        fi
+
+    done < <(profiles_sections "$profiles_file" )
+
+    # Deduplicate between SQLite stores and profiles.ini entries
+    readarray -t DIRArr < <(printf "%s\n" "${DIRArr[@]}" | sort -u)
 fi
 
 check_suffix=1
