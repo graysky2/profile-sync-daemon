@@ -11,7 +11,7 @@ if [[ -d "$HOME"/.zen ]]; then
             DIRArr[$index]="$HOME/.zen/$profileItem"
         fi
         (( index=index+1 ))
-    done < <(grep '[Pp]'ath= "$HOME"/.zen/profiles.ini | sed 's/[Pp]ath=//')
+    done < <(grep '^[Pp]'ath= "$HOME"/.zen/profiles.ini | sed 's/^[Pp]ath=//')
 fi
 
 check_suffix=1
