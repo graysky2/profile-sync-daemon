@@ -35,6 +35,16 @@ case "$1" in
     elif [[ $OLFSVER -eq 22 ]]; then
       mount -o nosuid,nodev -t overlayfs overlaid -olowerdir="$BACKUP",upperdir="$UPPER" "$TMP"
     fi
+
+    if [[ $OLFSVER -ne 22 && $OLFSVER -ne 23 ]]; then
+      echo "Error: Unsupported OLFSVER $OLFSVER." >&2
+      exit 1
+    fi
+
+    if [[ $? -ne 0 ]]; then
+      echo "Error: Failed to mount overlay filesystem." >&2
+      exit 1
+    fi
     ;;
 
   mountdown)
