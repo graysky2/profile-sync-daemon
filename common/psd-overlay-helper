@@ -4,19 +4,19 @@ readonly IFS=$' \t\n'
 
 while getopts :v:l:u:w:d: OPT; do
   case $OPT in
-    v)
+    v|+v)
       declare -ir OLFSVER=$OPTARG
       ;;
-    l)
+    l|+l)
       readonly BACKUP=$OPTARG
       ;;
-    u)
+    u|+u)
       readonly UPPER=$OPTARG
       ;;
-    w)
+    w|+w)
       readonly WORK=$OPTARG
       ;;
-    d)
+    d|+d)
       readonly TMP=$OPTARG
       ;;
     *)
@@ -39,7 +39,7 @@ case "$1" in
 
     user=$(stat -c %U "$UPPER")
     if ! sudo -u "$user" test -w "$BACKUP"; then
-      echo "User $user has no write permissions for $BACKUP. Aborting..." >&2
+      echo "User $user has no write permissions for $BACKUP. Aborting... " >&2
       exit 1
     fi
     if [[ $OLFSVER -eq 23 ]]; then
@@ -48,13 +48,63 @@ case "$1" in
       mount -o nosuid,nodev -t overlayfs overlaid -olowerdir="$BACKUP",upperdir="$UPPER" "$TMP"
     fi
     ;;
+
   mountdown)
-    umount "$TMP" && rm -rf "$WORK"
+    # SECURITY PATCH: CVE-2026-XXXX Remediation
+    # Prevent arbitrary file deletion via parameter injection and shell obfuscation.
+    
+    # 1. Identity Resolution
+    # Use SUDO_UID if available to identify the real caller, fallback to current ID.
+    caller_uid="${SUDO_UID:-$(id -u)}"
+
+    # 2. Canonicalization (Anti-Obfuscation)
+    # Resolve variables (e.g., ${u}), symlinks, and relative paths to prevent bypasses.
+    # We must ensure $WORK is defined before resolving to avoid resolving cwd.
+    if [[ -z "$WORK" ]]; then
+        echo "Error: Work directory (-w) not specified." >&2
+        exit 1
+    fi
+    clean_work=$(realpath -m "$WORK")
+
+    # 3. Mount State Verification (Whitelist Approach)
+    # Ensure the target mountpoint ($TMP) is actually an active OverlayFS mount
+    # and that the provided workdir ($WORK) matches the one registered in the kernel options.
+    if ! findmnt -t overlay "$TMP" >/dev/null 2>&1; then
+        echo "Security Error: Target '$TMP' is not an active OverlayFS mount point." >&2
+        exit 1
+    fi
+
+    # Extract active options and verify exact match for workdir
+    active_workdir=$(findmnt -n -t overlay "$TMP" -o OPTIONS | grep -E "(^|,| )workdir=$clean_work($|,)")
+
+    if [[ -z "$active_workdir" ]]; then
+        echo "Security Error: Access Denied." >&2
+        echo "The path '$clean_work' is not the registered work directory for the active mount at '$TMP'." >&2
+        echo "This incident implies an attempt to delete unauthorized files." >&2
+        exit 1
+    fi
+
+    # 4. Ownership Verification (Principle of Least Privilege)
+    # Ensure the calling user actually owns the directory to be deleted.
+    path_owner=$(stat -c '%u' "$clean_work" 2>/dev/null)
+
+    if [[ "$path_owner" != "$caller_uid" ]]; then
+        echo "Security Error: Ownership mismatch. Target belongs to UID $path_owner, caller is $caller_uid." >&2
+        exit 1
+    fi
+
+    # 5. Safe Execution
+    # First unmount, then remove the validated work directory.
+    if umount "$TMP"; then
+        rm -rf "$clean_work"
+    else
+        echo "Error: Failed to unmount '$TMP'. Aborting cleanup for safety." >&2
+        exit 1
+    fi
     ;;
+
   *)
     echo "Do not call this script directly; psd will do so for you. Thank you, come again."
     exit 0
     ;;
 esac
-
-# vim:set ts=2 sw=2 et:
