@@ -56,9 +56,11 @@ case "$1" in
     fi
 
     active_opts=$(findmnt -n -t overlay "$TMP" -o OPTIONS)
-    if [[ ! "$active_opts" =~ "workdir=$clean_work" ]]; then
-        echo "Security Error: Path '$clean_work' is not registered for this mount." >&2
-        exit 1
+    if [[ $OLFSVER -ne 22 ]]; then
+        if [[ ! "$active_opts" =~ "workdir=$clean_work" ]]; then
+            echo "Security Error: Path '$clean_work' is not registered for this mount." >&2
+            exit 1
+        fi
     fi
 
     # 3. Ownership Verification
