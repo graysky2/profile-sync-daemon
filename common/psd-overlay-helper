@@ -50,7 +50,6 @@ case "$1" in
     ;;
 
   mountdown)
-    # SECURITY PATCH: CVE-2026-XXXX Remediation
     # Prevent arbitrary file deletion via parameter injection and shell obfuscation.
     
     # 1. Identity Resolution
