@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
 # Profile-sync-daemon by graysky <graysky AT archlinux DOT us>
@@ -144,7 +144,7 @@ fi
 
 # scope to sync defined in BROWSERS array or from list of supported browsers
 if [[ -z "$BROWSERS" ]]; then
-  mapfile -t BROWSERS < <(find "$SHAREDIR/browsers" -type f -printf "%f\n")
+  mapfile -t BROWSERS < <(find "$SHAREDIR/browsers" -type f -exec basename {} \;)
 else
   if ! declare -p BROWSERS | grep -q 'declare -a'; then
     # did not setup as array so redefine it here
@@ -221,7 +221,7 @@ dep_check() {
     echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!${NRM}"
     exit 1
   fi
-  if ! command -v modinfo >/dev/null 2>&1; then
+  if [[ $OLFS -eq 1 ]] && ! command -v modinfo >/dev/null 2>&1; then
     echo -e " ${BLD}I require modinfo but it's not installed. ${RED}Aborting!${NRM}" >&2
     exit 1
   fi
@@ -305,7 +305,7 @@ ungraceful_state_check() {
           exit 1
         else
           echo "Ungraceful state detected for $DIR so fixing"
-          unlink "$DIR"
+          rm "${DIR%/}"
           # refuse to start browser while recovery
           ln -s /dev/null "$DIR"
         fi
@@ -313,8 +313,13 @@ ungraceful_state_check() {
 
       if [[ -d "$BACKUP" ]]; then
         if [[ -d $DIR ]]; then
-          echo "Unexpected state detected: we have $BACKUP, but $DIR already exists. Trying move $DIR to $DIR" "$DIR-old-profile-$NOW"
-          mv --no-target-directory "$DIR" "$DIR-old-profile-$NOW"
+          echo "Unexpected state detected: we have $BACKUP, but $DIR already exists. Trying move $DIR to $DIR-old-profile-$NOW"
+          if [[ ! -e "$DIR-old-profile-$NOW" ]]; then
+            mv "$DIR" "$DIR-old-profile-$NOW"
+          else
+            echo -e " ${RED}Error: ${NRM}${BLD}Unable to move $DIR to $DIR-old-profile-$NOW because destination already exists.${NRM}"
+            exit 1
+          fi
         fi
 
         if [[ -d "$BACK_OVFS" ]]; then
@@ -336,7 +341,7 @@ ungraceful_state_check() {
             cp -a --reflink=auto "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
           fi
 
-          unlink "$DIR"
+          rm "${DIR%/}"
           mv --no-target-directory "$TARGETTOKEEP" "$DIR"
           rm -rf "$BACKUP"
         else
@@ -345,9 +350,18 @@ ungraceful_state_check() {
           # at all which can be treated the same way
 
           if [[ $CRRE -eq 1 ]]; then
-            cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
-            unlink "$DIR"
-            mv --no-target-directory "$BACKUP" "$DIR"
+            if [[ "$(uname -s)" =~ BSD ]]; then
+              cp -a "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+            else
+              cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
+            fi
+            rm "${DIR%/}"
+            if [[ ! -e "$DIR" ]]; then
+              mv "$BACKUP" "$DIR"
+            else
+              echo -e " ${RED}Error: ${NRM}${BLD}Unable to move $BACKUP to $DIR because the destination already exists.${NRM}"
+              exit 1
+            fi
           fi
         fi
       fi
@@ -510,9 +524,14 @@ do_sync_for() {
 
       # backup target and link to tmpfs container
       if [[ $(readlink "$DIR") != "$TMP" ]]; then
-        mv --no-target-directory "$DIR" "$BACKUP"
-        # refuse to start browser while initial sync
-        ln -s /dev/null "$DIR"
+        if [[ ! -e "$BACKUP" ]]; then
+          mv "$DIR" "$BACKUP"
+          # refuse to start browser while initial sync
+          ln -s /dev/null "$DIR"
+        else
+          echo -e " ${RED}Error: ${NRM}${BLD}Unable to move $DIR to $BACKUP because destination already exists.${NRM}"
+          exit 1
+        fi
       fi
 
       # sync the tmpfs targets to the disc
@@ -537,7 +556,7 @@ do_sync_for() {
         fi
 
         # now browser can start
-        [[ $(readlink "$DIR") = "/dev/null" ]] && unlink "$DIR"
+        [[ $(readlink "$DIR") = "/dev/null" ]] && rm "${DIR%/}"
         ln -s "$TMP" "$DIR"
         chown -h "$user":"$group" "$DIR"
         touch "$DIR/.flagged"
@@ -619,12 +638,19 @@ do_unsync() {
       WORK="$VOLATILE/.$user-$browser${suffix}"
       # check if user has browser profile
       if [[ -h "$DIR" ]]; then
-        unlink "$DIR"
+        rm "${DIR%/}"
         # this assumes that the backup is always updated so
         # be sure to invoke a sync before an unsync
         #
         # restore original dirtree
-        [[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
+        if [[ -d "$BACKUP" ]]; then
+          if [[ ! -e "$DIR" ]]; then
+            mv "$BACKUP" "$DIR"
+          else
+            echo -e " ${RED}Error: ${NRM}${BLD}Unable to move $BACKUP to $DIR because destination already exists.${NRM}"
+            exit 1
+          fi
+        fi
         if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
           rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$DIR/"
           sudo psd-overlay-helper -d "$TMP" -w "$WORK" mountdown && rm -rf "$TMP" "$UPPER"
@@ -644,7 +670,7 @@ do_unsync() {
 parse() {
   psd_state=$(systemctl --user is-active psd)
   resync_state=$(systemctl --user is-active psd-resync.timer)
-  psd_suspend_sync_state=$(pgrep -cf "psd-suspend-sync")
+  psd_suspend_sync_state=$(pgrep -f "psd-suspend-sync" | wc -l | tr -d ' ')
   if [[ "$psd_suspend_sync_state" != 0 ]]; then
     psss_state="enabled"
   else
@@ -750,7 +776,7 @@ take_inhibit_lock() {
 }
 
 release_inhibit_lock() {
-  [[ "$(pgrep -cf "psd-suspend-sync")" != 0 ]] && pkill -f psd-suspend-sync
+  [[ "$(pgrep -f "psd-suspend-sync" | wc -l | tr -d ' ')" != 0 ]] && pkill -f psd-suspend-sync
 }
 
 case "$1" in
