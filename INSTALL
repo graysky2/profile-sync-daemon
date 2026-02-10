@@ -2,6 +2,7 @@ DEPENDENCIES
  bash >=4.0
  coreutils
  findutils
+ fuse-overlayfs
  glib2 (optional for suspend-sync support via gdbus)
  kmod
  rsync
