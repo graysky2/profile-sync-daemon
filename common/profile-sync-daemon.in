@@ -121,7 +121,7 @@ fi
 if [[ -f "$PID_FILE" ]]; then
   if [[ -f "$PSDCONFDIR/.psd.conf" ]]; then
     PSDCONF="$PSDCONFDIR/.psd.conf"
-    unset USE_OVERLAYFS USE_SUSPSYNC BROWSERS USE_BACKUPS BACKUP_LIMIT
+    unset USE_SUSPSYNC BROWSERS USE_BACKUPS BACKUP_LIMIT
     . "$PSDCONF"
     # defining VOLATILE in the config is deprecated since v6.16
     VOLATILE="$XDG_RUNTIME_DIR/psd"
@@ -155,16 +155,6 @@ fi
 # remove duplicate elements if user accidentally polluted array with same entries
 # https://stackoverflow.com/questions/13648410/how-can-i-get-unique-values-from-an-array-in-bash
 readarray -t BROWSERS < <(printf '%s\n' "${BROWSERS[@]}" | awk '!x[$0]++')
-
-# simple function to determine user intent rather than using a null value
-case "${USE_OVERLAYFS,,}" in
-  y|yes|true|t|on|1|enabled|enable|use)
-    OLFS=1
-    ;;
-  *)
-    OLFS=0
-    ;;
-esac
 
 # simple function to determine user intent rather than using a null value
 case "${USE_SUSPSYNC,,}" in
@@ -223,15 +213,13 @@ dep_check() {
 }
 
 config_check() {
-  if [[ $OLFS -eq 1 ]]; then
-    if [[ ! -x /usr/bin/fuse-overlayfs ]]; then
-      FAILCODE=1
-    fi
+  if [[ ! -x /usr/bin/fuse-overlayfs ]]; then
+    FAILCODE=1
+  fi
 
-    if [[ $FAILCODE -ne 0 ]]; then
-      echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, install fuse-overlayfs${NRM}${BLD}${NRM}"
-      exit 1
-    fi
+  if [[ $FAILCODE -ne 0 ]]; then
+    echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, install fuse-overlayfs${NRM}${BLD}${NRM}"
+    exit 1
   fi
 
   for browser in "${BROWSERS[@]}"; do
@@ -315,9 +303,6 @@ ungraceful_state_check() {
           fi
         fi
       fi
-
-      # if overlayfs was active but is no longer, remove $BACK_OVFS
-      [[ $OLFS -eq 1 ]] || rm -rf "$BACK_OVFS"
     done
   done
 }
@@ -463,13 +448,11 @@ do_sync_for() {
       PREFIXP=$(stat -c %a "$DIR")
       [[ -r "$TMP" ]] || install -dm"$PREFIXP" --owner="$user" --group="$group" "$TMP"
 
-      if [[ $OLFS -eq 1 ]]; then
-        if [[ ! -r "$UPPER" ]]; then
-          install -dm"$PREFIXP" --owner="$user" --group="$group" "$UPPER" || exit 2
-        fi
-        if [[ ! -r "$WORK" ]]; then
-          install -dm"$PREFIXP" --owner="$user" --group="$group" "$WORK" || exit 2
-        fi
+      if [[ ! -r "$UPPER" ]]; then
+        install -dm"$PREFIXP" --owner="$user" --group="$group" "$UPPER" || exit 2
+      fi
+      if [[ ! -r "$WORK" ]]; then
+        install -dm"$PREFIXP" --owner="$user" --group="$group" "$WORK" || exit 2
       fi
 
       # backup target and link to tmpfs container
@@ -482,24 +465,15 @@ do_sync_for() {
       # sync the tmpfs targets to the disc
       if [[ -e "$DIR"/.flagged ]]; then
         REPORT="resync"
-        if [[ $OLFS -eq 1 ]]; then
-          rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACK_OVFS/"
-        else
-          rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACKUP/"
-        fi
+        rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACK_OVFS/"
       else
         # initial sync
         REPORT="sync"
-        if [[ $OLFS -eq 1 ]]; then
+        if ! mountpoint -q "$TMP"; then
+          fuse-overlayfs -o lowerdir="$BACKUP",upperdir="$UPPER",workdir="$WORK" "$TMP"
           if ! mountpoint -q "$TMP"; then
-            fuse-overlayfs -o lowerdir="$BACKUP",upperdir="$UPPER",workdir="$WORK" "$TMP"
-            if ! mountpoint -q "$TMP"; then
-              exit 2
-            fi
+            exit 2
           fi
-        else
-          # keep user from launching browser while rsync is active
-          rsync -aX --inplace --no-whole-file "$BACKUP/" "$TMP"
         fi
 
         # now browser can start
@@ -535,7 +509,6 @@ do_sync() {
       echo "# Any edits to the live config: $PSDCONFDIR/psd.conf"
       echo "# will be applied the _next_ time psd is activated."
       echo "#"
-      echo "USE_OVERLAYFS=\"$USE_OVERLAYFS\""
       echo "USE_SUSPSYNC=\"$USE_SUSPSYNC\""
       echo "BROWSERS=\"${BROWSERS[*]}\""
       echo "USE_BACKUPS=\"$USE_BACKUPS\""
@@ -591,7 +564,7 @@ do_unsync() {
         #
         # restore original dirtree
         [[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
-        if [[ $OLFS -eq 1 ]] && mountpoint -q "$TMP"; then
+        if mountpoint -q "$TMP"; then
           rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$DIR/"
           fusermount -u "$TMP"
           rm -rf "$TMP" "$UPPER" "$WORK"
@@ -617,13 +590,6 @@ parse() {
   else
     psss_state="disabled"
   fi
-  if [[ $OLFS -eq 1 ]]; then
-    olfs_color="${GRN}"
-    ofls_state="enabled"
-  else
-    olfs_color="${RED}"
-    ofls_state="disabled"
-  fi
   [[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
   [[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
   [[ "$psd_suspend_sync_state" != 0 ]] && psss_color="${GRN}" || psss_color="${RED}"
@@ -633,8 +599,6 @@ parse() {
   echo -e "$(tput cr)$(tput cuf 17) ${resync_color}$resync_state${NRM}${BLD}${NRM}"
   echo -en " ${BLD}sync on sleep:"
   echo -e "$(tput cr)$(tput cuf 17) ${psss_color}$psss_state${NRM}${BLD}${NRM}"
-  echo -en " ${BLD}use overlayfs:"
-  echo -e "$(tput cr)$(tput cuf 17) ${olfs_color}$ofls_state${NRM}${BLD}${NRM}"
   echo
   echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD}:${NRM}"
   echo
@@ -681,11 +645,9 @@ parse() {
         echo -e "$(tput cr)$(tput cuf 17) ${GRN}$VOLATILE/$user-$browser$suffix${NRM}"
         echo -en " ${BLD}profile size:"
         echo -e "$(tput cr)$(tput cuf 17) $psize${NRM}"
-        if [[ $OLFS -eq 1 ]]; then
-          rwsize=$(du -Dh --max-depth=0 "$UPPER" 2>/dev/null | awk '{ print $1 }')
-          echo -en " ${BLD}overlayfs size:"
-          echo -e "$(tput cr)$(tput cuf 17) $rwsize${NRM}"
-        fi
+        rwsize=$(du -Dh --max-depth=0 "$UPPER" 2>/dev/null | awk '{ print $1 }')
+        echo -en " ${BLD}overlayfs size:"
+        echo -e "$(tput cr)$(tput cuf 17) $rwsize${NRM}"
         if [[ $BACKUP_LIMIT -ne 5 ]]; then
           # only print if not the hardcoded default
           echo -en " ${BLD}backup limit:"
