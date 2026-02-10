@@ -258,8 +258,6 @@ ungraceful_state_check() {
         else
           echo "Ungraceful state detected for $DIR so fixing"
           unlink "$DIR"
-          # refuse to start browser while recovery
-          ln -s /dev/null "$DIR"
         fi
       fi
 
@@ -288,7 +286,6 @@ ungraceful_state_check() {
             cp -a --reflink=auto "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
           fi
 
-          unlink "$DIR"
           mv --no-target-directory "$TARGETTOKEEP" "$DIR"
           rm -rf "$BACKUP"
         else
@@ -298,7 +295,6 @@ ungraceful_state_check() {
 
           if [[ $CRRE -eq 1 ]]; then
             cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
-            unlink "$DIR"
             mv --no-target-directory "$BACKUP" "$DIR"
           fi
         fi
@@ -458,8 +454,6 @@ do_sync_for() {
       # backup target and link to tmpfs container
       if [[ $(readlink "$DIR") != "$TMP" ]]; then
         mv --no-target-directory "$DIR" "$BACKUP"
-        # refuse to start browser while initial sync
-        ln -s /dev/null "$DIR"
       fi
 
       # sync the tmpfs targets to the disc
@@ -479,9 +473,9 @@ do_sync_for() {
           fi
         fi
 
-        # now browser can start
-        [[ $(readlink "$DIR") = "/dev/null" ]] && unlink "$DIR"
+        [[ -h "$DIR" ]] && unlink "$DIR"
         ln -s "$TMP" "$DIR"
+
         chown -h "$user":"$group" "$DIR"
         touch "$DIR/.flagged"
         
