@@ -465,7 +465,10 @@ do_sync_for() {
       # sync the tmpfs targets to the disc
       if [[ -e "$DIR"/.flagged ]]; then
         REPORT="resync"
-        rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACK_OVFS/"
+        if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACK_OVFS/"; then
+          echo -e "${RED}Error: Failed to resync $DIR to $BACK_OVFS${NRM}" >&2
+          exit 2
+        fi
       else
         # initial sync
         REPORT="sync"
@@ -481,6 +484,14 @@ do_sync_for() {
         ln -s "$TMP" "$DIR"
         chown -h "$user":"$group" "$DIR"
         touch "$DIR/.flagged"
+        
+        # create $BACK_OVFS directory for storing resync data
+        if [[ ! -d "$BACK_OVFS" ]]; then
+          install -dm"$PREFIXP" --owner="$user" --group="$group" "$BACK_OVFS" || {
+            echo -e "${RED}Error: Failed to create $BACK_OVFS${NRM}" >&2
+            exit 2
+          }
+        fi
       fi
       echo -e "${BLD}$browser $REPORT successful${NRM}"
     else
@@ -559,16 +570,37 @@ do_unsync() {
       # check if user has browser profile
       if [[ -h "$DIR" ]]; then
         unlink "$DIR"
-        # this assumes that the backup is always updated so
-        # be sure to invoke a sync before an unsync
-        #
-        # restore original dirtree
-        [[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
+        
+        # unmount overlayfs FIRST while BACKUP still exists at original location
+        # moving BACKUP before unmounting breaks the overlayfs mount (lowerdir path disappears)
         if mountpoint -q "$TMP"; then
-          rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$DIR/"
+          # sync latest changes from overlayfs to BACK_OVFS, then to BACKUP before unmounting
+          # always update BACK_OVFS from live overlayfs first to capture latest changes
+          if [[ -d "$BACK_OVFS" ]]; then
+            # Update BACK_OVFS with latest changes from live overlayfs
+            if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$TMP/" "$BACK_OVFS/"; then
+              echo -e "${RED}Error: Failed to sync $TMP to $BACK_OVFS during unsync${NRM}" >&2
+              exit 2
+            fi
+            # sync BACK_OVFS to BACKUP
+            if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$BACKUP/"; then
+              echo -e "${RED}Error: Failed to sync $BACK_OVFS to $BACKUP during unsync${NRM}" >&2
+              exit 2
+            fi
+          else
+            # BACK_OVFS doesn't exist, sync directly from TMP to BACKUP
+            if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$TMP/" "$BACKUP/"; then
+              echo -e "${RED}Error: Failed to sync $TMP to $BACKUP during unsync${NRM}" >&2
+              exit 2
+            fi
+          fi
+          # unmount (before moving BACKUP)
           fusermount -u "$TMP"
           rm -rf "$TMP" "$UPPER" "$WORK"
         fi
+        
+        # restore BACKUP (which now has the changes merged in)
+        [[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
         [[ -d "$TMP" ]] && rm -rf "$TMP"
         echo -e "${BLD}$browser unsync successful${NRM}"
       else
