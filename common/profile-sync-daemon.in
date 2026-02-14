@@ -478,7 +478,7 @@ do_sync_for() {
 
         chown -h "$user":"$group" "$DIR"
         touch "$DIR/.flagged"
-        
+
         # create $BACK_OVFS directory for storing resync data
         if [[ ! -d "$BACK_OVFS" ]]; then
           install -dm"$PREFIXP" --owner="$user" --group="$group" "$BACK_OVFS" || {
@@ -564,7 +564,7 @@ do_unsync() {
       # check if user has browser profile
       if [[ -h "$DIR" ]]; then
         unlink "$DIR"
-        
+
         # unmount overlayfs FIRST while BACKUP still exists at original location
         # moving BACKUP before unmounting breaks the overlayfs mount (lowerdir path disappears)
         if mountpoint -q "$TMP"; then
@@ -592,7 +592,7 @@ do_unsync() {
           fusermount -u "$TMP"
           rm -rf "$TMP" "$UPPER" "$WORK"
         fi
-        
+
         # restore BACKUP (which now has the changes merged in)
         [[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
         [[ -d "$TMP" ]] && rm -rf "$TMP"
@@ -671,9 +671,11 @@ parse() {
         echo -e "$(tput cr)$(tput cuf 17) ${GRN}$VOLATILE/$user-$browser$suffix${NRM}"
         echo -en " ${BLD}profile size:"
         echo -e "$(tput cr)$(tput cuf 17) $psize${NRM}"
-        rwsize=$(du -Dh --max-depth=0 "$UPPER" 2>/dev/null | awk '{ print $1 }')
-        echo -en " ${BLD}overlayfs size:"
-        echo -e "$(tput cr)$(tput cuf 17) $rwsize${NRM}"
+        if [[ -f $PID_FILE ]]; then
+          rwsize=$(du -Dh --max-depth=0 "$UPPER" 2>/dev/null | awk '{ print $1 }')
+          echo -en " ${BLD}overlayfs size:"
+          echo -e "$(tput cr)$(tput cuf 17) $rwsize${NRM}"
+        fi
         if [[ $BACKUP_LIMIT -ne 5 ]]; then
           # only print if not the hardcoded default
           echo -en " ${BLD}backup limit:"
