@@ -347,6 +347,23 @@ load_env_for() {
   . "$SHAREDIR/browsers/$browser"
 }
 
+running_browser_pid() {
+  local pid_list geckomain_pid
+
+  PSNAME_PID="$(pgrep -x -u "$user" "$PSNAME")"
+  # needed for browser using a process name different than application name
+  # e.g. GeckoMain for firefox or librewolf
+  if [[ -z "$PSNAME_PID" ]]; then
+    pid_list="$(pgrep -u "$user" -f "$PSNAME")"
+    if [[ -n "$pid_list" ]]; then
+      geckomain_pid="$(ps h -C GeckoMain -o pid:1)"
+      if [[ -n "$geckomain_pid" ]]; then
+        PSNAME_PID="$( grep "$geckomain_pid" <<< "$pid_list" )"
+      fi
+    fi
+  fi
+}
+
 running_check() {
   # check for browsers running and refuse to start if so
   # without this cannot guarantee profile integrity
@@ -354,7 +371,8 @@ running_check() {
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
     [[ -z "$PSNAME" ]] && continue
-    if pgrep -x -u "$user" "$PSNAME" &>/dev/null; then
+    running_browser_pid
+    if [[ -n "$PSNAME_PID" ]]; then
       echo "Refusing to start; $browser is running by $user!"
       exit 1
     fi
@@ -408,12 +426,13 @@ kill_browsers() {
     local x=1
     while [[ $x -le 60 ]]; do
       [[ -n "$PSNAME" ]] || break
-      pgrep -x -u "$user" "$PSNAME" &>/dev/null || break
+      running_browser_pid
+      [[ -n "$PSNAME_PID" ]] || break
 
       if [[ $x -le 5 ]]; then
-        pkill -x -SIGTERM -u "$user" "$PSNAME"
+        kill -SIGTERM "${PSNAME_PID//$'\n'/' '}"
       else
-        pkill -x -SIGKILL -u "$user" "$PSNAME"
+        kill -SIGKILL "${PSNAME_PID//$'\n'/' '}"
       fi
 
       x=$(( x + 1 ))
