@@ -42,7 +42,6 @@ To build from source, see the included INSTALL text document.
 * Arch: in the extra [repo](https://archlinux.org/packages/extra/any/profile-sync-daemon/).
 * Debian: in the official [repos](https://packages.debian.org/unstable/profile-sync-daemon).
 * Exherbo: in the official [repos](http://git.exherbo.org/summer/packages/net-www/profile-sync-daemon).
-* Fedora: in the official [repos](https://src.fedoraproject.org/rpms/profile-sync-daemon).
 * Gentoo: in the official [repos](http://packages.gentoo.org/package/www-misc/profile-sync-daemon).
 * NixOS: in the official [repo](https://search.nixos.org/packages?channel=22.11&from=0&size=50&sort=relevance&type=packages&query=profile-sync).
 * Ubuntu: in Universe [repo](https://packages.ubuntu.com/search?keywords=profile-sync-daemon).
