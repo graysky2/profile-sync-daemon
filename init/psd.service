@@ -2,7 +2,7 @@
 Description=Profile-sync-daemon
 Documentation=man:psd(1) man:profile-sync-daemon(1)
 Documentation=https://wiki.archlinux.org/index.php/Profile-sync-daemon
-Wants=psd-resync.service
+Wants=psd-resync.timer
 RequiresMountsFor=/home/
 After=winbindd.service
 
@@ -11,6 +11,7 @@ Slice=background.slice
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/bin/profile-sync-daemon startup
+ExecStartPost=/usr/bin/profile-sync-daemon resync
 ExecStop=/usr/bin/profile-sync-daemon unsync
 Environment=LAUNCHED_BY_SYSTEMD=1
 

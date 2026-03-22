@@ -1,7 +1,6 @@
 [Unit]
 Description=Timed resync
 After=psd.service
-Wants=psd-resync.timer
 BindsTo=psd.service
 
 [Service]
@@ -9,6 +8,3 @@ Slice=background.slice
 Type=oneshot
 ExecStart=/usr/bin/profile-sync-daemon resync
 Environment=LAUNCHED_BY_SYSTEMD=1
-
-[Install]
-WantedBy=default.target
