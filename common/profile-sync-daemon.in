@@ -213,14 +213,13 @@ dep_check() {
 }
 
 config_check() {
-  if [[ ! -x /usr/bin/fuse-overlayfs ]]; then
-    FAILCODE=1
-  fi
-
-  if [[ $FAILCODE -ne 0 ]]; then
-    echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, install fuse-overlayfs${NRM}${BLD}${NRM}"
-    exit 1
-  fi
+  # fuse3 is a depends of fuse-overlayfs but there are static builds floating around so to protect data, check for both
+  for _bin in fuse-overlayfs fusermount3; do
+    if [[ ! -x /usr/bin/"$_bin" ]]; then
+      echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, install fuse-overlayfs and fuse3${NRM}${BLD}${NRM}"
+      exit 1
+    fi
+  done
 
   for browser in "${BROWSERS[@]}"; do
     if [[ ! -f "$SHAREDIR/browsers/$browser" ]]; then
@@ -589,7 +588,7 @@ do_unsync() {
             fi
           fi
           # unmount (before moving BACKUP)
-          fusermount -u "$TMP"
+          fusermount3 -u "$TMP"
           rm -rf "$TMP" "$UPPER" "$WORK"
         fi
 
