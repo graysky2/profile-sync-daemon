@@ -215,7 +215,7 @@ dep_check() {
 config_check() {
   # fuse3 is a depends of fuse-overlayfs but there are static builds floating around so to protect data, check for both
   for _bin in fuse-overlayfs fusermount3; do
-    if [[ ! -x /usr/bin/"$_bin" ]]; then
+    if ! command -v "$_bin" >/dev/null 2>&1; then
       echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, install fuse-overlayfs and fuse3${NRM}${BLD}${NRM}"
       exit 1
     fi
