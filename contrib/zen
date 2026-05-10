@@ -1,17 +1,25 @@
-if [[ -d "$HOME"/.zen ]]; then
+# Zen Browser support for psd (modern + legacy paths)
+
+if [[ -d "$XDG_CONFIG_HOME/zen" ]]; then
+    ZEN_ROOT="$XDG_CONFIG_HOME/zen"
+elif [[ -d "$HOME/.config/zen" ]]; then
+    ZEN_ROOT="$HOME/.config/zen"
+elif [[ -d "$HOME/.zen" ]]; then
+    ZEN_ROOT="$HOME/.zen"
+fi
+
+if [[ -n "$ZEN_ROOT" ]]; then
     index=0
     PSNAME="$browser"
+
     while read -r profileItem; do
-        if [[ $(echo "$profileItem" | cut -c1) = "/" ]]; then
-            # path is not relative
+        if [[ "$profileItem" = /* ]]; then
             DIRArr[$index]="$profileItem"
         else
-            # we need to append the default path to give a
-            # fully qualified path
-            DIRArr[$index]="$HOME/.zen/$profileItem"
+            DIRArr[$index]="$ZEN_ROOT/$profileItem"
         fi
-        (( index=index+1 ))
-    done < <(grep '^[Pp]'ath= "$HOME"/.zen/profiles.ini | sed 's/^[Pp]ath=//')
+        ((index++))
+    done < <(grep '^[Pp]ath=' "$ZEN_ROOT/profiles.ini" | sed 's/^[Pp]ath=//')
 fi
 
 check_suffix=1
