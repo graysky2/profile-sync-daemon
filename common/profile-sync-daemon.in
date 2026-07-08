@@ -466,7 +466,11 @@ do_sync_for() {
         # initial sync
         REPORT="sync"
         if ! mountpoint -q "$TMP"; then
-          fuse-overlayfs -o lowerdir="$BACKUP",upperdir="$UPPER",workdir="$WORK" "$TMP"
+          overlay_opts="lowerdir=$BACKUP,upperdir=$UPPER,workdir=$WORK"
+          if [[ $FIREJAIL -eq 1 ]]; then
+            overlay_opts="allow_root,$overlay_opts"
+          fi
+          fuse-overlayfs -o "$overlay_opts" "$TMP"
           if ! mountpoint -q "$TMP"; then
             exit 2
           fi
