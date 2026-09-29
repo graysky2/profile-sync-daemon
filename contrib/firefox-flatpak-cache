@@ -4,7 +4,7 @@ fi
 
 if [[ -d "$HOME"/.var/app/org.mozilla.firefox/.mozilla/firefox ]] && [[ -d "$HOME"/.var/app/org.mozilla.firefox/cache/mozilla/firefox ]]; then
     index=0
-    PSNAME="$browser"
+    PSNAME="firefox-bin"
     while read -r profileItem; do
         if [[ $(echo "$profileItem" | cut -c1) = "/" ]]; then
             # path is not relative, so we have to use basename
