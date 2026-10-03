@@ -83,12 +83,15 @@ if [[ -f "$PSDCONF" ]]; then
     # do nothing if psd is currently running, otherwise
     # make sure only comments and variables/arrays are defined to prevent
     # problems like issue #166
-    if grep -Eqv '^$|^#|^[^ ]*=[^;]*' "$PSDCONF"; then
+    
+    # regex to allow multiline arrays for PERSISTENT_PATHS
+    config_regex='^[[:space:]]*$|^[[:space:]]*#|^[A-Za-z_][A-Za-z0-9_]*=[^;]*|^[[:space:]]*"[^"]*"[[:space:]]*$|^[[:space:]]*\)[[:space:]]*$'
+    if grep -Eqv "$config_regex" "$PSDCONF"; then
       # something that isn't a blank line, comment, or variable present
       # so exit
       echo -e " ${RED}ERROR:${NRM}${BLD} Syntax error(s) detected in ${BLU}$PSDCONF${NRM}${BLD} - edit and try again.${NRM}"
       echo -e "${NRM}${BLD}Line number: offending comment${NRM}"
-      grep -Evn '^$|^#|^[^ ]*=[^;]*' "$PSDCONF"
+      grep -Evn "$config_regex" "$PSDCONF"
       exit 1
     fi
   fi
@@ -121,7 +124,7 @@ fi
 if [[ -f "$PID_FILE" ]]; then
   if [[ -f "$PSDCONFDIR/.psd.conf" ]]; then
     PSDCONF="$PSDCONFDIR/.psd.conf"
-    unset USE_SUSPSYNC BROWSERS USE_BACKUPS BACKUP_LIMIT
+    unset USE_SUSPSYNC BROWSERS PERSISTENT_PATHS USE_BACKUPS BACKUP_LIMIT
     . "$PSDCONF"
     # defining VOLATILE in the config is deprecated since v6.16
     VOLATILE="$XDG_RUNTIME_DIR/psd"
@@ -225,6 +228,23 @@ config_check() {
     if [[ ! -f "$SHAREDIR/browsers/$browser" ]]; then
       # user defined an invalid browser
       echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser. Check config file for typos: ${NRM}${BLU}$PSDCONF${NRM}"
+      exit 1
+    fi
+  done
+
+  for persistent_entry in "${PERSISTENT_PATHS[@]}"; do
+    persistent_path="$persistent_entry"
+    if [[ "$persistent_entry" = *:* ]]; then
+      persistent_browser="${persistent_entry%%:*}"
+      persistent_path="${persistent_entry#*:}"
+      if [[ ! " ${BROWSERS[*]} " = *" $persistent_browser "* ]]; then
+        echo -e " ${BLD}${RED}Invalid persistent path browser:${NRM}${BLD} $persistent_browser${NRM}"
+        exit 1
+      fi
+    fi
+    if [[ -z "$persistent_path" || "$persistent_path" = . || "$persistent_path" = */. || "$persistent_path" = /* || "$persistent_path" = .. || "$persistent_path" = ../* || "$persistent_path" = */../* || "$persistent_path" = */.. ]]; then
+      echo -e " ${BLD}${RED}Invalid persistent path:${NRM}${BLD} $persistent_path${NRM}"
+      echo -e " ${BLD}Persistent paths must be relative and must not contain '..'.${NRM}"
       exit 1
     fi
   done
@@ -346,6 +366,18 @@ load_env_for() {
   . "$SHAREDIR/browsers/$browser"
 }
 
+persistent_paths_for() {
+  PERSISTENT_PATHS_CURRENT=()
+  for persistent_entry in "${PERSISTENT_PATHS[@]}"; do
+    if [[ "$persistent_entry" = *:* ]]; then
+      [[ "${persistent_entry%%:*}" = "$browser" ]] || continue
+      PERSISTENT_PATHS_CURRENT+=("${persistent_entry#*:}")
+    else
+      PERSISTENT_PATHS_CURRENT+=("$persistent_entry")
+    fi
+  done
+}
+
 running_check() {
   # check for browsers running and refuse to start if so
   # without this cannot guarantee profile integrity
@@ -424,6 +456,7 @@ kill_browsers() {
 do_sync_for() {
   browser=$1
   load_env_for "$browser"
+  persistent_paths_for
   for item in "${DIRArr[@]}"; do
     DIR="$item"
     BACKUP="$item-backup"
@@ -446,9 +479,9 @@ do_sync_for() {
       if [[ ! -r "$UPPER" ]]; then
         install -dm"$PREFIXP" --owner="$user" --group="$group" "$UPPER" || exit 2
       fi
-      if [[ ! -r "$WORK" ]]; then
-        install -dm"$PREFIXP" --owner="$user" --group="$group" "$WORK" || exit 2
-      fi
+        if [[ ! -r "$WORK" ]]; then
+          install -dm"$PREFIXP" --owner="$user" --group="$group" "$WORK" || exit 2
+        fi
 
       # backup target and link to tmpfs container
       if [[ $(readlink "$DIR") != "$TMP" ]]; then
@@ -458,7 +491,11 @@ do_sync_for() {
       # sync the tmpfs targets to the disc
       if [[ -e "$DIR"/.flagged ]]; then
         REPORT="resync"
-        if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACK_OVFS/"; then
+        local rsync_excludes=(--exclude .flagged)
+        for persistent_path in "${PERSISTENT_PATHS_CURRENT[@]}"; do
+          rsync_excludes+=(--exclude "$persistent_path")
+        done
+        if ! rsync -aX --delete-after --inplace --no-whole-file "${rsync_excludes[@]}" "$DIR/" "$BACK_OVFS/"; then
           echo -e "${RED}Error: Failed to resync $DIR to $BACK_OVFS${NRM}" >&2
           exit 2
         fi
@@ -466,6 +503,17 @@ do_sync_for() {
         # initial sync
         REPORT="sync"
         if ! mountpoint -q "$TMP"; then
+          # Put persistent paths in the upper directory before mounting the
+          # overlay. Removing a large lower-layer directory through the
+          # mounted overlay can exhaust tmpfs before the symlink is created.
+          for persistent_path in "${PERSISTENT_PATHS_CURRENT[@]}"; do
+            persistent_source="$BACKUP/$persistent_path"
+            persistent_target="$UPPER/$persistent_path"
+            mkdir -p "$persistent_source" "${persistent_target%/*}" || exit 2
+            rm -rf "$persistent_target"
+            ln -s "$persistent_source" "$persistent_target" || exit 2
+          done
+
           overlay_opts="lowerdir=$BACKUP,upperdir=$UPPER,workdir=$WORK"
           if [[ $FIREJAIL -eq 1 ]]; then
             overlay_opts="allow_root,$overlay_opts"
@@ -519,6 +567,9 @@ do_sync() {
       echo "#"
       echo "USE_SUSPSYNC=\"$USE_SUSPSYNC\""
       echo "BROWSERS=\"${BROWSERS[*]}\""
+      printf 'PERSISTENT_PATHS=('
+      printf ' %q' "${PERSISTENT_PATHS[@]}"
+      echo ' )'
       echo "USE_BACKUPS=\"$USE_BACKUPS\""
       echo "BACKUP_LIMIT=\"$BACKUP_LIMIT\""
     } >> "$PSDCONFDIR/.psd.conf"
@@ -556,6 +607,7 @@ do_unsync() {
   local browser
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
+    persistent_paths_for
     for item in "${DIRArr[@]}"; do
       DIR="$item"
       BACKUP="$item-backup"
@@ -576,20 +628,24 @@ do_unsync() {
         if mountpoint -q "$TMP"; then
           # sync latest changes from overlayfs to BACK_OVFS, then to BACKUP before unmounting
           # always update BACK_OVFS from live overlayfs first to capture latest changes
+          local rsync_excludes=(--exclude .flagged)
+          for persistent_path in "${PERSISTENT_PATHS_CURRENT[@]}"; do
+            rsync_excludes+=(--exclude "$persistent_path")
+          done
           if [[ -d "$BACK_OVFS" ]]; then
             # Update BACK_OVFS with latest changes from live overlayfs
-            if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$TMP/" "$BACK_OVFS/"; then
+            if ! rsync -aX --delete-after --inplace --no-whole-file "${rsync_excludes[@]}" "$TMP/" "$BACK_OVFS/"; then
               echo -e "${RED}Error: Failed to sync $TMP to $BACK_OVFS during unsync${NRM}" >&2
               exit 2
             fi
             # sync BACK_OVFS to BACKUP
-            if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$BACKUP/"; then
+            if ! rsync -aX --delete-after --inplace --no-whole-file "${rsync_excludes[@]}" "$BACK_OVFS/" "$BACKUP/"; then
               echo -e "${RED}Error: Failed to sync $BACK_OVFS to $BACKUP during unsync${NRM}" >&2
               exit 2
             fi
           else
             # BACK_OVFS doesn't exist, sync directly from TMP to BACKUP
-            if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$TMP/" "$BACKUP/"; then
+            if ! rsync -aX --delete-after --inplace --no-whole-file "${rsync_excludes[@]}" "$TMP/" "$BACKUP/"; then
               echo -e "${RED}Error: Failed to sync $TMP to $BACKUP during unsync${NRM}" >&2
               exit 2
             fi

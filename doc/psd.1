@@ -30,6 +30,19 @@ Optionally define which browsers are to be managed in the BROWSERS array. If non
 Optionally disable the use of crash-recovery snapshots (not recommended). Do this in the USE_BACKUPS variable.
 .IP \(bu 3
 Optionally define the number of crash-recovery snapshots to keep. Do this in the BACKUP_LIMIT variable.
+.IP \(bu 3
+Optionally define paths that should remain on disk instead of being written to the tmpfs overlay. Paths are relative to each managed browser profile. For example:
+.PP
+.nf
+PERSISTENT_PATHS=(
+  "chromium:Default/IndexedDB/chrome-extension_<extension_id>.indexeddb.leveldb"
+  "chromium:Default/IndexedDB/chrome-extension_<extension_id>.blob"
+  "firefox:storage/default/moz-extension+++<extension_id>"
+  "firefox:storage/default/moz-extension+++<extension_id>^userContextId=<context_id>"
+)
+.fi
+.PP
+Changes take effect after restarting psd. Paths must be relative and must not contain '..'. You may still encounter issues since the browser calculates its quota based on the size of tmpfs. You can temporarily disable psd, set up the needed extensions, and then re-enable psd. You can also try increasing the size of tmpfs by changing RuntimeDirectorySize. Unprefixed paths remain supported and apply to every managed browser.
 .RE
 .PP
 NOTE: occasionally, updates/changes are made to the default config file (/usr/share/psd/psd.conf) upstream. The user copy ($XDG_CONFIG_HOME/psd/psd.conf) will need to be diffed against it.
