@@ -3,7 +3,6 @@
 # are xfail; the fix commit removes the xfail line and the test stays.
 
 test_preview_is_read_only() {
-  xfail "bug 15: preview runs crash recovery" "tree changed"
   local P=$XDG_CONFIG_HOME/psdtest-a
   profile_new "$P" v1
   assert_ok start_session
@@ -13,6 +12,7 @@ test_preview_is_read_only() {
   before=$(tree_state "$XDG_CONFIG_HOME")
   psd preview
   assert_tree_unchanged "$before" "$XDG_CONFIG_HOME"
+  grep -q 'needs recovery' "$T_LOG" || fail "preview did not report the crashed profile"
 }
 
 test_duplicate_profile_names_refused() {

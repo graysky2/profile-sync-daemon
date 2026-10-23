@@ -718,6 +718,14 @@ parse() {
     load_env_for "$browser"
     for item in "${DIRArr[@]}"; do
       profile_paths "$item"
+      # preview only reports; recovery is left to the next start
+      if [[ ! -f $PID_FILE ]] && [[ -d "$BACKUP" || ( -h "$DIR" && ! -d "$DIR" ) ]]; then
+        echo -e " ${BLD}browser/psname:$(tput cr)$(tput cuf 17) $browser/$PSNAME${NRM}"
+        echo -e " ${BLD}sync target:$(tput cr)$(tput cuf 17) ${BLU}$DIR${NRM}"
+        echo -e " ${RED}needs recovery:$(tput cr)$(tput cuf 17) ${NRM}${BLD}left by a crash; starting psd will recover it${NRM}"
+        echo
+        continue
+      fi
       if [[ -d "$DIR" ]]; then
         local CRASHArr=()
         crash_dirs "$DIR"
@@ -792,7 +800,6 @@ case "$1" in
     dep_check
     config_check
     dup_check
-    ungraceful_state_check
     header
     parse
     ;;
