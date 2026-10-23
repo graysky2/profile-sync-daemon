@@ -1,0 +1,11 @@
+# multi-profile browser like firefox: one profile path per line in "profiles"
+if [[ -f "$XDG_CONFIG_HOME/psdtest-m/profiles" ]]; then
+    index=0
+    PSNAME="psdtst-m"
+    while read -r profileItem; do
+        DIRArr[$index]="$profileItem"
+        (( index=index+1 ))
+    done < "$XDG_CONFIG_HOME/psdtest-m/profiles"
+fi
+
+check_suffix=1

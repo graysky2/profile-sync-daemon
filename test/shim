@@ -1,0 +1,91 @@
+#!/bin/bash
+# Test shim, symlinked under each command name psd calls.
+#
+# PSD_TRACE=<file>      log every call ("name args") in order
+# PSD_SHIM_COUNT=<file> counter of mutating calls
+# PSD_FAULT=<n>:kill    SIGKILL psd's process group just before mutating call n
+# PSD_FAULT=<n>:fail    make mutating call n exit 1 without running
+# PSD_SHIM_VIOLATIONS   pkill on anything but a psdtst-* test process is
+#                       refused and logged here; the runner fails the test
+# PSD_REAL_FUSE         unset: fake fuse-overlayfs/fusermount3/mountpoint with
+#                       plain directories, table in PSD_FAKE_MNT; mountpoints
+#                       listed in PSD_FAKE_BUSY fail to unmount with EBUSY
+
+name=${0##*/}
+shimdir=$(cd -- "$(dirname -- "$0")" && pwd -P)
+
+# drop every PATH entry that resolves to the shim dir, so nothing below can
+# re-enter a shim
+newpath=
+IFS=: read -ra parts <<< "$PATH"
+for p in "${parts[@]}"; do
+  [[ "$(cd -- "$p" 2>/dev/null && pwd -P)" == "$shimdir" ]] && continue
+  newpath+=${newpath:+:}$p
+done
+PATH=$newpath
+real=$(command -v "$name")
+if [[ -z "$real" || "$(cd -- "$(dirname -- "$real")" && pwd -P)" == "$shimdir" ]]; then
+  echo "shim: cannot find real $name outside $shimdir" >&2
+  exit 127
+fi
+
+[[ -n "$PSD_TRACE" ]] && printf '%s %s\n' "$name" "$*" >> "$PSD_TRACE"
+
+if [[ "$name" == pkill ]]; then
+  [[ "${*: -1}" == psdtst-* ]] || {
+    echo "pkill $*" >> "$PSD_SHIM_VIOLATIONS"
+    exit 1
+  }
+fi
+
+if [[ "$name" != mountpoint && -n "$PSD_SHIM_COUNT" ]]; then
+  n=$(( $(cat "$PSD_SHIM_COUNT" 2>/dev/null || echo 0) + 1 ))
+  echo "$n" > "$PSD_SHIM_COUNT"
+  if [[ "${PSD_FAULT%%:*}" == "$n" ]]; then
+    [[ -n "$PSD_TRACE" ]] && echo "FAULT ${PSD_FAULT#*:} at $n" >> "$PSD_TRACE"
+    case "${PSD_FAULT#*:}" in
+      kill) kill -KILL -- -"$(ps -o pgid= $$ | tr -d ' ')" ;;
+      fail) exit 1 ;;
+    esac
+  fi
+fi
+
+if [[ -z "$PSD_REAL_FUSE" ]]; then
+  case "$name" in
+    fuse-overlayfs)
+      opts='' mnt=''
+      while (( $# )); do
+        case "$1" in
+          -o) opts=$2; shift 2 ;;
+          *) mnt=$1; shift ;;
+        esac
+      done
+      lower=${opts#*lowerdir=}; lower=${lower%%,*}
+      upper=${opts#*upperdir=}; upper=${upper%%,*}
+      work=${opts#*workdir=}; work=${work%%,*}
+      [[ -d "$lower" && -d "$upper" && -d "$work" && -d "$mnt" ]] ||
+        { echo "fake fuse-overlayfs: bad args" >&2; exit 1; }
+      cp -a "$lower/." "$mnt/" || exit 1
+      realpath "$mnt" >> "$PSD_FAKE_MNT"
+      exit 0
+      ;;
+    fusermount3)
+      mnt=${*: -1}
+      rp=$(realpath "$mnt" 2>/dev/null) || exit 1
+      grep -qxF "$rp" "$PSD_FAKE_MNT" || { echo "fusermount3: $mnt not mounted" >&2; exit 1; }
+      if grep -qxF "$rp" "$PSD_FAKE_BUSY" && [[ "$*" != *-z* ]]; then
+        echo "fusermount3: failed to unmount $mnt: Device or resource busy" >&2
+        exit 1
+      fi
+      grep -vxF "$rp" "$PSD_FAKE_MNT" > "$PSD_FAKE_MNT.new"
+      mv -f "$PSD_FAKE_MNT.new" "$PSD_FAKE_MNT"
+      find "$rp" -mindepth 1 -delete
+      exit 0
+      ;;
+    mountpoint)
+      rp=$(realpath "${*: -1}" 2>/dev/null) && grep -qxF "$rp" "$PSD_FAKE_MNT" && exit 0
+      ;;
+  esac
+fi
+
+exec "$real" "$@"

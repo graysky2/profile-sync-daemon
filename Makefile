@@ -21,7 +21,9 @@ Q = @
 
 common/$(PN): common/$(PN).in
 	$(Q)echo -e '\033[1;32mSetting version\033[0m'
-	$(Q)$(SED) 's/@VERSION@/'$(VERSION)'/' common/$(PN).in > common/$(PN)
+	$(Q)$(SED) -e 's/@VERSION@/'$(VERSION)'/' \
+		-e 's|@SHAREDIR@|$(SHAREDIR)|' \
+		-e 's|@BINDIR@|$(BINDIR)|' common/$(PN).in > common/$(PN)
 
 install-bin: common/$(PN)
 	$(Q)echo -e '\033[1;32mInstalling main script...\033[0m'
@@ -73,7 +75,12 @@ uninstall-systemd:
 
 uninstall: uninstall-bin uninstall-man uninstall-systemd
 
+check:
+	test/run.sh $(TESTS)
+
+test: check
+
 clean:
 	$(RM) -f common/$(PN)
 
-.PHONY: install-bin install-man install-systemd install uninstall-bin uninstall-man uninstall-systemd uninstall clean
+.PHONY: check test install-bin install-man install-systemd install uninstall-bin uninstall-man uninstall-systemd uninstall clean
