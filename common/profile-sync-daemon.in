@@ -245,9 +245,7 @@ ungraceful_state_check() {
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
     for item in "${DIRArr[@]}"; do
-      DIR="$item"
-      BACKUP="$item-backup"
-      BACK_OVFS="$item-back-ovfs"
+      profile_paths "$item"
 
       # all is well so continue
       [[ -e "$DIR/.flagged" ]] && continue
@@ -383,7 +381,7 @@ load_env_for() {
   # reset global variables and arrays
   unset DIRArr
 
-  unset PSNAME
+  unset PSNAME check_suffix
   . "$SHAREDIR/browsers/$browser"
 }
 
@@ -401,11 +399,18 @@ running_check() {
   done
 }
 
-suffix_needed() {
-  browser=$1
-  unset check_suffix
-  . "$SHAREDIR/browsers/$browser"
-  [[ -n "$check_suffix" ]]
+# profile_paths <dir>: set the paths psd uses for profile <dir> of the
+# browser last loaded with load_env_for. Multi-profile browsers (check_suffix)
+# name the tmpfs dirs after the last directory of the profile path.
+profile_paths() {
+  local suffix=
+  [[ -n "$check_suffix" ]] && suffix="-${1##*/}"
+  DIR=$1
+  BACKUP=$1-backup
+  BACK_OVFS=$1-back-ovfs
+  TMP=$VOLATILE/$user-$browser$suffix
+  UPPER=$VOLATILE/$user-$browser$suffix-rw
+  WORK=$VOLATILE/.$user-$browser$suffix
 }
 
 dup_check() {
@@ -413,7 +418,7 @@ dup_check() {
   # browser and, for multi-profile browsers, the LAST directory of the profile
   # path; two profiles sharing any of those names would be synced over each
   # other, so refuse to run if any name repeats across all browsers
-  local browser item suffix name
+  local browser item name
   local -A seen=() paths=()
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
@@ -427,11 +432,8 @@ dup_check() {
         exit 1
       fi
       paths[$item]=$browser
-      suffix=
-      if suffix_needed "$browser"; then
-        suffix="-${item##*/}"
-      fi
-      for name in "$user-$browser$suffix" "$user-$browser${suffix}-rw" ".$user-$browser${suffix}"; do
+      profile_paths "$item"
+      for name in "${TMP##*/}" "${UPPER##*/}" "${WORK##*/}"; do
         if [[ -n "${seen[$name]}" ]]; then
           echo -e " ${RED}Error: ${NRM}${BLD}profiles ${BLU}${seen[$name]}${NRM}${BLD} and ${BLU}$item${NRM}${BLD} would share ${BLU}$VOLATILE/$name${NRM}" >&2
           echo -e " ${BLD}The last directory of each profile path must be unique. See psd manpage, correct, and try again.${NRM}" >&2
@@ -471,16 +473,7 @@ do_sync_for() {
   browser=$1
   load_env_for "$browser"
   for item in "${DIRArr[@]}"; do
-    DIR="$item"
-    BACKUP="$item-backup"
-    BACK_OVFS="$item-back-ovfs"
-    suffix=
-    if suffix_needed "$browser"; then
-      suffix="-${item##*/}"
-    fi
-    TMP="$VOLATILE/$user-$browser$suffix"
-    UPPER="$VOLATILE/$user-$browser${suffix}-rw"
-    WORK="$VOLATILE/.$user-$browser${suffix}"
+    profile_paths "$item"
     local REPORT
 
     # make tmpfs container
@@ -631,16 +624,7 @@ do_unsync() {
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
     for item in "${DIRArr[@]}"; do
-      DIR="$item"
-      BACKUP="$item-backup"
-      BACK_OVFS="$item-back-ovfs"
-      suffix=
-      if suffix_needed "$browser"; then
-        suffix="-${item##*/}"
-      fi
-      TMP="$VOLATILE/$user-$browser$suffix"
-      UPPER="$VOLATILE/$user-$browser${suffix}-rw"
-      WORK="$VOLATILE/.$user-$browser${suffix}"
+      profile_paths "$item"
       # check if user has browser profile
       if [[ -h "$DIR" ]]; then
         unlink "$DIR"
@@ -733,13 +717,7 @@ parse() {
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
     for item in "${DIRArr[@]}"; do
-      DIR="$item"
-      BACKUP="$item-backup"
-      suffix=
-      if suffix_needed "$browser"; then
-        suffix="-${item##*/}"
-      fi
-      UPPER="$VOLATILE/$user-$browser${suffix}-rw"
+      profile_paths "$item"
       if [[ -d "$DIR" ]]; then
         local CRASHArr=()
         crash_dirs "$DIR"
@@ -767,7 +745,7 @@ parse() {
           warn=
         fi
         echo -en " ${BLD}tmpfs dir:"
-        echo -e "$(tput cr)$(tput cuf 17) ${GRN}$VOLATILE/$user-$browser$suffix${NRM}"
+        echo -e "$(tput cr)$(tput cuf 17) ${GRN}$TMP${NRM}"
         echo -en " ${BLD}profile size:"
         echo -e "$(tput cr)$(tput cuf 17) $psize${NRM}"
         if [[ -f $PID_FILE ]]; then
