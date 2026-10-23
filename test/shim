@@ -9,7 +9,11 @@
 #                       refused and logged here; the runner fails the test
 # PSD_REAL_FUSE         unset: fake fuse-overlayfs/fusermount3/mountpoint with
 #                       plain directories, table in PSD_FAKE_MNT; mountpoints
-#                       listed in PSD_FAKE_BUSY fail to unmount with EBUSY
+#                       listed in PSD_FAKE_BUSY fail to unmount with EBUSY.
+#                       Each fake mount runs a stand-in daemon that, like the
+#                       real fuse daemon, inherits psd's open fds. Mounts
+#                       whose daemon died are in PSD_FAKE_MNT.dead: findmnt
+#                       lists them, mountpoint does not (ENOTCONN).
 
 name=${0##*/}
 shimdir=$(cd -- "$(dirname -- "$0")" && pwd -P)
@@ -66,12 +70,20 @@ if [[ -z "$PSD_REAL_FUSE" ]]; then
       [[ -d "$lower" && -d "$upper" && -d "$work" && -d "$mnt" ]] ||
         { echo "fake fuse-overlayfs: bad args" >&2; exit 1; }
       cp -a "$lower/." "$mnt/" || exit 1
-      realpath "$mnt" >> "$PSD_FAKE_MNT"
+      rp=$(realpath "$mnt")
+      echo "$rp" >> "$PSD_FAKE_MNT"
+      setsid sleep 86400 </dev/null >/dev/null 2>&1 &
+      echo "$! $rp" >> "$PSD_FAKE_MNT.pids"
       exit 0
       ;;
     fusermount3)
       mnt=${*: -1}
       rp=$(realpath "$mnt" 2>/dev/null) || exit 1
+      if grep -qxF "$rp" "$PSD_FAKE_MNT.dead" 2>/dev/null; then
+        grep -vxF "$rp" "$PSD_FAKE_MNT.dead" > "$PSD_FAKE_MNT.new"
+        mv -f "$PSD_FAKE_MNT.new" "$PSD_FAKE_MNT.dead"
+        exit 0
+      fi
       grep -qxF "$rp" "$PSD_FAKE_MNT" || { echo "fusermount3: $mnt not mounted" >&2; exit 1; }
       lazy=
       for a in "$@"; do [[ "$a" == -*z* ]] && lazy=1; done
@@ -81,11 +93,25 @@ if [[ -z "$PSD_REAL_FUSE" ]]; then
       fi
       grep -vxF "$rp" "$PSD_FAKE_MNT" > "$PSD_FAKE_MNT.new"
       mv -f "$PSD_FAKE_MNT.new" "$PSD_FAKE_MNT"
+      while read -r pid path; do
+        [[ "$path" == "$rp" ]] && kill "$pid" 2>/dev/null
+      done < "$PSD_FAKE_MNT.pids"
       find "$rp" -mindepth 1 -delete
       exit 0
       ;;
     mountpoint)
       rp=$(realpath "${*: -1}" 2>/dev/null) && grep -qxF "$rp" "$PSD_FAKE_MNT" && exit 0
+      ;;
+    findmnt)
+      # only the -M <path> lookup psd uses
+      for (( i = 1; i < $#; i++ )); do
+        if [[ "${!i}" == -M ]]; then
+          j=$(( i + 1 ))
+          rp=$(realpath "${!j}" 2>/dev/null) || exit 1
+          cat "$PSD_FAKE_MNT" "$PSD_FAKE_MNT.dead" 2>/dev/null | grep -xF "$rp"
+          exit
+        fi
+      done
       ;;
   esac
 fi

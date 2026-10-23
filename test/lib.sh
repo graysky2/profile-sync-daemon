@@ -51,11 +51,12 @@ setup_env() {
   export PSD_SHIM_VIOLATIONS=$T/violations
   unset PSD_TRACE PSD_FAULT
   : > "$PSD_FAKE_MNT"
+  : > "$PSD_FAKE_MNT.dead"
   : > "$PSD_FAKE_BUSY"
 
   local name
   for name in rsync mv rm rmdir mkdir cp touch ln unlink install chmod chown \
-    sync fuse-overlayfs fusermount3 mountpoint pkill; do
+    sync fuse-overlayfs fusermount3 mountpoint findmnt pkill; do
     ln -s "$T_SRC/test/shim" "$T_SHIMS/$name"
   done
 
@@ -76,7 +77,9 @@ write_conf() {
 # unmount_all: drop every mount under the scratch tree (real or fake)
 unmount_all() {
   : > "$PSD_FAKE_MNT"
+  : > "$PSD_FAKE_MNT.dead"
   : > "$PSD_FAKE_BUSY"
+  kill_fake_daemons
   [[ -n "${PSD_REAL_FUSE:-}" ]] || return 0
   local m
   while read -r m; do
@@ -84,9 +87,37 @@ unmount_all() {
   done < <(findmnt -rn -o TARGET | grep -F "$T/" | sort -r)
 }
 
+kill_fake_daemons() {
+  local pid
+  [[ -f "$PSD_FAKE_MNT.pids" ]] || return 0
+  while read -r pid _; do
+    kill "$pid" 2>/dev/null
+  done < "$PSD_FAKE_MNT.pids"
+  : > "$PSD_FAKE_MNT.pids"
+}
+
+# kill_daemons: what systemd does to psd.service's fuse daemons after a
+# failed start or stop; the mounts stay behind, dead
+kill_daemons() {
+  if [[ -n "${PSD_REAL_FUSE:-}" ]]; then
+    pkill -KILL -u "$(id -u)" -f "^fuse-overlayfs .*$T/" 2>/dev/null
+    sleep 0.2
+  else
+    # a dead fake mount: its data is gone and it stays in the mount table
+    # until it is detached, which leaves the empty mountpoint dir
+    local m
+    while read -r m; do
+      [[ -n "$m" ]] && find "$m" -mindepth 1 -delete && echo "$m" >> "$PSD_FAKE_MNT.dead"
+    done < "$PSD_FAKE_MNT"
+    : > "$PSD_FAKE_MNT"
+    kill_fake_daemons
+  fi
+}
+
 # psd_with <bin> <verb>: run a build in its own process group with a scrubbed
 # environment and the shims first in PATH; output goes to $T_LOG, the exit
-# status is returned (137 when the shim killed it)
+# status is returned (137 when the shim killed it, 124 when it hung). A real
+# run takes well under a second; PSD_TEST_TIMEOUT caps a hung one.
 psd_with() {
   local bin=$1; shift
   echo "### ${bin##*/} $*" >> "$T_LOG"
@@ -99,7 +130,8 @@ psd_with() {
     PSD_TRACE="${PSD_TRACE:-}" PSD_FAULT="${PSD_FAULT:-}"
     PSD_REAL_FUSE="${PSD_REAL_FUSE:-}"
   )
-  setsid -w env -i "${envv[@]}" "$bin" "$@" >> "$T_LOG" 2>&1
+  # the subshell keeps bash's "Killed" job notice for injected kills quiet
+  (timeout -k 5 "${PSD_TEST_TIMEOUT:-60}" setsid -w env -i "${envv[@]}" "$bin" "$@" >> "$T_LOG" 2>&1; exit $?) 2>/dev/null
 }
 
 psd() {
@@ -204,7 +236,12 @@ assert_ok() {
 }
 
 assert_fails() {
-  ! "$@" || fail "command unexpectedly succeeded: $*"
+  local rc=0
+  "$@" || rc=$?
+  case $rc in
+    0) fail "command unexpectedly succeeded: $*" ;;
+    124 | 137) fail "command hung or was killed ($rc): $*" ;;
+  esac
 }
 
 # tree_state <dir>: listing of every path and its content hash, for "nothing
@@ -221,9 +258,9 @@ assert_tree_unchanged() {
       ${d//$'\n'/$'\n'      }"
 }
 
-# xfail <reason> <pattern>: known to fail until <reason> is fixed. The
-# failure output must match the grep -E <pattern>, so a test that breaks for
-# some other reason is not hidden.
+# xfail <reason> <pattern>: known to fail until <reason> is fixed. Every
+# failure line must match the grep -E <pattern>, so a test that also breaks
+# for some other reason is not hidden.
 xfail() {
   printf '%s\n%s\n' "$1" "$2" > "$T/xfail"
 }

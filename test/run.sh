@@ -13,12 +13,23 @@
 
 set -u
 
+# Become a child subreaper so processes orphaned by the fault injection's
+# kills are reparented to this shell and reaped, instead of piling up as
+# zombies under a PID 1 that does not reap (e.g. in containers).
+if [[ -z "${PSD_TEST_REAPER:-}" ]] && command -v python3 >/dev/null; then
+  export PSD_TEST_REAPER=1
+  exec python3 -I -c 'import ctypes, os, sys
+ctypes.CDLL(None).prctl(36, 1, 0, 0, 0)  # PR_SET_CHILD_SUBREAPER
+os.execv("/bin/bash", ["bash"] + sys.argv[1:])' "$0" "$@"
+fi
+
 cd -- "$(dirname -- "$0")" || exit 1
 # shellcheck source=test/lib.sh
 . ./lib.sh
 
 T_BASE=$(mktemp -d "${TMPDIR:-/tmp}/psd-test.XXXXXX")
-trap 'rm -rf "$T_BASE"' EXIT
+# also stop anything a test left running, e.g. stand-in fuse daemons
+trap 'pkill -P $$ 2>/dev/null; rm -rf "$T_BASE"' EXIT
 
 files=()
 if (( $# )); then
@@ -60,7 +71,7 @@ for f in "${files[@]}"; do
         rc=3
       elif [[ -f "$T/xfail" ]]; then
         { read -r reason; read -r pattern; } < "$T/xfail"
-        if (( rc )) && grep -qE -- "$pattern" "$T/failures"; then
+        if (( rc )) && ! grep -qvE -- "$pattern" "$T/failures"; then
           printf 'xfail %s: %s (%s)\n' "${f%.sh}" "$t" "$reason"
           [[ -n "${VERBOSE:-}" ]] && cat "$T/failures"
           rc=2
