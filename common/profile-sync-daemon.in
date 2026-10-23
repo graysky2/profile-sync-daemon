@@ -347,6 +347,15 @@ crash_dirs() {
   done < <(find "${1%/*}" -maxdepth 1 -type d -name "$pattern-backup-crashrecovery-*" -print0 | sort -r -z)
 }
 
+# flush <path>: make everything written so far to the filesystem holding
+# <path> durable, so a marker written after it cannot outlive the data
+flush() {
+  if ! sync -f "$1"; then
+    echo -e "${RED}Error: Failed to flush $1 to disk${NRM}" >&2
+    exit 2
+  fi
+}
+
 load_env_for() {
   browser="$1"
 
@@ -476,6 +485,12 @@ do_sync_for() {
 
       # backup target and link to tmpfs container
       if [[ $(readlink "$DIR") != "$TMP" ]]; then
+        # a BACK_OVFS left from a previous session is older than DIR, so its
+        # marker must be gone before DIR becomes BACKUP
+        if [[ -e "$BACK_OVFS/.psd-complete" ]]; then
+          rm -f "$BACK_OVFS/.psd-complete"
+          flush "$BACK_OVFS"
+        fi
         mv --no-target-directory "$DIR" "$BACKUP"
       fi
 
@@ -490,13 +505,18 @@ do_sync_for() {
             exit 2
           }
         fi
-        # .psd-complete tells ungraceful_state_check that BACK_OVFS is usable
+        # .psd-complete tells ungraceful_state_check that BACK_OVFS is usable;
+        # its removal must be on disk before rsync rewrites files in place,
+        # and the data before it is put back
         rm -f "$BACK_OVFS/.psd-complete"
+        flush "$BACK_OVFS"
         if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$DIR/" "$BACK_OVFS/"; then
           echo -e "${RED}Error: Failed to resync $DIR to $BACK_OVFS${NRM}" >&2
           exit 2
         fi
+        flush "$BACK_OVFS"
         touch "$BACK_OVFS/.psd-complete"
+        flush "$BACK_OVFS"
       else
         # initial sync
         REPORT="sync"
@@ -516,9 +536,6 @@ do_sync_for() {
 
         chown -h "$user":"$group" "$DIR"
         touch "$DIR/.flagged"
-
-        # a BACK_OVFS left from a previous session is not newer than BACKUP
-        rm -f "$BACK_OVFS/.psd-complete"
       fi
       echo -e "${BLD}$browser $REPORT successful${NRM}"
     else
@@ -608,11 +625,14 @@ do_unsync() {
           if [[ -d "$BACK_OVFS" ]]; then
             # Update BACK_OVFS with latest changes from live overlayfs
             rm -f "$BACK_OVFS/.psd-complete"
+            flush "$BACK_OVFS"
             if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$TMP/" "$BACK_OVFS/"; then
               echo -e "${RED}Error: Failed to sync $TMP to $BACK_OVFS during unsync${NRM}" >&2
               exit 2
             fi
+            flush "$BACK_OVFS"
             touch "$BACK_OVFS/.psd-complete"
+            flush "$BACK_OVFS"
             # sync BACK_OVFS to BACKUP
             if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$BACK_OVFS/" "$BACKUP/"; then
               echo -e "${RED}Error: Failed to sync $BACK_OVFS to $BACKUP during unsync${NRM}" >&2
@@ -625,6 +645,9 @@ do_unsync() {
               exit 2
             fi
           fi
+          # BACKUP was rewritten in place and becomes DIR below, where nothing
+          # marks it as partial, so it must be on disk first
+          flush "$BACKUP"
           # unmount (before moving BACKUP)
           fusermount3 -u "$TMP"
           rm -rf "$TMP" "$UPPER" "$WORK"
