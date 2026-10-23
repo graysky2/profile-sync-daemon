@@ -397,7 +397,7 @@ recover_profile() {
 replay_upper() {
   local rc=0
   msg "Copying the writes left in $UPPER to disk"
-  rm -rf "$WORK"
+  remove_tree "$WORK"
   install -dm"$(stat -c %a "$BACKUP")" "$TMP" &&
     install -dm700 "$WORK" &&
     mount_overlay || return 1
@@ -410,32 +410,76 @@ replay_upper() {
 }
 
 # new_generation <src>: copy <src> to a new marked copy beside BACK_OVFS and
-# swap it in, so the current complete copy is never touched. A leftover
-# BACK_OVFS.new is never a recovery candidate.
+# swap it in, so the current complete copy is never touched. Unchanged files
+# are hard links into the current copy. A leftover BACK_OVFS.new is never a
+# recovery candidate.
 new_generation() {
-  local new=$BACK_OVFS.new
+  local new=$BACK_OVFS.new err
   local -a base=()
-  rm -rf "$new"
-  [[ -d "$BACK_OVFS" ]] && base=(--link-dest="$BACK_OVFS")
+  if ! can_exchange; then
+    copy_generation "$1"
+    return
+  fi
+  # never copy into what is left of an earlier attempt
+  remove_tree "$new" || return 1
+  # unchanged files are linked from the current copy, or for the first copy
+  # of a session from the last session's
+  if [[ -d "$BACK_OVFS" ]]; then
+    base=(--link-dest="$BACK_OVFS")
+  elif [[ -d "$BACK_OVFS.base" ]]; then
+    base=(--link-dest="$BACK_OVFS.base")
+  fi
   install -dm"$(stat -c %a "$BACKUP")" "$new" || return 1
   if ! rsync -aX --modify-window=-1 "${base[@]}" --exclude .flagged --exclude .psd-complete "$1/" "$new/"; then
-    error "Failed to copy $1 to $new"
+    error "Failed to copy $1 to $new (is the disk full?); $BACK_OVFS is kept"
+    # its space may be needed by the next profile
+    remove_tree "$new"
     return 1
   fi
   flush "$new" && touch "$new/.psd-complete" && flush "$new" || return 1
   if [[ ! -d "$BACK_OVFS" ]]; then
-    mv --no-target-directory "$new" "$BACK_OVFS" && flush "$BACK_OVFS"
-    return
+    mv --no-target-directory "$new" "$BACK_OVFS" && flush "$BACK_OVFS" || return 1
+    remove_tree "$BACK_OVFS.base" || warn "Failed to remove $BACK_OVFS.base"
+    return 0
   fi
-  if ! mv --exchange --no-target-directory "$new" "$BACK_OVFS"; then
-    # e.g. a filesystem without RENAME_EXCHANGE
-    warn "Cannot swap $new in, copying in place"
-    rm -rf "$new"
-    copy_generation "$1"
-    return
+  if ! err=$(LC_ALL=C mv --exchange --no-target-directory "$new" "$BACK_OVFS" 2>&1); then
+    remove_tree "$new"
+    if [[ "$err" == *"Invalid argument"* || "$err" == *"not supported"* ||
+      "$err" == *"not implemented"* || "$err" == *"not permitted"* ]]; then
+      # a filesystem or sandbox without RENAME_EXCHANGE
+      warn "$BACK_OVFS cannot be swapped, copying in place"
+      copy_generation "$1"
+      return
+    fi
+    error "Failed to swap $new in: $err"
+    return 1
   fi
   flush "$BACK_OVFS" || return 1
-  rm -rf "$new"
+  # the old copy is not needed any more; a leftover is removed next time
+  remove_tree "$new" || warn "Failed to remove the old copy $new"
+  return 0
+}
+
+# can_exchange: whether mv can swap two dirs (coreutils 9.5 or newer)
+can_exchange() {
+  if [[ -z "$CAN_EXCHANGE" ]]; then
+    CAN_EXCHANGE=0
+    mv --help 2>/dev/null | grep -q -- '--exchange' && CAN_EXCHANGE=1
+  fi
+  [[ $CAN_EXCHANGE -eq 1 ]]
+}
+
+# remove_tree <dir>: delete <dir>, also when it holds read-only dirs, which
+# only the dirs need for that; files may be hard links into a copy in use
+remove_tree() {
+  [[ -e "$1" || -h "$1" ]] || return 0
+  [[ -d "$1" && ! -h "$1" ]] &&
+    find "$1" -type d ! -perm -u+wx -exec chmod u+wx {} + 2>/dev/null
+  rm -rf "$1"
+  if [[ -e "$1" || -h "$1" ]]; then
+    error "Failed to remove $1"
+    return 1
+  fi
 }
 
 # discard <path>...: delete tmpfs dirs of a profile; each is first renamed
@@ -447,7 +491,7 @@ discard() {
     [[ -e "$p" || -h "$p" ]] || continue
     mv --no-target-directory "$p" "$trash/${p##*/}.$$.$RANDOM" || return 1
   done
-  rm -rf "$trash"
+  remove_tree "$trash"
 }
 
 # mount_overlay: mount the current profile's overlay at TMP
@@ -464,10 +508,14 @@ mount_overlay() {
   fi
 }
 
-# copy_generation <src>: copy <src> to BACK_OVFS and mark it complete. The
-# marker's removal is on disk before rsync rewrites files in place, and the
-# data is on disk before the marker is put back.
+# copy_generation <src>: copy <src> to BACK_OVFS in place and mark it
+# complete, for filesystems that cannot swap. The marker's removal is on disk
+# before rsync rewrites files in place, and the data is on disk before the
+# marker is put back; until then recovery falls back to BACKUP.
 copy_generation() {
+  if [[ ! -d "$BACK_OVFS" ]]; then
+    install -dm"$(stat -c %a "$BACKUP")" "$BACK_OVFS" || return 1
+  fi
   rm -f "$BACK_OVFS/.psd-complete"
   flush "$BACK_OVFS" || return 1
   if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$1/" "$BACK_OVFS/"; then
@@ -594,7 +642,7 @@ cleanup() {
         echo -e "${BLD}Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR${NRM}"
         for backup in "${CRASHArr[@]}"; do
           echo -e "${BLD}${RED} $backup${NRM}"
-          rm -rf "$backup"
+          remove_tree "$backup"
         done
       else
         echo -e "${BLD}Found no crashrecovery dirs for: ${BLU}$DIR${NRM}${BLD}${NRM}"
@@ -775,7 +823,7 @@ sync_profile() {
     local stale
     stale="$XDG_RUNTIME_DIR/psd/.stale-${UPPER##*/}-$(date +%Y%m%d_%H%M%S)"
     mv --no-target-directory "$UPPER" "$stale" || return 1
-    rm -rf "$WORK"
+    remove_tree "$WORK"
     warn "Writes left by an earlier session are kept in $stale, not used"
   fi
 
@@ -783,11 +831,14 @@ sync_profile() {
   PREFIXP=$(stat -c %a "$DIR")
   install -dm"$PREFIXP" --owner="$user" --group="$group" "$TMP" "$UPPER" "$WORK" || return 1
 
-  # a BACK_OVFS left from a previous session is older than DIR, so its
-  # marker must be gone before DIR becomes BACKUP
-  if [[ -e "$BACK_OVFS/.psd-complete" ]]; then
-    rm -f "$BACK_OVFS/.psd-complete"
-    flush "$BACK_OVFS" || return 1
+  # a BACK_OVFS left from a previous session is older than DIR, so it must
+  # be out of the way before DIR becomes BACKUP; removing just its marker
+  # would make it look newer than BACKUP to psd 7.04's recovery. It is kept
+  # as the base of this session's first copy, which links unchanged files.
+  if [[ -d "$BACK_OVFS" ]]; then
+    remove_tree "$BACK_OVFS.base" &&
+      mv --no-target-directory "$BACK_OVFS" "$BACK_OVFS.base" &&
+      flush "$BACK_OVFS.base" || return 1
   fi
   mv --no-target-directory "$DIR" "$BACKUP" || return 1
   SYNCED_BROWSER+=("$browser")
@@ -829,7 +880,7 @@ rollback_sync() {
     # anything written in the moments the overlay was up is kept, not deleted
     rm -f "$UPPER/.flagged"
     if rmdir "$UPPER" 2>/dev/null; then
-      rm -rf "$WORK"
+      remove_tree "$WORK"
     else
       warn "Writes made during the failed start are kept in $UPPER"
     fi
@@ -853,16 +904,10 @@ resync_profile() {
     return 1
   fi
 
-  # BACK_OVFS is created here rather than on the initial sync so a crash
-  # before the first resync recovers from BACKUP
-  if [[ ! -d "$BACK_OVFS" ]]; then
-    install -dm"$(stat -c %a "$BACKUP")" --owner="$user" --group="$group" "$BACK_OVFS" || {
-      error "Failed to create $BACK_OVFS"
-      return 1
-    }
-  fi
-  # .psd-complete tells recovery that BACK_OVFS is usable
-  if ! copy_generation "$DIR"; then
+  # BACK_OVFS is created by the first resync rather than the initial sync so
+  # a crash before it recovers from BACKUP; each resync writes a new copy
+  # and swaps it in, so the last complete one is kept until then
+  if ! new_generation "$DIR"; then
     error "Failed to resync $DIR"
     return 1
   fi
@@ -989,16 +1034,16 @@ enforce() {
 
     if [[ ${#CRASHArr[@]} -gt $BACKUP_LIMIT ]]; then
       for remove in "${CRASHArr[@]:$BACKUP_LIMIT}"; do
-        rm -rf "$remove"
+        remove_tree "$remove"
       done
     fi
     # a new copy whose swap was interrupted is never used
-    rm -rf "$DIR-back-ovfs.new"
+    remove_tree "$DIR-back-ovfs.new"
     # snapshots whose copy was interrupted; recovery finished since
     crash_dirs "$DIR"
     for remove in "${CRASHArr[@]}"; do
       [[ "${remove##*/}" =~ -backup-crashrecovery-[0-9]{8}_[0-9]{6}-partial$ ]] &&
-        rm -rf "$remove"
+        remove_tree "$remove"
     done
   done
   done
@@ -1028,7 +1073,7 @@ do_unsync() {
         # always update BACK_OVFS from live overlayfs first to capture latest changes
         if [[ -d "$BACK_OVFS" ]]; then
           # Update BACK_OVFS with latest changes from live overlayfs
-          if ! copy_generation "$TMP"; then
+          if ! new_generation "$TMP"; then
             error "Failed to sync $TMP to $BACK_OVFS during unsync, leaving $DIR in tmpfs"
             failed=1
             continue
@@ -1080,6 +1125,9 @@ do_unsync() {
       fi
       [[ -d "$TMP" ]] && ! mountpoint -q "$TMP" && rm -rf "$TMP"
       msg "$browser unsync successful"
+    elif [[ -d "$BACKUP" ]]; then
+      # an earlier unsync stopped after the copy; finish it like recovery
+      recover_profile || failed=1
     else
       if [[ ! -d "$homedir" ]] ; then
         die "$DIR does not exist! Is /home unmounted?"

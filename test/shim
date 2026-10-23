@@ -109,7 +109,9 @@ if [[ -z "$PSD_REAL_FUSE" ]]; then
       ;;
     sync)
       # durability is checked by the order in PSD_TRACE; a real syncfs here
-      # would only flush the host disk over and over
+      # would only flush the host disk over and over. Like syncfs it needs
+      # the path to exist.
+      [[ -e "${*: -1}" ]] || { echo "sync: error opening '${*: -1}'" >&2; exit 1; }
       exit 0
       ;;
     mountpoint)

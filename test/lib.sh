@@ -88,6 +88,8 @@ setup_env() {
 teardown_env() {
   [[ -n "${T:-}" && -d "$T" ]] || return 0
   unmount_all
+  # tests may leave read-only dirs behind
+  chmod -R u+w "$T" 2>/dev/null
   rm -rf "$T" "$T_BIN"
 }
 

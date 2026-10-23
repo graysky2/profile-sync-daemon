@@ -22,13 +22,18 @@ test_resync_flushes_around_marker() {
   assert_ok psd resync
   export PSD_TRACE=$T/trace
   assert_ok psd resync
+  # the new copy is complete on disk before it replaces the current one,
+  # which stays marked throughout
   assert_trace_order \
-    '^rm -f .*-back-ovfs/\.psd-complete$' \
-    '^sync -f .*-back-ovfs$' \
-    '^rsync .* .*-back-ovfs/$' \
-    '^sync -f .*-back-ovfs$' \
-    '^touch .*-back-ovfs/\.psd-complete$' \
+    '^rsync .* .*-back-ovfs\.new/$' \
+    '^sync -f .*-back-ovfs\.new$' \
+    '^touch .*-back-ovfs\.new/\.psd-complete$' \
+    '^sync -f .*-back-ovfs\.new$' \
+    '^mv --exchange --no-target-directory .*-back-ovfs\.new .*-back-ovfs$' \
     '^sync -f .*-back-ovfs$'
+  grep -E '^(rm|rsync|touch) .*-back-ovfs/' "$PSD_TRACE" &&
+    fail "the current copy was changed in place"
+  assert_absent "$P-back-ovfs.new"
 }
 
 test_unsync_flushes_before_restore() {
@@ -41,19 +46,20 @@ test_unsync_flushes_before_restore() {
   # after the resync unsync starts with, the unsync's own copy; the link
   # goes only once the data is on disk
   assert_trace_order \
-    '^rsync .*/psdtest-a/ .*-back-ovfs/$' \
-    '^rm -f .*-back-ovfs/\.psd-complete$' \
+    '^rsync .*/psdtest-a/ .*-back-ovfs\.new/$' \
+    '^rsync .*/psd/[^ ]*/ .*-back-ovfs\.new/$' \
+    '^sync -f .*-back-ovfs\.new$' \
+    '^touch .*-back-ovfs\.new/\.psd-complete$' \
+    '^sync -f .*-back-ovfs\.new$' \
+    '^mv --exchange --no-target-directory .*-back-ovfs\.new .*-back-ovfs$' \
     '^sync -f .*-back-ovfs$' \
-    '^rsync .*/psd/[^ ]*/ .*-back-ovfs/$' \
-    '^sync -f .*-back-ovfs$' \
-    '^touch .*-back-ovfs/\.psd-complete$' \
     '^rsync .*-back-ovfs/ .*-backup/$' \
     '^sync -f .*-backup$' \
     '^unlink ' \
     '^mv --no-target-directory .*-backup .*/psdtest-a$'
 }
 
-test_initial_sync_clears_stale_marker_first() {
+test_initial_sync_moves_stale_copy_first() {
   local P; P=$(P_A)
   profile_new "$P" v1
   assert_ok start_session
@@ -63,8 +69,8 @@ test_initial_sync_clears_stale_marker_first() {
   export PSD_TRACE=$T/trace
   assert_ok start_session
   assert_trace_order \
-    '^rm -f .*-back-ovfs/\.psd-complete$' \
-    '^sync -f .*-back-ovfs$' \
+    '^mv --no-target-directory .*-back-ovfs .*-back-ovfs\.base$' \
+    '^sync -f .*-back-ovfs\.base$' \
     '^mv --no-target-directory .*/psdtest-a .*-backup$'
   assert_ok psd unsync
 }
@@ -87,4 +93,136 @@ test_mount_failure_leaves_no_stale_marker() {
   reboot_sim
   assert_ok psd startup
   assert_version "$P" v2
+}
+
+test_resync_without_exchange_falls_back() {
+  # a filesystem without RENAME_EXCHANGE: copy in place as before
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  profile_write "$P" v2
+  assert_ok psd resync
+  # what mv says when the filesystem cannot swap
+  # shellcheck disable=SC2016 # the stub's own variables
+  printf '#!/bin/bash\ncase "$*" in *--exchange*) echo "mv: cannot exchange: Invalid argument" >&2; exit 1 ;; esac\nPATH=${PATH#"%s:"}\nexec "%s/shim2/mv" "$@"\n' "$T_SHIMS" "$T" > "$T_BIN/mv"
+  mkdir -p "$T/shim2" && ln -sf "$T_SRC/test/shim" "$T/shim2/mv"
+  chmod 755 "$T_BIN/mv" && ln -sf "$T_BIN/mv" "$T_SHIMS/mv"
+  profile_write "$P" v3
+  assert_ok psd resync
+  assert_version "$P-back-ovfs" v3
+  assert_absent "$P-back-ovfs.new"
+  profile_write "$P" v4
+  assert_ok psd unsync
+  assert_version "$P" v4
+}
+
+test_leftover_new_copy_never_used() {
+  # a swap killed after the exchange leaves the previous copy as .new, marked
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  profile_write "$P" v2
+  assert_ok psd resync
+  cp -a "$P-back-ovfs" "$P-back-ovfs.new"
+  profile_write "$P-back-ovfs.new" v9
+  reboot_sim
+  assert_ok psd startup
+  assert_version "$P" v2
+  assert_ok start_session
+  assert_absent "$P-back-ovfs.new"
+  assert_ok psd unsync
+  assert_version "$P" v2
+}
+
+test_failed_swap_keeps_current_copy() {
+  # any other failure of the swap: report it, never copy in place
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  profile_write "$P" v2
+  assert_ok psd resync
+  stub_cmd mv '*--exchange*'
+  profile_write "$P" v3
+  assert_fails psd resync
+  assert_version "$P-back-ovfs" v2
+  [[ -e "$P-back-ovfs/.psd-complete" ]] || fail "current copy lost its marker"
+  assert_absent "$P-back-ovfs.new"
+  unstub_cmd mv
+  assert_ok psd unsync
+  assert_version "$P" v3
+}
+
+test_old_coreutils_copies_in_place() {
+  # mv without --exchange (coreutils before 9.5): no new copy is built
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  # shellcheck disable=SC2016 # the stub's own variables
+  printf '#!/bin/bash\nif [[ "$1" == --help ]]; then echo "Usage: mv"; exit 0; fi\nPATH=${PATH#"%s:"}\nexec "%s/shim2/mv" "$@"\n' "$T_SHIMS" "$T" > "$T_BIN/mv"
+  mkdir -p "$T/shim2" && ln -sf "$T_SRC/test/shim" "$T/shim2/mv"
+  chmod 755 "$T_BIN/mv" && ln -sf "$T_BIN/mv" "$T_SHIMS/mv"
+  export PSD_TRACE=$T/trace
+  profile_write "$P" v2
+  assert_ok psd resync
+  grep -q -- '-back-ovfs\.new' "$PSD_TRACE" && fail "built a new copy it cannot swap in"
+  assert_version "$P-back-ovfs" v2
+  profile_write "$P" v3
+  assert_ok psd unsync
+  assert_version "$P" v3
+}
+
+test_read_only_dir_in_profile() {
+  # old copies must be removable although a dir in them is read-only
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  mkdir "$P/ext"
+  echo old > "$P/ext/manifest"
+  chmod 555 "$P/ext"
+  assert_ok start_session
+  profile_write "$P" v2
+  assert_ok psd resync
+  profile_write "$P" v3
+  assert_ok psd resync
+  chmod u+w "$P/ext"
+  rm -rf "$P/ext"
+  profile_write "$P" v4
+  assert_ok psd resync
+  assert_absent "$P-back-ovfs/ext"
+  reboot_sim
+  assert_ok psd startup
+  assert_version "$P" v4
+  assert_absent "$P/ext"
+}
+
+test_downgrade_recovers_crash_before_first_resync() {
+  # psd 7.04 recovers by ctime in whole seconds; last session's copy must
+  # not look newer than the profile this session moved to BACKUP
+  build_base release || return
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  profile_write "$P" v2
+  assert_ok psd unsync
+  profile_write "$P" v3
+  assert_ok start_session
+  reboot_sim
+  assert_ok psd_with "$BASE" startup
+  assert_version "$P" v3
+}
+
+test_first_copy_links_last_session() {
+  # the first copy of a session builds on the last session's
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  assert_ok psd resync
+  assert_ok psd unsync
+  assert_ok start_session
+  [[ -d "$P-back-ovfs.base" ]] || fail "last session's copy not kept as base"
+  export PSD_TRACE=$T/trace
+  assert_ok psd resync
+  grep -qE '^rsync .*--link-dest=.*-back-ovfs\.base ' "$PSD_TRACE" || fail "first copy not linked"
+  assert_absent "$P-back-ovfs.base"
+  assert_ok psd unsync
+  assert_version "$P" v1
 }

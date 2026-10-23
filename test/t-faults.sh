@@ -84,17 +84,46 @@ test_kill_during_initial_sync() {
 }
 
 test_kill_during_resync() {
-  xfail "bug 5: every resync invalidates the last good snapshot first" \
-    "recovered 'v1'"
   fault_matrix setup_running act_resync v2 v3
 }
 
 test_kill_during_unsync() {
-  xfail "bug 5/6: unsync invalidates the snapshot before copying" \
-    "recovered 'v1'"
   fault_matrix setup_running act_unsync v2 v3
 }
 
 test_kill_during_recovery() {
   fault_matrix setup_crashed act_startup v2
+}
+
+# fail_matrix <setup> <action>: make each mutating call of <action> fail in
+# turn; whatever psd then reports, the next resync and unsync must save the
+# newest data
+fail_matrix() {
+  local setup=$1 action=$2 n=1 calls P
+  P=$(P_A)
+  while (( n < 200 )); do
+    fault_reset
+    "$setup" || { fail "setup $setup failed"; return; }
+    rm -f "$PSD_SHIM_COUNT"
+    PSD_TRACE=$T/calls PSD_FAULT=$n:fail "$action"
+    calls=$(cat "$PSD_SHIM_COUNT" 2>/dev/null || echo 0)
+    psd resync
+    if ! psd unsync; then
+      # one failed copy may leave the session for recover
+      psd recover || fail "fail at call $n: recover failed"
+    fi
+    [[ "$(profile_version "$P")" == v3 ]] ||
+      fail "fail at call $n ($(sed -n "${n}p" "$T/calls" 2>/dev/null)): got $(profile_version "$P")"
+    (( calls >= n )) || break
+    n=$(( n + 1 ))
+  done
+  (( n > 1 )) || fail "fault never triggered"
+}
+
+test_fail_during_resync() {
+  fail_matrix setup_running act_resync
+}
+
+test_fail_during_unsync() {
+  fail_matrix setup_running act_unsync
 }
