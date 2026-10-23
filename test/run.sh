@@ -35,7 +35,7 @@ files=()
 if (( $# )); then
   shopt -s nullglob
   for a in "$@"; do
-    if [[ -f "$a" ]]; then files+=("$a"); else files+=(t-*"$a"*.sh); fi
+    if [[ -f "$a" ]]; then files+=("$(realpath -- "$a")"); else files+=(t-*"$a"*.sh); fi
   done
   shopt -u nullglob
 else
@@ -58,10 +58,14 @@ for f in "${files[@]}"; do
   fi
   for t in $(bash -c ". ./lib.sh; . '$f'; declare -F" | awk '$3 ~ /^test_/ { print $3 }'); do
     (
-      # shellcheck disable=SC1090
-      . "./$f"
       setup_env
-      "$t"
+      # a test that cannot be loaded must not pass
+      # shellcheck disable=SC1090
+      if ! . "$(realpath -- "$f")" || [[ "$(type -t "$t")" != function ]]; then
+        fail "could not load $t from $f"
+      else
+        "$t"
+      fi
       rc=0
       [[ -s "$PSD_SHIM_VIOLATIONS" ]] &&
         fail "psd tried to touch a non-test process: $(< "$PSD_SHIM_VIOLATIONS")"

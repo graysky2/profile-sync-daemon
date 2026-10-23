@@ -13,7 +13,10 @@
 #                       Each fake mount runs a stand-in daemon that, like the
 #                       real fuse daemon, inherits psd's open fds. Mounts
 #                       whose daemon died are in PSD_FAKE_MNT.dead: findmnt
-#                       lists them, mountpoint does not (ENOTCONN).
+#                       lists them, mountpoint does not (ENOTCONN). Writes
+#                       reach the upper dir only when the daemon dies (see
+#                       kill_daemons), which marks it .fake-opaque: mounting
+#                       it again shows it alone, deletions included.
 
 name=${0##*/}
 shimdir=$(cd -- "$(dirname -- "$0")" && pwd -P)
@@ -69,9 +72,14 @@ if [[ -z "$PSD_REAL_FUSE" ]]; then
       work=${opts#*workdir=}; work=${work%%,*}
       [[ -d "$lower" && -d "$upper" && -d "$work" && -d "$mnt" ]] ||
         { echo "fake fuse-overlayfs: bad args" >&2; exit 1; }
-      cp -a "$lower/." "$mnt/" || exit 1
+      if [[ -e "$upper/.fake-opaque" ]]; then
+        (cd "$upper" && find . -mindepth 1 -maxdepth 1 ! -name .fake-opaque -exec cp -a {} "$mnt/" \;) || exit 1
+      else
+        cp -a "$lower/." "$mnt/" || exit 1
+      fi
       rp=$(realpath "$mnt")
       echo "$rp" >> "$PSD_FAKE_MNT"
+      echo "$rp $(realpath "$upper")" >> "$PSD_FAKE_MNT.upper"
       setsid sleep 86400 </dev/null >/dev/null 2>&1 &
       echo "$! $rp" >> "$PSD_FAKE_MNT.pids"
       exit 0
@@ -103,7 +111,7 @@ if [[ -z "$PSD_REAL_FUSE" ]]; then
       rp=$(realpath "${*: -1}" 2>/dev/null) && grep -qxF "$rp" "$PSD_FAKE_MNT" && exit 0
       ;;
     findmnt)
-      # only the -M <path> lookup psd uses
+      # the -M <path> lookup and the listing psd uses
       for (( i = 1; i < $#; i++ )); do
         if [[ "${!i}" == -M ]]; then
           j=$(( i + 1 ))
@@ -112,6 +120,8 @@ if [[ -z "$PSD_REAL_FUSE" ]]; then
           exit
         fi
       done
+      cat "$PSD_FAKE_MNT" "$PSD_FAKE_MNT.dead" 2>/dev/null | grep -v '^$'
+      exit 0
       ;;
   esac
 fi

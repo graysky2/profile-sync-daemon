@@ -96,6 +96,5 @@ test_kill_during_unsync() {
 }
 
 test_kill_during_recovery() {
-  xfail "bug 13: recovery is not crash-idempotent" "recovered 'v1'"
   fault_matrix setup_crashed act_startup v2
 }

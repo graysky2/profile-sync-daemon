@@ -7,23 +7,6 @@
 
 P_A() { echo "$XDG_CONFIG_HOME/psdtest-a"; }
 
-# build_base release|branch: sets BASE to a scratch build of that ref
-build_base() {
-  local ref
-  if ! command -v git >/dev/null || ! git -C "$T_SRC" rev-parse --git-dir >/dev/null 2>&1; then
-    skip "no git checkout"
-    return 1
-  fi
-  case $1 in
-    release) ref=${PSD_COMPAT_REF:-$(git -C "$T_SRC" describe --tags --abbrev=0 master 2>/dev/null)} ;;
-    branch) ref=$(git -C "$T_SRC" merge-base HEAD master 2>/dev/null) ;;
-  esac
-  [[ -n "$ref" ]] || { skip "no $1 ref found"; return 1; }
-  git -C "$T_SRC" show "$ref:common/profile-sync-daemon.in" > "$T/base.in" || return 1
-  build_psd "$T/base.in" "$T_BIN/psd-base"
-  BASE=$T_BIN/psd-base
-}
-
 base_crash_recovered_by_new() {
   build_base "$1" || return
   local P; P=$(P_A)
@@ -136,5 +119,54 @@ test_branch_stale_back_ovfs_not_promoted() {
   fi
   reboot_sim
   assert_ok psd startup
+  assert_version "$P" v2
+}
+
+test_kill_during_recovery_of_release_crash() {
+  # recovery of an older session picks its copy without a marker; being
+  # killed half way must not undo that choice
+  build_base release || return
+  local P n=1 hit
+  P=$(P_A)
+  while (( n < 200 )); do
+    unmount_all
+    rm -rf "$P" "$P"-* "$XDG_CONFIG_HOME/psd/.psd.conf" "$XDG_CONFIG_HOME/psd/.psd-session"
+    reboot_sim
+    profile_new "$P" v1
+    if ! { psd_with "$BASE" startup && psd_with "$BASE" resync; }; then
+      fail "setup failed"
+      return
+    fi
+    profile_write "$P" v2
+    sleep 1.1
+    psd_with "$BASE" resync || { fail "setup failed"; return; }
+    profile_write "$P" v3
+    reboot_sim
+    PSD_FAULT=$n:kill psd startup
+    hit=$?
+    reboot_sim
+    psd startup || fail "kill before call $n: startup failed"
+    assert_version "$P" v2
+    (( hit == 137 || hit == 9 )) || break
+    n=$(( n + 1 ))
+  done
+  (( n > 1 )) || fail "fault never triggered"
+}
+
+test_release_session_dead_mount_unsync() {
+  # an older session, upgraded, whose fuse daemon died; the copy cannot be
+  # replayed, so the older session's rule picks the newer copy on disk
+  build_base release || return
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok psd_with "$BASE" startup
+  assert_ok psd_with "$BASE" resync
+  profile_write "$P" v2
+  sleep 1.1
+  assert_ok psd_with "$BASE" resync
+  profile_write "$P" v3
+  kill_daemons
+  stub_cmd fuse-overlayfs '*'
+  psd unsync
   assert_version "$P" v2
 }

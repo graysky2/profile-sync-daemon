@@ -27,6 +27,26 @@ build_psd() {
   fi
 }
 
+# build_base release|branch: sets BASE to a scratch build of that ref: the
+# latest release tag (PSD_COMPAT_REF overrides it) or the merge-base with
+# master
+build_base() {
+  local ref
+  if ! command -v git >/dev/null || ! git -C "$T_SRC" rev-parse --git-dir >/dev/null 2>&1; then
+    skip "no git checkout"
+    return 1
+  fi
+  case $1 in
+    release) ref=${PSD_COMPAT_REF:-$(git -C "$T_SRC" describe --tags --abbrev=0 master 2>/dev/null)} ;;
+    branch) ref=$(git -C "$T_SRC" merge-base HEAD master 2>/dev/null) ;;
+  esac
+  [[ -n "$ref" ]] || { skip "no $1 ref found"; return 1; }
+  git -C "$T_SRC" show "$ref:common/profile-sync-daemon.in" > "$T/base.in" || return 1
+  build_psd "$T/base.in" "$T_BIN/psd-base"
+  # shellcheck disable=SC2034 # used by the test files
+  BASE=$T_BIN/psd-base
+}
+
 # setup_env: fresh scratch tree, config, and shim dir for one test
 setup_env() {
   T=$(mktemp -d "$T_BASE/t.XXXXXX")
@@ -52,6 +72,7 @@ setup_env() {
   unset PSD_TRACE PSD_FAULT
   : > "$PSD_FAKE_MNT"
   : > "$PSD_FAKE_MNT.dead"
+  : > "$PSD_FAKE_MNT.upper"
   : > "$PSD_FAKE_BUSY"
 
   local name
@@ -78,6 +99,7 @@ write_conf() {
 unmount_all() {
   : > "$PSD_FAKE_MNT"
   : > "$PSD_FAKE_MNT.dead"
+  : > "$PSD_FAKE_MNT.upper"
   : > "$PSD_FAKE_BUSY"
   kill_fake_daemons
   [[ -n "${PSD_REAL_FUSE:-}" ]] || return 0
@@ -103,11 +125,20 @@ kill_daemons() {
     pkill -KILL -u "$(id -u)" -f "^fuse-overlayfs .*$T/" 2>/dev/null
     sleep 0.2
   else
-    # a dead fake mount: its data is gone and it stays in the mount table
-    # until it is detached, which leaves the empty mountpoint dir
-    local m
+    # a dead fake mount: what was written is in its upper dir, the mount
+    # stays in the mount table until it is detached, which leaves the empty
+    # mountpoint dir
+    local m u
     while read -r m; do
-      [[ -n "$m" ]] && find "$m" -mindepth 1 -delete && echo "$m" >> "$PSD_FAKE_MNT.dead"
+      [[ -n "$m" ]] || continue
+      u=$(awk -v m="$m" '$1 == m { u = $2 } END { print u }' "$PSD_FAKE_MNT.upper")
+      if [[ -n "$u" && -d "$u" ]]; then
+        find "$u" -mindepth 1 -delete
+        cp -a "$m/." "$u/"
+        touch "$u/.fake-opaque"
+      fi
+      find "$m" -mindepth 1 -delete
+      echo "$m" >> "$PSD_FAKE_MNT.dead"
     done < "$PSD_FAKE_MNT"
     : > "$PSD_FAKE_MNT"
     kill_fake_daemons
@@ -151,6 +182,25 @@ reboot_sim() {
   rm -rf "$XDG_RUNTIME_DIR"
   mkdir -m 700 "$XDG_RUNTIME_DIR"
   rm -f "$PSD_SHIM_COUNT"
+}
+
+# stub_cmd <name> <pattern>: make <name> fail when its arguments match the
+# glob <pattern>, otherwise run it through the normal shim
+stub_cmd() {
+  mkdir -p "$T/shim2"
+  ln -sf "$T_SRC/test/shim" "$T/shim2/$1"
+  cat > "$T/bin/$1" <<EOS
+#!/bin/bash
+case "\$*" in $2) exit 1 ;; esac
+PATH=\${PATH#"$T_SHIMS:"}
+exec "$T/shim2/$1" "\$@"
+EOS
+  chmod 755 "$T/bin/$1"
+  ln -sf "$T/bin/$1" "$T_SHIMS/$1"
+}
+
+unstub_cmd() {
+  ln -sf "$T_SRC/test/shim" "$T_SHIMS/$1"
 }
 
 # ---- simulated browser profile ----------------------------------------------
