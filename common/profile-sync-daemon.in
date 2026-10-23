@@ -28,6 +28,12 @@ else
 fi
 VERS="@VERSION@"
 
+# msg goes to stdout; warn, error and die go to stderr, and die exits 1
+msg() { echo -e "${BLD}$*${NRM}"; }
+warn() { echo -e " ${RED}Warning:${NRM}${BLD} $*${NRM}" >&2; }
+error() { echo -e " ${RED}Error:${NRM}${BLD} $*${NRM}" >&2; }
+die() { error "$@"; exit 1; }
+
 user=$(id -un)
 HOME="$(getent passwd "$user" | cut -d: -f6)"
 TMPDIR="${TMPDIR:-/tmp}"
@@ -38,18 +44,15 @@ PSDCONF="$PSDCONFDIR/psd.conf"
 SHAREDIR="@SHAREDIR@"
 
 if [[ ! -d "$SHAREDIR" ]]; then
-  echo -e " ${RED}ERROR:${NRM}${BLD} Missing ${BLU}$SHAREDIR${NRM}${BLD} - reinstall the package to use profile-sync-daemon.${NRM}"
-  exit 1
+  die "Missing ${BLU}$SHAREDIR${NRM}${BLD} - reinstall the package to use profile-sync-daemon."
 fi
 
 if [[ ! -d "$SHAREDIR/browsers" ]]; then
-  echo -e " ${RED}ERROR:${NRM}${BLD} Missing ${BLU}$SHAREDIR/browsers${NRM}${BLD} - reinstall the package to use profile-sync-daemon.${NRM}"
-  exit 1
+  die "Missing ${BLU}$SHAREDIR/browsers${NRM}${BLD} - reinstall the package to use profile-sync-daemon."
 fi
 
 if [[ $EUID -eq 0 ]]; then
-  echo -e " ${RED}WARNING:${NRM}${BLD} Do not call ${BLU}$0${NRM}${BLD} as root.${NRM}"
-  exit 1
+  die "Do not call ${BLU}$0${NRM}${BLD} as root."
 fi
 
 # Create an XDG_RUNTIME_DIR if not given one (i.e. running without DE)
@@ -58,20 +61,16 @@ if [[ -z "$XDG_RUNTIME_DIR" ]]; then
   XDG_RUNTIME_DIR="${TMPDIR}/runtime-${user}"
   echo -e " ${RED}WARNING:${NRM}${BLD} XDG_RUNTIME_DIR not set, defaulting to '${XDG_RUNTIME_DIR}'.${NRM}"
   if [[ ! -d "$XDG_RUNTIME_DIR" ]] && ! mkdir "$XDG_RUNTIME_DIR"; then
-    echo -e " ${RED}ERROR:${NRM}${BLD} Unable to create runtime directory '${XDG_RUNTIME_DIR}'.${NRM}"
-    exit 1
+    die "Unable to create runtime directory '${XDG_RUNTIME_DIR}'."
   fi
   if ! chown "${user}" "${XDG_RUNTIME_DIR}"; then
-    echo -e " ${RED}ERROR:${NRM}${BLD} Unable to make user '${user}' owner of runtime directory '${XDG_RUNTIME_DIR}'.${NRM}"
-    exit 1
+    die "Unable to make user '${user}' owner of runtime directory '${XDG_RUNTIME_DIR}'."
   fi
   if ! chmod 0700 "${XDG_RUNTIME_DIR}"; then
-    echo -e " ${RED}ERROR:${NRM}${BLD} Uname to make runtime directory '${XDG_RUNTIME_DIR}' only accessible to user '$user'.${NRM}"
-    exit 1
+    die "Unable to make runtime directory '${XDG_RUNTIME_DIR}' only accessible to user '$user'."
   fi
 elif [[ ! -d "$XDG_RUNTIME_DIR" ]]; then
-  echo -e " ${RED}ERROR:${NRM}${BLD} Cannot find XDG_RUNTIME_DIR which should be set by systemd.${NRM}"
-  exit 1
+  die "Cannot find XDG_RUNTIME_DIR which should be set by systemd."
 fi
 
 VOLATILE="$XDG_RUNTIME_DIR/psd"
@@ -137,8 +136,7 @@ else
     # correctly setup
     true
   else
-    echo -e " ${RED}ERROR:${NRM}${BLD} Bad value for BACKUP_LIMIT detected!${NRM}"
-    exit 1
+    die "Bad value for BACKUP_LIMIT detected!"
   fi
 fi
 
@@ -186,29 +184,22 @@ header() {
 dep_check() {
   # checks for dependencies and that psd.conf is setup correctly
   if ! command -v rsync >/dev/null 2>&1; then
-    echo -e " ${BLD}I require rsync but it's not installed. ${RED}Aborting!${NRM}"
-    exit 1
+    die "I require rsync but it's not installed."
   fi
   if ! command -v modinfo >/dev/null 2>&1; then
-    echo -e " ${BLD}I require modinfo but it's not installed. ${RED}Aborting!${NRM}" >&2
-    exit 1
+    die "I require modinfo but it's not installed."
   fi
   if ! command -v awk >/dev/null 2>&1; then
-    echo -e " ${BLD}I require awk but it's not installed. ${RED}Aborting!${NRM}" >&2
-    exit 1
+    die "I require awk but it's not installed."
   fi
   if ! command -v gdbus >/dev/null 2>&1; then
     if [[ $SUSPSYNC -eq 1 ]]; then
-      echo -e " ${BLD}I require gdbus but it's not installed. ${RED}Aborting!${NRM}"
-      exit 1
+      die "I require gdbus but it's not installed."
     fi
   fi
 
   if [[ -f /etc/psd.conf ]]; then
-    echo -e "${BLD} This version of psd does not support /etc/psd.conf since it runs as your user.${NRM}"
-    echo -e "${BLD} Recommend that you remove /etc/psd.conf and run it in systemd's user mode:${NRM}"
-    echo -e "${BLD}   systemd --user <action> psd.service${NRM}"
-    exit 1
+    die "This version of psd does not support /etc/psd.conf since it runs as your user. Remove it and use systemd's user mode: systemctl --user <action> psd.service"
   fi
 }
 
@@ -216,16 +207,14 @@ config_check() {
   # fuse3 is a depends of fuse-overlayfs but there are static builds floating around so to protect data, check for both
   for _bin in fuse-overlayfs fusermount3; do
     if ! command -v "$_bin" >/dev/null 2>&1; then
-      echo -e "${BLD}${RED} ERROR!${NRM}${BLD} To use overlayfs mode, install fuse-overlayfs and fuse3${NRM}${BLD}${NRM}"
-      exit 1
+      die "To use overlayfs mode, install fuse-overlayfs and fuse3"
     fi
   done
 
   for browser in "${BROWSERS[@]}"; do
     if [[ ! -f "$SHAREDIR/browsers/$browser" ]]; then
       # user defined an invalid browser
-      echo -e " ${BLD}${RED}$browser${NRM}${BLD} is not a supported browser. Check config file for typos: ${NRM}${BLU}$PSDCONF${NRM}"
-      exit 1
+      die "${RED}$browser${NRM}${BLD} is not a supported browser. Check config file for typos: ${NRM}${BLU}$PSDCONF"
     fi
   done
 }
@@ -254,10 +243,7 @@ ungraceful_state_check() {
       if [[ -h "$DIR" ]]; then
         # symlinked browser profiles are not supported so bail if one is detected
         if [[ -d $(readlink "$DIR") ]]; then
-          echo -e " ${RED}Warning!${NRM}"
-          echo -e " ${BLD}${BLU}$DIR${NRM}${BLD} appears to be a symlink but these are not supported.${NRM}"
-          echo -e " ${BLD}Please make the browser profile a live directory and try again. Exiting.${NRM}"
-          exit 1
+          die "${BLU}$DIR${NRM}${BLD} is a symlink, which psd does not support. Make the browser profile a real directory and try again."
         else
           echo "Ungraceful state detected for $DIR so fixing"
           unlink "$DIR"
@@ -362,7 +348,7 @@ crash_dirs() {
 # <path> durable, so a marker written after it cannot outlive the data
 flush() {
   if ! sync -f "$1"; then
-    echo -e "${RED}Error: Failed to flush $1 to disk${NRM}" >&2
+    error "Failed to flush $1 to disk"
     exit 2
   fi
 }
@@ -428,16 +414,13 @@ dup_check() {
       if [[ -n "${paths[$item]}" ]]; then
         # listed twice by one browser is harmless, by two is not
         [[ "${paths[$item]}" = "$browser" ]] && continue
-        echo -e " ${RED}Error: ${NRM}${BLD}${BLU}$item${NRM}${BLD} is a profile of both ${paths[$item]} and $browser; remove one from BROWSERS.${NRM}" >&2
-        exit 1
+        die "${BLU}$item${NRM}${BLD} is a profile of both ${paths[$item]} and $browser; remove one from BROWSERS."
       fi
       paths[$item]=$browser
       profile_paths "$item"
       for name in "${TMP##*/}" "${UPPER##*/}" "${WORK##*/}"; do
         if [[ -n "${seen[$name]}" ]]; then
-          echo -e " ${RED}Error: ${NRM}${BLD}profiles ${BLU}${seen[$name]}${NRM}${BLD} and ${BLU}$item${NRM}${BLD} would share ${BLU}$VOLATILE/$name${NRM}" >&2
-          echo -e " ${BLD}The last directory of each profile path must be unique. See psd manpage, correct, and try again.${NRM}" >&2
-          exit 1
+          die "Profiles ${BLU}${seen[$name]}${NRM}${BLD} and ${BLU}$item${NRM}${BLD} would share ${BLU}$VOLATILE/$name${NRM}${BLD}. The last directory of each profile path must be unique, see the psd man page."
         fi
         seen[$name]=$item
       done
@@ -507,7 +490,7 @@ do_sync_for() {
         # before the first resync recovers from BACKUP
         if [[ ! -d "$BACK_OVFS" ]]; then
           install -dm"$(stat -c %a "$BACKUP")" --owner="$user" --group="$group" "$BACK_OVFS" || {
-            echo -e "${RED}Error: Failed to create $BACK_OVFS${NRM}" >&2
+            error "Failed to create $BACK_OVFS"
             exit 2
           }
         fi
@@ -517,7 +500,7 @@ do_sync_for() {
         rm -f "$BACK_OVFS/.psd-complete"
         flush "$BACK_OVFS"
         if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$DIR/" "$BACK_OVFS/"; then
-          echo -e "${RED}Error: Failed to resync $DIR to $BACK_OVFS${NRM}" >&2
+          error "Failed to resync $DIR to $BACK_OVFS"
           exit 2
         fi
         flush "$BACK_OVFS"
@@ -543,14 +526,12 @@ do_sync_for() {
         chown -h "$user":"$group" "$DIR"
         touch "$DIR/.flagged"
       fi
-      echo -e "${BLD}$browser $REPORT successful${NRM}"
+      msg "$browser $REPORT successful"
     else
       if [[ ! -d "$homedir" ]] ; then
-        echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
-        exit 1
+        die "$DIR does not exist! Is /home unmounted?"
       elif [[ -d "$BACKUP" ]] ; then
-        echo -e "${RED}$DIR does not exist or is a broken symlink! Is $VOLATILE unmounted?${NRM}" >&2
-        exit 1
+        die "$DIR does not exist or is a broken symlink! Is $VOLATILE unmounted?"
       fi
     fi
   done
@@ -579,14 +560,14 @@ do_sync() {
       echo "BACKUP_LIMIT=\"$BACKUP_LIMIT\""
       echo "PSD_SESSION_MARKERS=1"
     } > "$PSDCONFDIR/.psd.conf.new"; then
-      echo -e "${RED}Error: Failed to write $PSDCONFDIR/.psd.conf.new${NRM}" >&2
+      error "Failed to write $PSDCONFDIR/.psd.conf.new"
       exit 2
     fi
     chmod 400 "$PSDCONFDIR/.psd.conf.new"
     # on disk before it replaces the old one; an empty snapshot would make
     # recovery treat this session as one started by an older psd
     if ! sync -f "$PSDCONFDIR/.psd.conf.new"; then
-      echo -e "${RED}Error: Failed to flush $PSDCONFDIR/.psd.conf.new${NRM}" >&2
+      error "Failed to flush $PSDCONFDIR/.psd.conf.new"
       exit 2
     fi
     mv -f "$PSDCONFDIR/.psd.conf.new" "$PSDCONFDIR/.psd.conf"
@@ -639,7 +620,7 @@ do_unsync() {
             rm -f "$BACK_OVFS/.psd-complete"
             flush "$BACK_OVFS"
             if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$TMP/" "$BACK_OVFS/"; then
-              echo -e "${RED}Error: Failed to sync $TMP to $BACK_OVFS during unsync${NRM}" >&2
+              error "Failed to sync $TMP to $BACK_OVFS during unsync"
               exit 2
             fi
             flush "$BACK_OVFS"
@@ -647,13 +628,13 @@ do_unsync() {
             flush "$BACK_OVFS"
             # sync BACK_OVFS to BACKUP
             if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$BACK_OVFS/" "$BACKUP/"; then
-              echo -e "${RED}Error: Failed to sync $BACK_OVFS to $BACKUP during unsync${NRM}" >&2
+              error "Failed to sync $BACK_OVFS to $BACKUP during unsync"
               exit 2
             fi
           else
             # BACK_OVFS doesn't exist, sync directly from TMP to BACKUP
             if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged "$TMP/" "$BACKUP/"; then
-              echo -e "${RED}Error: Failed to sync $TMP to $BACKUP during unsync${NRM}" >&2
+              error "Failed to sync $TMP to $BACKUP during unsync"
               exit 2
             fi
           fi
@@ -664,13 +645,13 @@ do_unsync() {
           # if something still holds the mount it is detached lazily and only
           # writes made after the copy above are lost
           if ! fusermount3 -u "$TMP"; then
-            echo -e "${RED}Warning: $TMP is busy, detaching it lazily${NRM}" >&2
+            warn "$TMP is busy, detaching it lazily"
             fusermount3 -uz "$TMP"
           fi
           # never rm -rf through a live mount; leave this profile to crash
           # recovery and carry on with the others
           if mountpoint -q "$TMP"; then
-            echo -e "${RED}Error: Failed to unmount $TMP, leaving it and $BACKUP in place${NRM}" >&2
+            error "Failed to unmount $TMP, leaving it and $BACKUP in place"
             failed=1
             continue
           fi
@@ -680,11 +661,10 @@ do_unsync() {
         # restore BACKUP (which now has the changes merged in)
         [[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
         [[ -d "$TMP" ]] && ! mountpoint -q "$TMP" && rm -rf "$TMP"
-        echo -e "${BLD}$browser unsync successful${NRM}"
+        msg "$browser unsync successful"
       else
         if [[ ! -d "$homedir" ]] ; then
-          echo -e "${RED}$DIR does not exist! Is /home unmounted?${NRM}" >&2
-          exit 1
+          die "$DIR does not exist! Is /home unmounted?"
         fi
       fi
     done
@@ -819,7 +799,7 @@ case "$1" in
       running_check
       ungraceful_state_check
       [[ $SUSPSYNC -eq 1 ]] && take_inhibit_lock
-      echo -e "${BLD}psd startup check successful${NRM}"
+      msg "psd startup check successful"
     fi
     ;;
   suspend-sync)
