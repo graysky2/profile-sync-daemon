@@ -76,6 +76,11 @@ fi
 VOLATILE="$XDG_RUNTIME_DIR/psd"
 PID_FILE="$XDG_RUNTIME_DIR/psd.pid"
 
+# runs that change state are serialized on this lock (see take_lock); every
+# background child is started with the fd closed so the lock dies with us
+exec {lockfd}>>"$XDG_RUNTIME_DIR/psd.lock" ||
+  die "Unable to open $XDG_RUNTIME_DIR/psd.lock"
+
 # Setup check for config file
 if [[ -f "$PSDCONF" ]]; then
   if [[ ! -f "$PID_FILE" ]]; then
@@ -189,6 +194,9 @@ dep_check() {
   if ! command -v modinfo >/dev/null 2>&1; then
     die "I require modinfo but it's not installed."
   fi
+  for _bin in flock findmnt; do
+    command -v "$_bin" >/dev/null 2>&1 || die "I require $_bin but it's not installed."
+  done
   if ! command -v awk >/dev/null 2>&1; then
     die "I require awk but it's not installed."
   fi
@@ -240,7 +248,15 @@ ungraceful_state_check() {
       [[ -e "$DIR/.flagged" ]] && continue
 
       NOW=$(date +%Y%m%d_%H%M%S)
-      if [[ -h "$DIR" ]]; then
+      if [[ -h "$DIR" && "$(readlink "$DIR")" == "$TMP" ]]; then
+        # psd's own link; while the mount is live it holds the newest data
+        if mountpoint -q "$TMP"; then
+          die "$TMP is still mounted but $DIR is not flagged; unsync it with: psd unsync"
+        fi
+        echo "Ungraceful state detected for $DIR so fixing"
+        unlink "$DIR"
+        findmnt -rn -M "$TMP" >/dev/null 2>&1 || rmdir "$TMP" 2>/dev/null
+      elif [[ -h "$DIR" ]]; then
         # symlinked browser profiles are not supported so bail if one is detected
         if [[ -d $(readlink "$DIR") ]]; then
           die "${BLU}$DIR${NRM}${BLD} is a symlink, which psd does not support. Make the browser profile a real directory and try again."
@@ -349,7 +365,7 @@ crash_dirs() {
 flush() {
   if ! sync -f "$1"; then
     error "Failed to flush $1 to disk"
-    exit 2
+    return 1
   fi
 }
 
@@ -452,93 +468,149 @@ kill_browsers() {
   done
 }
 
-do_sync_for() {
-  browser=$1
-  load_env_for "$browser"
-  for item in "${DIRArr[@]}"; do
-    profile_paths "$item"
-    local REPORT
+# sync_profile <dir>: initial sync of one profile of the loaded browser. On
+# failure nothing is left half done except what SYNCED_* records, which
+# rollback_sync undoes.
+sync_profile() {
+  profile_paths "$1"
 
-    # make tmpfs container
-    if [[ -d "$DIR" ]]; then
-      # retain permissions on sync target
-      PREFIXP=$(stat -c %a "$DIR")
-      [[ -r "$TMP" ]] || install -dm"$PREFIXP" --owner="$user" --group="$group" "$TMP"
-
-      if [[ ! -r "$UPPER" ]]; then
-        install -dm"$PREFIXP" --owner="$user" --group="$group" "$UPPER" || exit 2
-      fi
-      if [[ ! -r "$WORK" ]]; then
-        install -dm"$PREFIXP" --owner="$user" --group="$group" "$WORK" || exit 2
-      fi
-
-      # backup target and link to tmpfs container
-      if [[ $(readlink "$DIR") != "$TMP" ]]; then
-        # a BACK_OVFS left from a previous session is older than DIR, so its
-        # marker must be gone before DIR becomes BACKUP
-        if [[ -e "$BACK_OVFS/.psd-complete" ]]; then
-          rm -f "$BACK_OVFS/.psd-complete"
-          flush "$BACK_OVFS"
-        fi
-        mv --no-target-directory "$DIR" "$BACKUP"
-      fi
-
-      # sync the tmpfs targets to the disc
-      if [[ -e "$DIR"/.flagged ]]; then
-        REPORT="resync"
-        # BACK_OVFS is created here rather than on the initial sync so a crash
-        # before the first resync recovers from BACKUP
-        if [[ ! -d "$BACK_OVFS" ]]; then
-          install -dm"$(stat -c %a "$BACKUP")" --owner="$user" --group="$group" "$BACK_OVFS" || {
-            error "Failed to create $BACK_OVFS"
-            exit 2
-          }
-        fi
-        # .psd-complete tells ungraceful_state_check that BACK_OVFS is usable;
-        # its removal must be on disk before rsync rewrites files in place,
-        # and the data before it is put back
-        rm -f "$BACK_OVFS/.psd-complete"
-        flush "$BACK_OVFS"
-        if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$DIR/" "$BACK_OVFS/"; then
-          error "Failed to resync $DIR to $BACK_OVFS"
-          exit 2
-        fi
-        flush "$BACK_OVFS"
-        touch "$BACK_OVFS/.psd-complete"
-        flush "$BACK_OVFS"
-      else
-        # initial sync
-        REPORT="sync"
-        if ! mountpoint -q "$TMP"; then
-          overlay_opts="lowerdir=$BACKUP,upperdir=$UPPER,workdir=$WORK"
-          if [[ $FIREJAIL -eq 1 ]]; then
-            overlay_opts="allow_root,$overlay_opts"
-          fi
-          fuse-overlayfs -o "$overlay_opts" "$TMP"
-          if ! mountpoint -q "$TMP"; then
-            exit 2
-          fi
-        fi
-
-        [[ -h "$DIR" ]] && unlink "$DIR"
-        ln -s "$TMP" "$DIR"
-
-        chown -h "$user":"$group" "$DIR"
-        touch "$DIR/.flagged"
-      fi
-      msg "$browser $REPORT successful"
-    else
-      if [[ ! -d "$homedir" ]] ; then
-        die "$DIR does not exist! Is /home unmounted?"
-      elif [[ -d "$BACKUP" ]] ; then
-        die "$DIR does not exist or is a broken symlink! Is $VOLATILE unmounted?"
-      fi
+  if [[ -h "$DIR" ]]; then
+    # recovery runs first, so a link here means another session owns it
+    error "$DIR is already a link to $(readlink "$DIR"), not syncing it"
+    return 1
+  elif [[ ! -d "$DIR" ]]; then
+    if [[ ! -d "$homedir" ]]; then
+      error "$DIR does not exist! Is /home unmounted?"
+      return 1
+    elif [[ -d "$BACKUP" ]]; then
+      error "$DIR does not exist but $BACKUP does, not syncing it"
+      return 1
     fi
+    # browser not installed
+    return 0
+  fi
+  if mountpoint -q "$TMP"; then
+    error "$TMP is still mounted from an earlier session, not syncing $DIR"
+    return 1
+  fi
+
+  # writes left by an earlier session in this boot would be layered over the
+  # profile on disk, which may be newer; keep them aside instead
+  if unsaved_writes; then
+    local stale
+    stale="$XDG_RUNTIME_DIR/psd/.stale-${UPPER##*/}-$(date +%Y%m%d_%H%M%S)"
+    mv --no-target-directory "$UPPER" "$stale" || return 1
+    rm -rf "$WORK"
+    warn "Writes left by an earlier session are kept in $stale, not used"
+  fi
+
+  # retain permissions on sync target
+  PREFIXP=$(stat -c %a "$DIR")
+  install -dm"$PREFIXP" --owner="$user" --group="$group" "$TMP" "$UPPER" "$WORK" || return 1
+
+  # a BACK_OVFS left from a previous session is older than DIR, so its
+  # marker must be gone before DIR becomes BACKUP
+  if [[ -e "$BACK_OVFS/.psd-complete" ]]; then
+    rm -f "$BACK_OVFS/.psd-complete"
+    flush "$BACK_OVFS" || return 1
+  fi
+  mv --no-target-directory "$DIR" "$BACKUP" || return 1
+  SYNCED_BROWSER+=("$browser")
+  SYNCED_DIR+=("$1")
+
+  overlay_opts="lowerdir=$BACKUP,upperdir=$UPPER,workdir=$WORK"
+  if [[ $FIREJAIL -eq 1 ]]; then
+    overlay_opts="allow_root,$overlay_opts"
+  fi
+  # the fuse daemon outlives psd, so it must not inherit the lock
+  fuse-overlayfs -o "$overlay_opts" "$TMP" {lockfd}>&-
+  if ! mountpoint -q "$TMP"; then
+    error "Failed to mount $TMP"
+    return 1
+  fi
+
+  ln -sT "$TMP" "$DIR" &&
+    chown -h "$user":"$group" "$DIR" &&
+    touch "$DIR/.flagged" || return 1
+  msg "$browser sync successful"
+}
+
+# unsaved_writes: whether UPPER holds anything besides psd's own .flagged
+unsaved_writes() {
+  [[ -d "$UPPER" ]] &&
+    [[ -n "$(find "$UPPER" -mindepth 1 ! -path "$UPPER/.flagged" -print -quit)" ]]
+}
+
+# rollback_sync: undo the profiles synced by a failed start, newest first
+rollback_sync() {
+  local i
+  for (( i = ${#SYNCED_DIR[@]} - 1; i >= 0; i-- )); do
+    load_env_for "${SYNCED_BROWSER[i]}"
+    profile_paths "${SYNCED_DIR[i]}"
+    [[ -h "$DIR" ]] && unlink "$DIR"
+    if mountpoint -q "$TMP"; then
+      fusermount3 -u "$TMP" || fusermount3 -uz "$TMP"
+    fi
+    if mountpoint -q "$TMP"; then
+      error "Failed to unmount $TMP; $BACKUP is left for crash recovery"
+      continue
+    fi
+    mv --no-target-directory "$BACKUP" "$DIR" || continue
+    # anything written in the moments the overlay was up is kept, not deleted
+    rm -f "$UPPER/.flagged"
+    if rmdir "$UPPER" 2>/dev/null; then
+      rm -rf "$WORK"
+    else
+      warn "Writes made during the failed start are kept in $UPPER"
+    fi
+    rmdir "$TMP" 2>/dev/null
+    msg "${SYNCED_BROWSER[i]} sync undone"
   done
 }
 
+# resync_profile <dir>: copy one synced profile of the loaded browser to disk.
+# Never moves, mounts or links anything: a profile that is not this session's
+# link is left for the next start.
+resync_profile() {
+  profile_paths "$1"
+
+  if [[ ! -h "$DIR" || "$(readlink "$DIR")" != "$TMP" ]]; then
+    [[ -e "$DIR" || -h "$DIR" ]] &&
+      warn "$DIR is not synced by this session; it is synced at the next start"
+    return 0
+  fi
+  if [[ ! -e "$DIR/.flagged" ]]; then
+    error "$TMP is not mounted, cannot resync $DIR"
+    return 1
+  fi
+
+  # BACK_OVFS is created here rather than on the initial sync so a crash
+  # before the first resync recovers from BACKUP
+  if [[ ! -d "$BACK_OVFS" ]]; then
+    install -dm"$(stat -c %a "$BACKUP")" --owner="$user" --group="$group" "$BACK_OVFS" || {
+      error "Failed to create $BACK_OVFS"
+      return 1
+    }
+  fi
+  # .psd-complete tells ungraceful_state_check that BACK_OVFS is usable;
+  # its removal must be on disk before rsync rewrites files in place,
+  # and the data before it is put back
+  rm -f "$BACK_OVFS/.psd-complete"
+  flush "$BACK_OVFS" || return 1
+  if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$DIR/" "$BACK_OVFS/"; then
+    error "Failed to resync $DIR to $BACK_OVFS"
+    return 1
+  fi
+  flush "$BACK_OVFS" &&
+    touch "$BACK_OVFS/.psd-complete" &&
+    flush "$BACK_OVFS" || return 1
+  msg "$browser resync successful"
+}
+
+# do_sync: the initial sync when no session is running, all or nothing, else a
+# resync of every synced profile. Returns nonzero if anything failed.
 do_sync() {
-  local initial=0
+  local initial=0 browser item failed=0
   [[ -f "$PID_FILE" ]] || initial=1
 
   # make a snapshot of psd.conf and redefine its location to this snapshot
@@ -561,23 +633,46 @@ do_sync() {
       echo "PSD_SESSION_MARKERS=1"
     } > "$PSDCONFDIR/.psd.conf.new"; then
       error "Failed to write $PSDCONFDIR/.psd.conf.new"
-      exit 2
+      return 2
     fi
     chmod 400 "$PSDCONFDIR/.psd.conf.new"
     # on disk before it replaces the old one; an empty snapshot would make
     # recovery treat this session as one started by an older psd
     if ! sync -f "$PSDCONFDIR/.psd.conf.new"; then
       error "Failed to flush $PSDCONFDIR/.psd.conf.new"
-      exit 2
+      return 2
     fi
     mv -f "$PSDCONFDIR/.psd.conf.new" "$PSDCONFDIR/.psd.conf"
   fi
-  touch "$PID_FILE"
 
-  local browser
-  for browser in "${BROWSERS[@]}"; do
-    do_sync_for "$browser"
-  done
+  if [[ $initial -eq 1 ]]; then
+    local -A seen_dirs=()
+    SYNCED_BROWSER=()
+    SYNCED_DIR=()
+    for browser in "${BROWSERS[@]}"; do
+      load_env_for "$browser"
+      for item in "${DIRArr[@]}"; do
+        # a def may list the same profile twice
+        [[ -n "${seen_dirs[$item]}" ]] && continue
+        seen_dirs[$item]=1
+        if ! sync_profile "$item"; then
+          error "Sync of $browser failed, undoing this start"
+          rollback_sync
+          return 2
+        fi
+      done
+    done
+    # the session exists only once every profile is synced
+    touch "$PID_FILE"
+  else
+    for browser in "${BROWSERS[@]}"; do
+      load_env_for "$browser"
+      for item in "${DIRArr[@]}"; do
+        resync_profile "$item" || failed=1
+      done
+    done
+    [[ $failed -eq 0 ]] || return 2
+  fi
 }
 
 enforce() {
@@ -599,8 +694,6 @@ enforce() {
 }
 
 do_unsync() {
-  rm -f "$PID_FILE" "$PSDCONFDIR/.psd.conf"
-
   local browser failed=0
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
@@ -608,7 +701,8 @@ do_unsync() {
       profile_paths "$item"
       # check if user has browser profile
       if [[ -h "$DIR" ]]; then
-        unlink "$DIR"
+        # the link and mount stay until the data is on disk, so a failure
+        # below leaves the profile usable in tmpfs
 
         # unmount overlayfs FIRST while BACKUP still exists at original location
         # moving BACKUP before unmounting breaks the overlayfs mount (lowerdir path disappears)
@@ -618,29 +712,39 @@ do_unsync() {
           if [[ -d "$BACK_OVFS" ]]; then
             # Update BACK_OVFS with latest changes from live overlayfs
             rm -f "$BACK_OVFS/.psd-complete"
-            flush "$BACK_OVFS"
-            if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$TMP/" "$BACK_OVFS/"; then
-              error "Failed to sync $TMP to $BACK_OVFS during unsync"
-              exit 2
+            if ! flush "$BACK_OVFS" ||
+              ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$TMP/" "$BACK_OVFS/" ||
+              ! flush "$BACK_OVFS"; then
+              error "Failed to sync $TMP to $BACK_OVFS during unsync, leaving $DIR in tmpfs"
+              failed=1
+              continue
             fi
-            flush "$BACK_OVFS"
-            touch "$BACK_OVFS/.psd-complete"
-            flush "$BACK_OVFS"
+            if ! touch "$BACK_OVFS/.psd-complete" || ! flush "$BACK_OVFS"; then
+              error "Failed to mark $BACK_OVFS complete, leaving $DIR in tmpfs"
+              failed=1
+              continue
+            fi
             # sync BACK_OVFS to BACKUP
             if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$BACK_OVFS/" "$BACKUP/"; then
-              error "Failed to sync $BACK_OVFS to $BACKUP during unsync"
-              exit 2
+              error "Failed to sync $BACK_OVFS to $BACKUP during unsync, leaving $BACKUP for crash recovery"
+              failed=1
+              continue
             fi
           else
             # BACK_OVFS doesn't exist, sync directly from TMP to BACKUP
             if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged "$TMP/" "$BACKUP/"; then
-              error "Failed to sync $TMP to $BACKUP during unsync"
-              exit 2
+              error "Failed to sync $TMP to $BACKUP during unsync, leaving $DIR in tmpfs"
+              failed=1
+              continue
             fi
           fi
           # BACKUP was rewritten in place and becomes DIR below, where nothing
           # marks it as partial, so it must be on disk first
-          flush "$BACKUP"
+          if ! flush "$BACKUP"; then
+            failed=1
+            continue
+          fi
+          unlink "$DIR"
           # unmount (before moving BACKUP); everything is on disk by now, so
           # if something still holds the mount it is detached lazily and only
           # writes made after the copy above are lost
@@ -658,8 +762,13 @@ do_unsync() {
           rm -rf "$TMP" "$UPPER" "$WORK"
         fi
 
+        [[ -h "$DIR" ]] && unlink "$DIR"
         # restore BACKUP (which now has the changes merged in)
-        [[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
+        if [[ -d "$BACKUP" ]] && ! mv --no-target-directory "$BACKUP" "$DIR"; then
+          error "Failed to move $BACKUP back to $DIR, leaving it for crash recovery"
+          failed=1
+          continue
+        fi
         [[ -d "$TMP" ]] && ! mountpoint -q "$TMP" && rm -rf "$TMP"
         msg "$browser unsync successful"
       else
@@ -669,7 +778,10 @@ do_unsync() {
       fi
     done
   done
-  [[ $failed -eq 0 ]] || exit 2
+  # the session ends only when every profile is back on disk; otherwise the
+  # PID and config snapshot are kept for recovery
+  [[ $failed -eq 0 ]] || return 2
+  rm -f "$PID_FILE" "$PSDCONFDIR/.psd.conf"
 }
 
 parse() {
@@ -768,7 +880,55 @@ take_inhibit_lock() {
   release_inhibit_lock
 
   # background this to avoid hanging on startup
-  @BINDIR@/psd-suspend-sync &
+  @BINDIR@/psd-suspend-sync {lockfd}>&- &
+}
+
+# take_lock wait|try: wait for other psd runs to finish, or with try exit
+# quietly if one is running (a skipped resync is caught up by the next one)
+take_lock() {
+  if [[ $1 = try ]]; then
+    flock -n "$lockfd"
+    case $? in
+      0) ;;
+      1) msg "psd is busy, skipping"; exit 0 ;;
+      *) die "Cannot take the lock $XDG_RUNTIME_DIR/psd.lock" ;;
+    esac
+  else
+    # no timeout: going ahead without the lock would race a running sync,
+    # and systemd's stop timeout already bounds a stuck holder
+    flock "$lockfd" || die "Cannot take the lock $XDG_RUNTIME_DIR/psd.lock"
+  fi
+}
+
+# recover: psd.service's ExecStopPost. It runs after every stop, also when
+# the start failed or psd was killed, after systemd has killed the fuse
+# daemons. A clean unsync left nothing to do.
+recover() {
+  local browser item
+  for browser in "${BROWSERS[@]}"; do
+    load_env_for "$browser"
+    for item in "${DIRArr[@]}"; do
+      profile_paths "$item"
+      if [[ -f "$PID_FILE" ]] && [[ -e "$DIR/.flagged" ]] || mountpoint -q "$TMP"; then
+        die "psd is running and $DIR is live; stop it with: systemctl --user stop psd"
+      fi
+    done
+  done
+  rm -f "$PID_FILE"
+  # mounts whose fuse daemon is gone hide the profile; detach them
+  for browser in "${BROWSERS[@]}"; do
+    load_env_for "$browser"
+    for item in "${DIRArr[@]}"; do
+      profile_paths "$item"
+      if findmnt -rn -M "$TMP" >/dev/null 2>&1; then
+        fusermount3 -u "$TMP" 2>/dev/null || fusermount3 -uz "$TMP"
+      fi
+      if unsaved_writes; then
+        warn "$UPPER holds writes made after the last copy to disk; they are not restored and are lost at reboot"
+      fi
+    done
+  done
+  ungraceful_state_check
 }
 
 release_inhibit_lock() {
@@ -784,6 +944,7 @@ case "$1" in
     parse
     ;;
   c|C|clean|Clean)
+    take_lock wait
     dep_check
     config_check
     dup_check
@@ -792,6 +953,7 @@ case "$1" in
     ;;
   startup)
     # target for psd.service's ExecStart= for consistent error handling
+    take_lock wait
     if [[ ! -f $PID_FILE ]]; then
       dep_check
       config_check
@@ -803,9 +965,11 @@ case "$1" in
     fi
     ;;
   suspend-sync)
+    # wait: a resync in progress has no complete copy until it finishes
+    take_lock wait
     if [[ -f $PID_FILE ]]; then
       # system preparing for sleep mode, resync when psd is active
-      do_sync
+      do_sync || exit
     fi
     ;;
   recycle-inhibit-lock)
@@ -814,24 +978,40 @@ case "$1" in
     ;;
   sync|resync)
     if [[ -f $PID_FILE ]]; then
-      do_sync
+      take_lock try
+      # an unsync may have ended the session while we waited for the check
+      if [[ ! -f $PID_FILE ]]; then
+        msg "psd is not running, skipping"
+        exit 0
+      fi
+      do_sync || exit
     else
+      take_lock wait
       dep_check
       config_check
       dup_check
       running_check
       ungraceful_state_check
-      do_sync
+      do_sync || exit
       enforce
     fi
     ;;
   unsync)
+    take_lock wait
     if [[ -f $PID_FILE ]]; then
-      do_sync
+      # a failed resync here must not stop the unsync
+      do_sync || warn "Resync before unsync failed, unsyncing anyway"
       kill_browsers
       do_unsync
+      rc=$?
       [[ $SUSPSYNC -eq 1 ]] && release_inhibit_lock
+      exit $rc
     fi
+    ;;
+  recover)
+    take_lock wait
+    recover
+    [[ $SUSPSYNC -eq 1 ]] && release_inhibit_lock
     ;;
   *)
     header

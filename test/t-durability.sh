@@ -38,9 +38,10 @@ test_unsync_flushes_before_restore() {
   assert_ok psd resync
   export PSD_TRACE=$T/trace
   assert_ok psd unsync
-  # the unsync's own copy, not the resync it starts with
+  # after the resync unsync starts with, the unsync's own copy; the link
+  # goes only once the data is on disk
   assert_trace_order \
-    '^unlink ' \
+    '^rsync .*/psdtest-a/ .*-back-ovfs/$' \
     '^rm -f .*-back-ovfs/\.psd-complete$' \
     '^sync -f .*-back-ovfs$' \
     '^rsync .*/psd/[^ ]*/ .*-back-ovfs/$' \
@@ -48,6 +49,7 @@ test_unsync_flushes_before_restore() {
     '^touch .*-back-ovfs/\.psd-complete$' \
     '^rsync .*-back-ovfs/ .*-backup/$' \
     '^sync -f .*-backup$' \
+    '^unlink ' \
     '^mv --no-target-directory .*-backup .*/psdtest-a$'
 }
 
