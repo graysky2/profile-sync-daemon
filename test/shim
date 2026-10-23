@@ -73,7 +73,9 @@ if [[ -z "$PSD_REAL_FUSE" ]]; then
       mnt=${*: -1}
       rp=$(realpath "$mnt" 2>/dev/null) || exit 1
       grep -qxF "$rp" "$PSD_FAKE_MNT" || { echo "fusermount3: $mnt not mounted" >&2; exit 1; }
-      if grep -qxF "$rp" "$PSD_FAKE_BUSY" && [[ "$*" != *-z* ]]; then
+      lazy=
+      for a in "$@"; do [[ "$a" == -*z* ]] && lazy=1; done
+      if grep -qxF "$rp" "$PSD_FAKE_BUSY" && [[ -z "$lazy" ]]; then
         echo "fusermount3: failed to unmount $mnt: Device or resource busy" >&2
         exit 1
       fi

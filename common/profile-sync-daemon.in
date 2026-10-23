@@ -599,7 +599,7 @@ enforce() {
 do_unsync() {
   rm -f "$PID_FILE" "$PSDCONFDIR/.psd.conf"
 
-  local browser
+  local browser failed=0
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
     for item in "${DIRArr[@]}"; do
@@ -648,14 +648,26 @@ do_unsync() {
           # BACKUP was rewritten in place and becomes DIR below, where nothing
           # marks it as partial, so it must be on disk first
           flush "$BACKUP"
-          # unmount (before moving BACKUP)
-          fusermount3 -u "$TMP"
+          # unmount (before moving BACKUP); everything is on disk by now, so
+          # if something still holds the mount it is detached lazily and only
+          # writes made after the copy above are lost
+          if ! fusermount3 -u "$TMP"; then
+            echo -e "${RED}Warning: $TMP is busy, detaching it lazily${NRM}" >&2
+            fusermount3 -uz "$TMP"
+          fi
+          # never rm -rf through a live mount; leave this profile to crash
+          # recovery and carry on with the others
+          if mountpoint -q "$TMP"; then
+            echo -e "${RED}Error: Failed to unmount $TMP, leaving it and $BACKUP in place${NRM}" >&2
+            failed=1
+            continue
+          fi
           rm -rf "$TMP" "$UPPER" "$WORK"
         fi
 
         # restore BACKUP (which now has the changes merged in)
         [[ -d "$BACKUP" ]] && mv --no-target-directory "$BACKUP" "$DIR"
-        [[ -d "$TMP" ]] && rm -rf "$TMP"
+        [[ -d "$TMP" ]] && ! mountpoint -q "$TMP" && rm -rf "$TMP"
         echo -e "${BLD}$browser unsync successful${NRM}"
       else
         if [[ ! -d "$homedir" ]] ; then
@@ -665,6 +677,7 @@ do_unsync() {
       fi
     done
   done
+  [[ $failed -eq 0 ]] || exit 2
 }
 
 parse() {
