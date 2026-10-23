@@ -492,7 +492,7 @@ do_sync_for() {
         fi
         # .psd-complete tells ungraceful_state_check that BACK_OVFS is usable
         rm -f "$BACK_OVFS/.psd-complete"
-        if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$DIR/" "$BACK_OVFS/"; then
+        if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$DIR/" "$BACK_OVFS/"; then
           echo -e "${RED}Error: Failed to resync $DIR to $BACK_OVFS${NRM}" >&2
           exit 2
         fi
@@ -608,19 +608,19 @@ do_unsync() {
           if [[ -d "$BACK_OVFS" ]]; then
             # Update BACK_OVFS with latest changes from live overlayfs
             rm -f "$BACK_OVFS/.psd-complete"
-            if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$TMP/" "$BACK_OVFS/"; then
+            if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$TMP/" "$BACK_OVFS/"; then
               echo -e "${RED}Error: Failed to sync $TMP to $BACK_OVFS during unsync${NRM}" >&2
               exit 2
             fi
             touch "$BACK_OVFS/.psd-complete"
             # sync BACK_OVFS to BACKUP
-            if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$BACK_OVFS/" "$BACKUP/"; then
+            if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$BACK_OVFS/" "$BACKUP/"; then
               echo -e "${RED}Error: Failed to sync $BACK_OVFS to $BACKUP during unsync${NRM}" >&2
               exit 2
             fi
           else
             # BACK_OVFS doesn't exist, sync directly from TMP to BACKUP
-            if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$TMP/" "$BACKUP/"; then
+            if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged "$TMP/" "$BACKUP/"; then
               echo -e "${RED}Error: Failed to sync $TMP to $BACKUP during unsync${NRM}" >&2
               exit 2
             fi

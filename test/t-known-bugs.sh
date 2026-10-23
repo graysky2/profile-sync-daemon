@@ -60,7 +60,6 @@ test_enforce_keeps_unused_copies() {
 }
 
 test_same_size_rewrite_in_same_second_synced() {
-  xfail "bug 19: rsync quick check compares whole seconds only" "prefs.js after unsync"
   local P=$XDG_CONFIG_HOME/psdtest-a
   profile_new "$P" v1
   assert_ok start_session
@@ -150,5 +149,22 @@ test_enforce_rotates_snapshots() {
   assert_ok start_session
   assert_absent "$P-backup-crashrecovery-20260101_000000"
   assert_realdir "$P-backup-crashrecovery-20260102_000000"
+  assert_ok psd unsync
+}
+
+test_same_size_rewrite_in_same_second_resynced() {
+  # bug 19, resync path
+  local P=$XDG_CONFIG_HOME/psdtest-a
+  profile_new "$P" v1
+  assert_ok start_session
+  local sec v
+  sec=$(date +%s)
+  touch -d "@$sec.100000000" "$P/prefs.js"
+  assert_ok psd resync
+  profile_rewrite "$P" v2
+  touch -d "@$sec.200000000" "$P/prefs.js"
+  assert_ok psd resync
+  read -r v _ < "$P-back-ovfs/prefs.js"
+  assert_eq "$v" v2 "prefs.js in back-ovfs after resync"
   assert_ok psd unsync
 }
