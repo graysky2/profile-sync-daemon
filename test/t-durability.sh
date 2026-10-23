@@ -78,10 +78,10 @@ test_mount_failure_leaves_no_stale_marker() {
   assert_ok psd resync
   assert_ok psd unsync
   profile_write "$P" v2          # used without psd
-  printf '#!/bin/sh\nexit 1\n' > "$T/bin/fuse-overlayfs"
-  chmod 755 "$T/bin/fuse-overlayfs"
+  printf '#!/bin/sh\nexit 1\n' > "$T_BIN/fuse-overlayfs"
+  chmod 755 "$T_BIN/fuse-overlayfs"
   rm "$T_SHIMS/fuse-overlayfs"
-  ln -s "$T/bin/fuse-overlayfs" "$T_SHIMS/fuse-overlayfs"
+  ln -s "$T_BIN/fuse-overlayfs" "$T_SHIMS/fuse-overlayfs"
   psd startup
   psd resync
   reboot_sim

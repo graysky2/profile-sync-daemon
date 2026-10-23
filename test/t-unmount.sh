@@ -24,9 +24,9 @@ test_unmount_failure_removes_nothing() {
   profile_new "$P" v1
   assert_ok start_session
   profile_write "$P" v2
-  printf '#!/bin/sh\nexit 1\n' > "$T/bin/fusermount3"
-  chmod 755 "$T/bin/fusermount3"
-  ln -sf "$T/bin/fusermount3" "$T_SHIMS/fusermount3"
+  printf '#!/bin/sh\nexit 1\n' > "$T_BIN/fusermount3"
+  chmod 755 "$T_BIN/fusermount3"
+  ln -sf "$T_BIN/fusermount3" "$T_SHIMS/fusermount3"
   assert_fails psd unsync
   # still mounted and intact in tmpfs
   assert_version "$(TMP_A)" v2
@@ -50,14 +50,14 @@ test_unmount_failure_does_not_stop_other_profiles() {
   # only psdtest-a refuses to unmount
   mkdir -p "$T/shim2"
   ln -s "$T_SRC/test/shim" "$T/shim2/fusermount3"
-  cat > "$T/bin/fusermount3" <<EOS
+  cat > "$T_BIN/fusermount3" <<EOS
 #!/bin/bash
 case "\$*" in *psdtest-a*) exit 1 ;; esac
 PATH=\${PATH#"$T_SHIMS:"}
 exec "$T/shim2/fusermount3" "\$@"
 EOS
-  chmod 755 "$T/bin/fusermount3"
-  ln -sf "$T/bin/fusermount3" "$T_SHIMS/fusermount3"
+  chmod 755 "$T_BIN/fusermount3"
+  ln -sf "$T_BIN/fusermount3" "$T_SHIMS/fusermount3"
   assert_fails psd unsync
   assert_realdir "$B"
   assert_version "$B" b2

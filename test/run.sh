@@ -5,6 +5,8 @@
 #   PSD_REAL_FUSE=1  use real fuse-overlayfs mounts (see test/host.sh)
 #   KEEP=1           keep scratch trees of failing tests
 #   VERBOSE=1        show why expected failures failed
+#   TMPDIR=/dev/shm  keep the test data in RAM (PSD_TEST_EXECDIR, default
+#                    /tmp, holds the scratch builds if it is noexec)
 #
 # Each test file defines test_* functions. Every function runs in a subshell
 # with a fresh scratch tree. A test that calls xfail is expected to fail with
@@ -28,8 +30,16 @@ cd -- "$(dirname -- "$0")" || exit 1
 . ./lib.sh
 
 T_BASE=$(mktemp -d "${TMPDIR:-/tmp}/psd-test.XXXXXX")
+# test data can go on a tmpfs (TMPDIR=/dev/shm) to spare the disk; if that
+# is mounted noexec, the scratch builds of psd go to PSD_TEST_EXECDIR
+T_XBASE=$T_BASE/x
+mkdir "$T_XBASE"
+printf '#!/bin/sh\n' > "$T_XBASE/probe" && chmod 755 "$T_XBASE/probe"
+if ! "$T_XBASE/probe" 2>/dev/null; then
+  T_XBASE=$(mktemp -d "${PSD_TEST_EXECDIR:-/tmp}/psd-test-x.XXXXXX")
+fi
 # also stop anything a test left running, e.g. stand-in fuse daemons
-trap 'pkill -P $$ 2>/dev/null; rm -rf "$T_BASE"' EXIT
+trap 'pkill -P $$ 2>/dev/null; rm -rf "$T_BASE" "$T_XBASE"' EXIT
 
 files=()
 if (( $# )); then

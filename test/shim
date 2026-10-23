@@ -107,6 +107,11 @@ if [[ -z "$PSD_REAL_FUSE" ]]; then
       find "$rp" -mindepth 1 -delete
       exit 0
       ;;
+    sync)
+      # durability is checked by the order in PSD_TRACE; a real syncfs here
+      # would only flush the host disk over and over
+      exit 0
+      ;;
     mountpoint)
       rp=$(realpath "${*: -1}" 2>/dev/null) && grep -qxF "$rp" "$PSD_FAKE_MNT" && exit 0
       ;;
@@ -120,7 +125,9 @@ if [[ -z "$PSD_REAL_FUSE" ]]; then
           exit
         fi
       done
-      cat "$PSD_FAKE_MNT" "$PSD_FAKE_MNT.dead" 2>/dev/null | grep -v '^$'
+      # escaped like findmnt -r does
+      cat "$PSD_FAKE_MNT" "$PSD_FAKE_MNT.dead" 2>/dev/null | grep -v '^$' |
+        sed 's/\\/\\x5c/g; s/ /\\x20/g'
       exit 0
       ;;
   esac

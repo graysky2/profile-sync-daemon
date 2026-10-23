@@ -51,7 +51,8 @@ build_base() {
 setup_env() {
   T=$(mktemp -d "$T_BASE/t.XXXXXX")
   T_SHARE=$T/share
-  T_BIN=$T/bin
+  # executables live apart from the data, which may be on a noexec tmpfs
+  T_BIN=$T_XBASE/${T##*/}
   T_SHIMS=$T/shims
   T_LOG=$T/log
   mkdir -p "$T_SHARE/browsers" "$T_BIN" "$T_SHIMS" "$T/home" "$T/config/psd" \
@@ -87,7 +88,7 @@ setup_env() {
 teardown_env() {
   [[ -n "${T:-}" && -d "$T" ]] || return 0
   unmount_all
-  rm -rf "$T"
+  rm -rf "$T" "$T_BIN"
 }
 
 # write_conf <lines...>: replace psd.conf, always with suspend sync off
@@ -189,14 +190,14 @@ reboot_sim() {
 stub_cmd() {
   mkdir -p "$T/shim2"
   ln -sf "$T_SRC/test/shim" "$T/shim2/$1"
-  cat > "$T/bin/$1" <<EOS
+  cat > "$T_BIN/$1" <<EOS
 #!/bin/bash
 case "\$*" in $2) exit 1 ;; esac
 PATH=\${PATH#"$T_SHIMS:"}
 exec "$T/shim2/$1" "\$@"
 EOS
-  chmod 755 "$T/bin/$1"
-  ln -sf "$T/bin/$1" "$T_SHIMS/$1"
+  chmod 755 "$T_BIN/$1"
+  ln -sf "$T_BIN/$1" "$T_SHIMS/$1"
 }
 
 unstub_cmd() {
