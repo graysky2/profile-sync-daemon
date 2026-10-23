@@ -13,6 +13,7 @@ RemainAfterExit=yes
 ExecStart=/usr/bin/profile-sync-daemon startup
 ExecStartPost=/usr/bin/profile-sync-daemon resync
 ExecStop=/usr/bin/profile-sync-daemon unsync
+TimeoutStopSec=90s
 Environment=LAUNCHED_BY_SYSTEMD=1
 
 [Install]

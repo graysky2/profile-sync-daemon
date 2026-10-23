@@ -267,26 +267,30 @@ ungraceful_state_check() {
         fi
 
         if [[ -d "$BACK_OVFS" ]]; then
-          # always snapshot the most recent of these two dirs...
-          # if using overlayfs $BACK_OVFS and $BACKUP should be compared
-          # against each other to see which is newer and then that should
-          # be what psd snapshots since BACKUP (the lowerdir) is readonly
-          # at the time the user started psd could be many resync cycles
-          # in the past
+          # BACKUP (the lowerdir) is readonly so it holds the profile as it was
+          # when psd started, while BACK_OVFS holds the last resync. BACK_OVFS is
+          # only newer if a resync into it completed during this session, which
+          # is marked by .psd-complete, otherwise it may be stale or partial
 
-          BACKUP_TIME=$(stat "$BACKUP" | grep Change | awk '{ print $2,$3 }')
-          BACK_OVFS_TIME=$(stat "$BACK_OVFS" | grep Change | awk '{ print $2,$3 }')
-
-          [[ $(date -d "$BACK_OVFS_TIME" "+%s") -ge $(date -d "$BACKUP_TIME" "+%s") ]] &&
-            TARGETTOKEEP="$BACK_OVFS" ||
+          if [[ -e "$BACK_OVFS/.psd-complete" ]]; then
+            TARGETTOKEEP="$BACK_OVFS"
+            TARGETTOSAVE="$BACKUP"
+          else
             TARGETTOKEEP="$BACKUP"
+            TARGETTOSAVE="$BACK_OVFS"
+          fi
 
           if [[ $CRRE -eq 1 ]]; then
             cp -a --reflink=auto "$TARGETTOKEEP" "$BACKUP-crashrecovery-$NOW"
+            rm -f "$BACKUP-crashrecovery-$NOW/.psd-complete"
           fi
 
           mv --no-target-directory "$TARGETTOKEEP" "$DIR"
-          rm -rf "$BACKUP"
+          rm -f "$DIR/.psd-complete"
+
+          # never delete the other copy, keep it unless it is empty
+          rmdir "$TARGETTOSAVE" 2>/dev/null ||
+            mv --no-target-directory "$TARGETTOSAVE" "$BACKUP-crashrecovery-$NOW-unused"
         else
           # we only find the BACKUP and no BACKOVFS then either the initial resync
           # never occurred before the crash using overlayfs or we aren't using overlayfs
@@ -294,8 +298,8 @@ ungraceful_state_check() {
 
           if [[ $CRRE -eq 1 ]]; then
             cp -a --reflink=auto "$BACKUP" "$BACKUP-crashrecovery-$NOW"
-            mv --no-target-directory "$BACKUP" "$DIR"
           fi
+          mv --no-target-directory "$BACKUP" "$DIR"
         fi
       fi
     done
@@ -458,10 +462,21 @@ do_sync_for() {
       # sync the tmpfs targets to the disc
       if [[ -e "$DIR"/.flagged ]]; then
         REPORT="resync"
-        if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$DIR/" "$BACK_OVFS/"; then
+        # BACK_OVFS is created here rather than on the initial sync so a crash
+        # before the first resync recovers from BACKUP
+        if [[ ! -d "$BACK_OVFS" ]]; then
+          install -dm"$(stat -c %a "$BACKUP")" --owner="$user" --group="$group" "$BACK_OVFS" || {
+            echo -e "${RED}Error: Failed to create $BACK_OVFS${NRM}" >&2
+            exit 2
+          }
+        fi
+        # .psd-complete tells ungraceful_state_check that BACK_OVFS is usable
+        rm -f "$BACK_OVFS/.psd-complete"
+        if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$DIR/" "$BACK_OVFS/"; then
           echo -e "${RED}Error: Failed to resync $DIR to $BACK_OVFS${NRM}" >&2
           exit 2
         fi
+        touch "$BACK_OVFS/.psd-complete"
       else
         # initial sync
         REPORT="sync"
@@ -482,13 +497,8 @@ do_sync_for() {
         chown -h "$user":"$group" "$DIR"
         touch "$DIR/.flagged"
 
-        # create $BACK_OVFS directory for storing resync data
-        if [[ ! -d "$BACK_OVFS" ]]; then
-          install -dm"$PREFIXP" --owner="$user" --group="$group" "$BACK_OVFS" || {
-            echo -e "${RED}Error: Failed to create $BACK_OVFS${NRM}" >&2
-            exit 2
-          }
-        fi
+        # a BACK_OVFS left from a previous session is not newer than BACKUP
+        rm -f "$BACK_OVFS/.psd-complete"
       fi
       echo -e "${BLD}$browser $REPORT successful${NRM}"
     else
@@ -578,12 +588,14 @@ do_unsync() {
           # always update BACK_OVFS from live overlayfs first to capture latest changes
           if [[ -d "$BACK_OVFS" ]]; then
             # Update BACK_OVFS with latest changes from live overlayfs
-            if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$TMP/" "$BACK_OVFS/"; then
+            rm -f "$BACK_OVFS/.psd-complete"
+            if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$TMP/" "$BACK_OVFS/"; then
               echo -e "${RED}Error: Failed to sync $TMP to $BACK_OVFS during unsync${NRM}" >&2
               exit 2
             fi
+            touch "$BACK_OVFS/.psd-complete"
             # sync BACK_OVFS to BACKUP
-            if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged "$BACK_OVFS/" "$BACKUP/"; then
+            if ! rsync -aX --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$BACK_OVFS/" "$BACKUP/"; then
               echo -e "${RED}Error: Failed to sync $BACK_OVFS to $BACKUP during unsync${NRM}" >&2
               exit 2
             fi
