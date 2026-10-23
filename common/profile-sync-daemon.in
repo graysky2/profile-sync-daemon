@@ -372,32 +372,37 @@ suffix_needed() {
 }
 
 dup_check() {
-  # only for firefox, icecat, seamonkey, and palemoon
-  # the LAST directory in the profile MUST be unique
-  # make sure there are no duplicates in ~/.mozilla/<browser>/profiles.ini
-  local browser
+  # every profile gets its own tmpfs, upper and work dir named after the
+  # browser and, for multi-profile browsers, the LAST directory of the profile
+  # path; two profiles sharing any of those names would be synced over each
+  # other, so refuse to run if any name repeats across all browsers
+  local browser item suffix name
+  local -A seen=() paths=()
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
-    if suffix_needed "$browser"; then
-      # nothing to check
-      [[ -z "${DIRArr[*]}" ]] && continue
-      # browser is on system so check profiles
-      #
-      # check that the LAST DIRECTORY in the full path is unique
-      unique_count=$(printf "%s\n" "${DIRArr[@]##*/}" | sort -u | wc -l)
-      # no problems so do nothing
-      [[ ${#DIRArr[@]} -eq $unique_count ]] && continue
-
-      echo -e " ${RED}Error: ${NRM}${BLD}dup profile for ${GRN}$browser${NRM}${BLD} detected. See psd manpage, correct, and try again.${NRM}"
-      # clip of the 'heftig-' to give correct path
-      [[ "$browser" = "heftig-aurora" ]] && browser="${browser##*-}"
-      profile_ini="$homedir/.mozilla/$browser/profiles.ini"
-      if [[ "$browser" = "palemoon" ]]; then
-        profile_ini="$homedir/.moonchild productions/pale moon/profiles.ini"
-        echo -e " ${BLD}Must have unique last directories in ${BLU}${profile_ini}${NRM}${BLD} to use psd.${NRM}"
+    for item in "${DIRArr[@]}"; do
+      # only profiles psd will actually sync, each path once
+      [[ -d "$item" || -h "$item" || -d "$item-backup" ]] || continue
+      if [[ -n "${paths[$item]}" ]]; then
+        # listed twice by one browser is harmless, by two is not
+        [[ "${paths[$item]}" = "$browser" ]] && continue
+        echo -e " ${RED}Error: ${NRM}${BLD}${BLU}$item${NRM}${BLD} is a profile of both ${paths[$item]} and $browser; remove one from BROWSERS.${NRM}" >&2
         exit 1
       fi
-    fi
+      paths[$item]=$browser
+      suffix=
+      if suffix_needed "$browser"; then
+        suffix="-${item##*/}"
+      fi
+      for name in "$user-$browser$suffix" "$user-$browser${suffix}-rw" ".$user-$browser${suffix}"; do
+        if [[ -n "${seen[$name]}" ]]; then
+          echo -e " ${RED}Error: ${NRM}${BLD}profiles ${BLU}${seen[$name]}${NRM}${BLD} and ${BLU}$item${NRM}${BLD} would share ${BLU}$VOLATILE/$name${NRM}" >&2
+          echo -e " ${BLD}The last directory of each profile path must be unique. See psd manpage, correct, and try again.${NRM}" >&2
+          exit 1
+        fi
+        seen[$name]=$item
+      done
+    done
   done
 }
 

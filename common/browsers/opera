@@ -1,4 +1,9 @@
-# version 26 moved the profile dir but keep this for older versions
-DIRArr[0]="$HOME/.$browser"
-DIRArr[1]="$XDG_CONFIG_HOME/$browser"
+# version 26 moved the profile dir to XDG_CONFIG_HOME; use the old one only
+# if the new one is not there (a symlink or -backup means psd manages it)
+if [[ -d "$XDG_CONFIG_HOME/$browser" || -h "$XDG_CONFIG_HOME/$browser" ||
+  -d "$XDG_CONFIG_HOME/$browser-backup" ]]; then
+    DIRArr[0]="$XDG_CONFIG_HOME/$browser"
+else
+    DIRArr[0]="$HOME/.$browser"
+fi
 PSNAME="$browser"
