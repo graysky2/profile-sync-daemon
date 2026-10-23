@@ -314,9 +314,7 @@ cleanup() {
       DIR="$item"
 
       local CRASHArr=()
-      while IFS= read -d '' -r backup; do
-        CRASHArr=("${CRASHArr[@]}" "$backup")
-      done < <(find "${DIR%/*}" -maxdepth 1 -type d -name "${DIR##*/}-backup-crashrecovery-*" -print0 | sort -r -z)
+      crash_dirs "$DIR"
 
       if [[ ${#CRASHArr[@]} -gt 0 ]]; then
         echo -e "${BLD}Deleting ${#CRASHArr[@]} crashrecovery dir(s) for profile ${BLU}$DIR${NRM}"
@@ -330,6 +328,23 @@ cleanup() {
       echo
     done
   done
+}
+
+# crash_dirs <dir> [snapshots]: set CRASHArr to the crashrecovery dirs of
+# profile <dir>, newest first. With "snapshots" only the timestamped copies
+# made by USE_BACKUPS are listed, not the -unused copies recovery sets aside.
+crash_dirs() {
+  local pattern path
+  # escape glob characters in the profile name for find -name
+  pattern=$(printf '%s' "${1##*/}" | sed 's/[][*?\\]/\\&/g')
+  CRASHArr=()
+  while IFS= read -d '' -r path; do
+    if [[ "${2:-}" = snapshots ]] &&
+      [[ ! "${path##*/}" =~ -backup-crashrecovery-[0-9]{8}_[0-9]{6}$ ]]; then
+      continue
+    fi
+    CRASHArr+=("$path")
+  done < <(find "${1%/*}" -maxdepth 1 -type d -name "$pattern-backup-crashrecovery-*" -print0 | sort -r -z)
 }
 
 load_env_for() {
@@ -552,9 +567,8 @@ enforce() {
   load_env_for "$browser"
   for DIR in "${DIRArr[@]}"; do
     local CRASHArr=()
-    while IFS= read -d '' -r backup; do
-      CRASHArr=("${CRASHArr[@]}" "$backup")
-    done < <(find "${DIR%/*}" -maxdepth 1 -type d -name "${DIR##*/}-backup-crashrecovery-*" -print0 | sort -r -z)
+    # only rotate timestamped snapshots, never the copies recovery set aside
+    crash_dirs "$DIR" snapshots
 
     if [[ ${#CRASHArr[@]} -gt $BACKUP_LIMIT ]]; then
       for remove in "${CRASHArr[@]:$BACKUP_LIMIT}"; do
@@ -664,9 +678,7 @@ parse() {
       UPPER="$VOLATILE/$user-$browser${suffix}-rw"
       if [[ -d "$DIR" ]]; then
         local CRASHArr=()
-        while IFS= read -d '' -r backup; do
-          CRASHArr=("${CRASHArr[@]}" "$backup")
-        done < <(find "${DIR%/*}" -maxdepth 1 -type d -name "${DIR##*/}-backup-crashrecovery-*" -print0 | sort -r -z)
+        crash_dirs "$DIR"
 
         # get permissions on profile dir and be smart about it since symlinks are all 777
         [[ -f $PID_FILE ]] && TRUEP=$(stat -c %a "$BACKUP") || TRUEP=$(stat -c %a "$DIR")

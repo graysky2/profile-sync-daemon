@@ -43,7 +43,6 @@ test_profile_named_like_an_upper_dir_refused() {
 }
 
 test_enforce_keeps_unused_copies() {
-  xfail "bug 4: enforce deletes -unused copies" "set-aside copy was deleted"
   write_conf 'BROWSERS=(psdtest-a)' 'BACKUP_LIMIT=0'
   local P=$XDG_CONFIG_HOME/psdtest-a
   profile_new "$P" v1
@@ -124,4 +123,32 @@ test_same_profile_listed_twice_is_fine() {
   profile_write "$M/one" one2
   assert_ok psd unsync
   assert_version "$M/one" one2
+}
+
+test_enforce_glob_stays_in_its_profile() {
+  # bug 17: a profile named "p?" must not rotate profile "pa"'s snapshots
+  write_conf 'BROWSERS=(psdtest-m)' 'BACKUP_LIMIT=0'
+  local M=$XDG_CONFIG_HOME/psdtest-m
+  profile_new "$M/p?" q1
+  printf '%s\n' "$M/p?" > "$M/profiles"
+  mkdir -p "$M/pa-backup-crashrecovery-20260101_000000" \
+    "$M/pa-backup-crashrecovery-20260102_000000"
+
+  assert_ok start_session
+  [[ -d "$M/pa-backup-crashrecovery-20260101_000000" &&
+    -d "$M/pa-backup-crashrecovery-20260102_000000" ]] ||
+    fail "another profile's snapshots were deleted"
+  assert_ok psd unsync
+}
+
+test_enforce_rotates_snapshots() {
+  write_conf 'BROWSERS=(psdtest-a)' 'BACKUP_LIMIT=1'
+  local P=$XDG_CONFIG_HOME/psdtest-a
+  profile_new "$P" v1
+  mkdir -p "$P-backup-crashrecovery-20260101_000000" \
+    "$P-backup-crashrecovery-20260102_000000"
+  assert_ok start_session
+  assert_absent "$P-backup-crashrecovery-20260101_000000"
+  assert_realdir "$P-backup-crashrecovery-20260102_000000"
+  assert_ok psd unsync
 }
