@@ -57,3 +57,20 @@ test_crash_snapshot_kept() {
   n=$(find "$XDG_CONFIG_HOME" -maxdepth 1 -name 'psdtest-a-backup-crashrecovery-*' | wc -l)
   (( n >= 1 )) || fail "no crashrecovery snapshot created"
 }
+
+test_snapshot_from_crash_is_replaced() {
+  # the config snapshot survives a crash; the next session must not keep
+  # using it, or a browser added since is synced but never unsynced
+  local A=$XDG_CONFIG_HOME/psdtest-a B=$XDG_CONFIG_HOME/psdtest-b
+  profile_new "$A" a1
+  profile_new "$B" b1
+  assert_ok start_session
+  reboot_sim
+  write_conf 'BROWSERS=(psdtest-a psdtest-b)'
+  assert_ok start_session
+  assert_symlink "$B"
+  profile_write "$B" b2
+  assert_ok psd unsync
+  assert_realdir "$B"
+  assert_version "$B" b2
+}

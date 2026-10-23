@@ -235,7 +235,13 @@ ungraceful_state_check() {
   # on the filesystem and the link to tmpfs will be on the filesystem
   # but the contents will be empty we need to simply remove the link
   # and rotate the backup into place
-  local browser
+  local browser legacy=0
+  # sessions started by psd 7.04 or older never mark BACK_OVFS complete; their
+  # config snapshot lacks PSD_SESSION_MARKERS and survives the crash
+  if [[ -f "$PSDCONFDIR/.psd.conf" ]] &&
+    ! grep -qx 'PSD_SESSION_MARKERS=1' "$PSDCONFDIR/.psd.conf"; then
+    legacy=1
+  fi
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
     for item in "${DIRArr[@]}"; do
@@ -273,6 +279,13 @@ ungraceful_state_check() {
           # is marked by .psd-complete, otherwise it may be stale or partial
 
           if [[ -e "$BACK_OVFS/.psd-complete" ]]; then
+            TARGETTOKEEP="$BACK_OVFS"
+            TARGETTOSAVE="$BACKUP"
+          elif [[ $legacy -eq 1 ]] &&
+            [[ -n "$(find "$BACK_OVFS" -mindepth 1 -maxdepth 1 -print -quit)" ]] &&
+            [[ $(stat -c %Z "$BACK_OVFS") -gt $(stat -c %Z "$BACKUP") ]]; then
+            # an old session: use its rule, the newer copy unless it is empty
+            echo "$DIR: crash in a session started by an older psd, using the newer copy; the other is kept as $BACKUP-crashrecovery-$NOW-unused"
             TARGETTOKEEP="$BACK_OVFS"
             TARGETTOSAVE="$BACKUP"
           else
@@ -551,14 +564,17 @@ do_sync_for() {
 }
 
 do_sync() {
-  touch "$PID_FILE"
+  local initial=0
+  [[ -f "$PID_FILE" ]] || initial=1
 
   # make a snapshot of psd.conf and redefine its location to this snapshot
   # while psd is running to keep any edits made to the "live" psd.conf from
-  # potentially orphaning the snapshot copies thus preserving the data
+  # potentially orphaning the snapshot copies thus preserving the data; a
+  # snapshot left by a crash is replaced when the next session starts
 
-  if [[ ! -f "$PSDCONFDIR/.psd.conf" ]]; then
-    {
+  if [[ $initial -eq 1 || ! -f "$PSDCONFDIR/.psd.conf" ]]; then
+    rm -f "$PSDCONFDIR/.psd.conf.new"
+    if ! {
       echo "# Automatically generated file; DO NOT EDIT!"
       echo "# The purpose is to snapshot the settings used when psd was activated."
       echo "# Any edits to the live config: $PSDCONFDIR/psd.conf"
@@ -568,9 +584,21 @@ do_sync() {
       echo "BROWSERS=\"${BROWSERS[*]}\""
       echo "USE_BACKUPS=\"$USE_BACKUPS\""
       echo "BACKUP_LIMIT=\"$BACKUP_LIMIT\""
-    } >> "$PSDCONFDIR/.psd.conf"
-  chmod 400 "$PSDCONFDIR/.psd.conf"
+      echo "PSD_SESSION_MARKERS=1"
+    } > "$PSDCONFDIR/.psd.conf.new"; then
+      echo -e "${RED}Error: Failed to write $PSDCONFDIR/.psd.conf.new${NRM}" >&2
+      exit 2
+    fi
+    chmod 400 "$PSDCONFDIR/.psd.conf.new"
+    # on disk before it replaces the old one; an empty snapshot would make
+    # recovery treat this session as one started by an older psd
+    if ! sync -f "$PSDCONFDIR/.psd.conf.new"; then
+      echo -e "${RED}Error: Failed to flush $PSDCONFDIR/.psd.conf.new${NRM}" >&2
+      exit 2
+    fi
+    mv -f "$PSDCONFDIR/.psd.conf.new" "$PSDCONFDIR/.psd.conf"
   fi
+  touch "$PID_FILE"
 
   local browser
   for browser in "${BROWSERS[@]}"; do
