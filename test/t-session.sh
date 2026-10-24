@@ -221,6 +221,13 @@ test_stop_after_fuse_daemon_died() {
   assert_ok psd recover
   assert_realdir "$P"
   assert_version "$P" v3
+  # the replay is done by unsync; recover finds nothing left to do
+  grep -q 'restoring the writes left in tmpfs' "$T_LOG" || fail "recovery did not say which copy it used"
+  # the copy from when psd started is the one fallback, not also a snapshot
+  # duplicating the restored profile
+  local n
+  n=$(find "$XDG_CONFIG_HOME" -maxdepth 1 -name 'psdtest-a-backup-crashrecovery-*' | wc -l)
+  assert_eq "$n" 1
   assert_ok start_session
   assert_ok psd unsync
   assert_version "$P" v3

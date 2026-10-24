@@ -3,6 +3,11 @@
 
 P_A() { echo "$XDG_CONFIG_HOME/psdtest-a"; }
 
+# crash_dir_count <profile>: the crashrecovery dirs recovery left
+crash_dir_count() {
+  find "${1%/*}" -maxdepth 1 -name "${1##*/}-backup-crashrecovery-*" | wc -l
+}
+
 test_crash_after_initial_sync() {
   local P; P=$(P_A)
   profile_new "$P" v1
@@ -47,15 +52,13 @@ test_recovered_profile_syncs_again() {
   assert_version "$P" v3
 }
 
-test_crash_snapshot_kept() {
+test_crash_keeps_a_copy() {
   local P; P=$(P_A)
   profile_new "$P" v1
   assert_ok start_session
   reboot_sim
   assert_ok psd startup
-  local n
-  n=$(find "$XDG_CONFIG_HOME" -maxdepth 1 -name 'psdtest-a-backup-crashrecovery-*' | wc -l)
-  (( n >= 1 )) || fail "no crashrecovery snapshot created"
+  (( $(crash_dir_count "$P") >= 1 )) || fail "no crashrecovery dir created"
 }
 
 test_snapshot_from_crash_is_replaced() {
@@ -88,6 +91,37 @@ test_crash_sets_older_copy_aside_for_rotation() {
   assert_version "$P" v2
   compgen -G "$P-backup-crashrecovery-*-start" >/dev/null || fail "BACKUP not set aside for rotation"
   compgen -G "$P-backup-crashrecovery-*-unused" >/dev/null && fail "BACKUP kept as an unrotated copy"
+  assert_eq "$(crash_dir_count "$P")" 1
+  grep -q 'restoring the last copy written to disk' "$T_LOG" || fail "recovery did not say which copy it used"
+}
+
+test_crash_before_resync_keeps_one_snapshot() {
+  # nothing is set aside when BACKUP itself is restored, so the snapshot is
+  # the one copy to fall back on
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok psd startup
+  reboot_sim
+  assert_ok psd startup
+  assert_eq "$(crash_dir_count "$P")" 1
+  compgen -G "$P-backup-crashrecovery-[0-9]*[0-9]" >/dev/null || fail "no snapshot of the restored copy"
+  grep -q 'restoring the copy made when psd started' "$T_LOG" || fail "recovery did not say which copy it used"
+}
+
+test_partial_copy_set_aside_keeps_snapshot() {
+  # an unmarked BACK_OVFS may be partial, so setting it aside does not
+  # replace the snapshot of the copy restored
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok psd startup
+  mkdir "$P-back-ovfs"
+  echo torn > "$P-back-ovfs/partial"
+  reboot_sim
+  assert_ok psd startup
+  assert_version "$P" v1
+  compgen -G "$P-backup-crashrecovery-*-unused" >/dev/null || fail "partial copy not set aside"
+  compgen -G "$P-backup-crashrecovery-[0-9]*[0-9]" >/dev/null || fail "no snapshot of the restored copy"
+  assert_eq "$(crash_dir_count "$P")" 2
 }
 
 test_replay_failure_keeps_everything() {
