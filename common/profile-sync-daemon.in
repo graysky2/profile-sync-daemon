@@ -277,12 +277,17 @@ set_legacy() {
 # step leaves a state the next run finishes, so a recovery that is
 # interrupted never demotes the newest copy.
 recover_profile() {
-  local now keep save aside legacy=$LEGACY
+  local now keep save aside replayed=0 legacy=$LEGACY
   # nothing changes BACKUP itself during a session, so a BACKUP that is not
   # the one this session recorded comes from a later session of an older psd
   # that kept this session's config snapshot
   if [[ -n "$BACKUP_CTIME" && -d "$BACKUP" ]] &&
     [[ "$(stat -c %.9Z "$BACKUP")" != "$BACKUP_CTIME" ]]; then
+    legacy=1
+  fi
+  # psd never puts a marker in BACKUP; one there was carried along by an
+  # older psd, which copies it with the profile, so markers mean nothing here
+  if [[ -e "$BACKUP/.psd-complete" ]]; then
     legacy=1
   fi
   # all is well
@@ -307,9 +312,12 @@ recover_profile() {
     echo "Ungraceful state detected for $DIR so fixing"
     # writes made after the last copy are in UPPER; while the link stays,
     # a failure leaves the profile pointing at them rather than missing
-    if [[ -d "$BACKUP" ]] && unsaved_writes && ! replay_upper; then
-      error "The writes in $UPPER could not be copied to disk (is it full?); they are kept until reboot. Free some space and run: psd recover"
-      return 1
+    if [[ -d "$BACKUP" ]] && unsaved_writes; then
+      if ! replay_upper; then
+        error "The writes in $UPPER could not be copied to disk (is it full?); they are kept until reboot. Free some space and run: psd recover"
+        return 1
+      fi
+      replayed=1
     fi
     unlink "$DIR" || return 1
   elif [[ -h "$DIR" ]]; then
@@ -324,8 +332,15 @@ recover_profile() {
 
   if [[ -d "$DIR" && ! -h "$DIR" && -e "$DIR/.psd-complete" ]]; then
     # a recovery stopped after promoting the newest copy; finish it
+    echo "$DIR: finishing an interrupted recovery"
+    if [[ $legacy -eq 0 ]]; then
+      aside="$BACKUP-crashrecovery-$now-start"
+    else
+      aside="$BACKUP-crashrecovery-$now-unused"
+    fi
     if [[ -d "$BACKUP" ]] && ! rmdir "$BACKUP" 2>/dev/null; then
-      mv --no-target-directory "$BACKUP" "$BACKUP-crashrecovery-$now-unused" || return 1
+      mv --no-target-directory "$BACKUP" "$aside" || return 1
+      echo "$DIR: the copy made when psd started is kept as $aside"
     fi
     rm -f "$DIR/.psd-complete"
     flush "$DIR"
@@ -336,12 +351,15 @@ recover_profile() {
 
   # in the same boot, writes made after the last copy to disk are still in
   # UPPER over BACKUP
-  if [[ -d "$BACKUP" ]] && ! mounted "$TMP" && unsaved_writes && ! replay_upper; then
-    # keep the state for another try; a link keeps the browser from
-    # creating a fresh profile meanwhile
-    [[ -e "$DIR" || -h "$DIR" ]] || ln -sT "$TMP" "$DIR"
-    error "The writes in $UPPER could not be copied to disk (is it full?); they are kept until reboot. Free some space and run: psd recover"
-    return 1
+  if [[ -d "$BACKUP" ]] && ! mounted "$TMP" && unsaved_writes; then
+    if ! replay_upper; then
+      # keep the state for another try; a link keeps the browser from
+      # creating a fresh profile meanwhile
+      [[ -e "$DIR" || -h "$DIR" ]] || ln -sT "$TMP" "$DIR"
+      error "The writes in $UPPER could not be copied to disk (is it full?); they are kept until reboot. Free some space and run: psd recover"
+      return 1
+    fi
+    replayed=1
   fi
 
   [[ -d "$BACKUP" ]] || return 0
@@ -355,11 +373,6 @@ recover_profile() {
   # psd started, while BACK_OVFS holds the last resync. BACK_OVFS is only
   # newer if a resync into it completed, which is marked by .psd-complete,
   # otherwise it may be stale or partial
-  # psd never puts a marker in BACKUP; one there was carried along by an
-  # older psd, which copies it with the profile, so markers mean nothing here
-  if [[ -e "$BACKUP/.psd-complete" ]]; then
-    legacy=1
-  fi
   keep=$BACKUP save=
   if [[ -d "$BACK_OVFS" ]]; then
     save=$BACK_OVFS
@@ -369,20 +382,33 @@ recover_profile() {
       [[ -n "$(find "$BACK_OVFS" -mindepth 1 -maxdepth 1 -print -quit)" ]] &&
       [[ $(stat -c %Z "$BACK_OVFS") -gt $(stat -c %Z "$BACKUP") ]]; then
       # an old session: use its rule, the newer copy unless it is empty
-      echo "$DIR: crash in a session started by an older psd, using the newer copy; the other is kept as $BACKUP-crashrecovery-$now-unused"
+      echo "$DIR: crash in a session started by an older psd, using its newer copy"
       # marked, so an interrupted promotion is finished rather than undone
       touch "$BACK_OVFS/.psd-complete" && flush "$BACK_OVFS" || return 1
       keep=$BACK_OVFS save=$BACKUP
     fi
   fi
 
-  if [[ $CRRE -eq 1 ]]; then
+  if [[ "$keep" == "$BACK_OVFS" ]]; then
+    if [[ $replayed -eq 1 ]]; then
+      echo "$DIR: restoring the writes left in tmpfs"
+    else
+      echo "$DIR: restoring the last copy written to disk"
+    fi
+  else
+    echo "$DIR: restoring the copy made when psd started"
+  fi
+  # BACKUP is complete and older than a BACK_OVFS that won, and is set aside
+  # below unless it is empty; a snapshot would only duplicate the copy
+  # restored. A BACK_OVFS that lost may be partial, so it is no fallback.
+  if [[ $CRRE -eq 1 ]] && { [[ "$keep" != "$BACK_OVFS" ]] ||
+    [[ -z "$(find "$BACKUP" -mindepth 1 -maxdepth 1 -print -quit)" ]]; }; then
     # complete snapshots only ever carry the final name
     if cp -a --reflink=auto "$keep" "$BACKUP-crashrecovery-$now-partial" &&
       rm -f "$BACKUP-crashrecovery-$now-partial/.psd-complete" &&
       flush "$BACKUP-crashrecovery-$now-partial" &&
       mv --no-target-directory "$BACKUP-crashrecovery-$now-partial" "$BACKUP-crashrecovery-$now"; then
-      true
+      echo "$DIR: a snapshot of it is kept as $BACKUP-crashrecovery-$now"
     else
       warn "Failed to snapshot $keep to $BACKUP-crashrecovery-$now"
     fi
@@ -401,11 +427,13 @@ recover_profile() {
     fi
     if ! rmdir "$BACKUP" 2>/dev/null; then
       mv --no-target-directory "$BACKUP" "$aside" || return 1
+      echo "$DIR: the copy made when psd started is kept as $aside"
     fi
     rm -f "$DIR/.psd-complete"
   else
     if [[ -n "$save" ]] && ! rmdir "$save" 2>/dev/null; then
       mv --no-target-directory "$save" "$BACKUP-crashrecovery-$now-unused" || return 1
+      echo "$DIR: the unused copy is kept as $BACKUP-crashrecovery-$now-unused"
     fi
     mv --no-target-directory "$BACKUP" "$DIR" || return 1
     rm -f "$DIR/.psd-complete"
