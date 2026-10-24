@@ -1,0 +1,3 @@
+DIRArr[0]="$XDG_CONFIG_HOME/psdtest-long"
+# longer than the 15 characters pgrep sees
+PSNAME="psdtst-long-browser-name"

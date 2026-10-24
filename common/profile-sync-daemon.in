@@ -713,11 +713,31 @@ running_check() {
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
     [[ -z "$PSNAME" ]] && continue
-    if pgrep -x -u "$user" "$PSNAME" &>/dev/null; then
+    if browsers_running "$(proc_name "$PSNAME" | sed 's/[][\\.^$*+?(){}|]/\\&/g')"; then
       echo "Refusing to start; $browser is running by $user!"
       exit 1
     fi
   done
+}
+
+# space_check <dir>...: warn if the runtime dir is too small for the writes
+# of the profiles.
+space_check() {
+  local avail need
+  avail=$(df --output=avail -k "$XDG_RUNTIME_DIR" 2>/dev/null | tail -n1)
+  # only files the browser writes are copied to tmpfs, whole; the largest
+  # one being rewritten (e.g. a database vacuum) needs twice its size
+  need=$(find "$@" -type f -printf '%s\n' 2>/dev/null | sort -n | tail -n1)
+  [[ "$avail" =~ ^[0-9]+$ && "$need" =~ ^[0-9]+$ ]] || return 0
+  need=$(( need * 2 / 1024 ))
+  if (( need > avail )); then
+    warn "Only $(( avail / 1024 )) MiB are free in $XDG_RUNTIME_DIR, less than a rewrite of the largest profile file may need ($(( need / 1024 )) MiB); the browser may then fail to save. Raise RuntimeDirectorySize in logind.conf."
+  fi
+}
+
+# proc_name <name>: <name> as the kernel shows it to pgrep, at most 15 chars
+proc_name() {
+  printf '%s' "${1:0:15}"
 }
 
 # profile_paths <dir>: set the paths psd uses for profile <dir> of the
@@ -768,27 +788,71 @@ dup_check() {
 }
 
 kill_browsers() {
-  # check for browsers running and kill them to safely sync/unsync
-  # without this cannot guarantee profile integrity
-  local browser
+  # give browsers that are already quitting (e.g. at logout) a moment, ask
+  # the rest to quit at once, give them time to save their profiles, and
+  # only then kill what is left. A second TERM can cut a browser's shutdown
+  # short, so each gets one.
+  local browser name pattern=
+  local -A seen=()
   for browser in "${BROWSERS[@]}"; do
     load_env_for "$browser"
-
-    local x=1
-    while [[ $x -le 60 ]]; do
-      [[ -n "$PSNAME" ]] || break
-      pgrep -x -u "$user" "$PSNAME" &>/dev/null || break
-
-      if [[ $x -le 5 ]]; then
-        pkill -x -SIGTERM -u "$user" "$PSNAME"
-      else
-        pkill -x -SIGKILL -u "$user" "$PSNAME"
-      fi
-
-      x=$(( x + 1 ))
-      sleep .05
-    done
+    [[ -n "$PSNAME" ]] || continue
+    name=$(proc_name "$PSNAME")
+    [[ -n "${seen[$name]}" ]] && continue
+    seen[$name]=1
+    # pgrep takes an extended regex
+    pattern+=${pattern:+|}$(printf '%s' "$name" | sed 's/[][\\.^$*+?(){}|]/\\&/g')
   done
+  [[ -n "$pattern" ]] && browsers_running "$pattern" || return 0
+  wait_browsers "$pattern" 3 && return 0
+  pkill -x -SIGTERM -u "$user" "$pattern"
+  wait_browsers "$pattern" 10 && return 0
+  warn "Browsers did not quit within 10 seconds, killing them"
+  pkill -x -SIGKILL -u "$user" "$pattern"
+  wait_browsers "$pattern" 2 && return 0
+  warn "Browsers are still running: $pattern"
+}
+
+# browsers_running <pattern>: whether a live process of the user has a name
+# matching <pattern> exactly; zombies are dead and only wait to be reaped
+browsers_running() {
+  local pid stat
+  for pid in $(pgrep -x -u "$user" "$1"); do
+    stat=$(< "/proc/$pid/stat") 2>/dev/null || continue
+    stat=${stat##*) }
+    [[ "${stat%% *}" != Z ]] && return 0
+  done
+  return 1
+}
+
+# wait_browsers <pattern> <seconds>: wait until no browser runs, at most
+# <seconds> by the clock; returns nonzero if one still does
+wait_browsers() {
+  local end=$(( ${EPOCHREALTIME/[.,]/} + $2 * 1000000 ))
+  while browsers_running "$1"; do
+    (( ${EPOCHREALTIME/[.,]/} < end )) || return 1
+    sleep .1
+  done
+}
+
+# holders <dir>: the processes that have <dir> or a file in it open, or as
+# their working or root dir, as "pid (name)"
+holders() {
+  local pattern link pid finder fd
+  local -A seen=()
+  pattern=$(printf '%s' "$1" | sed 's/[][*?\\]/\\&/g')
+  exec {fd}< <(find /proc/[0-9]*/cwd /proc/[0-9]*/root /proc/[0-9]*/fd -maxdepth 1 \
+    \( -lname "$pattern" -o -lname "$pattern/*" \) -print 2>/dev/null)
+  # the find itself, whose working dir may be in <dir>
+  finder=$!
+  while IFS= read -r -u "$fd" link; do
+    pid=${link#/proc/}
+    pid=${pid%%/*}
+    [[ -n "${seen[$pid]}" || "$pid" == "$$" || "$pid" == "$BASHPID" || "$pid" == "$finder" ]] && continue
+    seen[$pid]=1
+    echo "$pid ($(cat "/proc/$pid/comm" 2>/dev/null))"
+  done
+  exec {fd}<&-
 }
 
 # sync_profile <dir>: initial sync of one profile of the loaded browser. On
@@ -946,6 +1010,7 @@ do_sync() {
       lines+=$(printf '%s\t%s\t%s\t%s\t%s' "$browser" "$DIR" "$TMP" "$UPPER" "$WORK")$'\n'
     done
     printf '%s' "$lines" | write_file "$SESSION_FILE" || return 2
+    space_check "${items[@]}"
   fi
 
   # make a snapshot of psd.conf and redefine its location to this snapshot
@@ -1050,7 +1115,7 @@ enforce() {
 }
 
 do_unsync() {
-  local i failed=0 m
+  local i failed=0 m held
   set_legacy
   session_profiles
   for i in "${!PROF_D[@]}"; do
@@ -1066,6 +1131,9 @@ do_unsync() {
       # the link and mount stay until the data is on disk, so a failure
       # below leaves the profile usable in tmpfs
 
+      held=$(holders "$TMP")
+      [[ -n "$held" ]] &&
+        warn "$DIR is still in use by: ${held//$'\n'/, }; what they write after the final copy is lost"
       # unmount overlayfs FIRST while BACKUP still exists at original location
       # moving BACKUP before unmounting breaks the overlayfs mount (lowerdir path disappears)
       if mountpoint -q "$TMP"; then
