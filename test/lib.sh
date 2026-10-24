@@ -78,7 +78,7 @@ setup_env() {
 
   local name
   for name in rsync mv rm rmdir mkdir cp touch ln unlink install chmod chown \
-    sync fuse-overlayfs fusermount3 mountpoint findmnt pkill; do
+    sync fuse-overlayfs fusermount3 mountpoint findmnt pkill ls; do
     ln -s "$T_SRC/test/shim" "$T_SHIMS/$name"
   done
 
@@ -129,8 +129,8 @@ kill_daemons() {
     sleep 0.2
   else
     # a dead fake mount: what was written is in its upper dir, the mount
-    # stays in the mount table until it is detached, which leaves the empty
-    # mountpoint dir
+    # stays in the mount table until it is detached, and the kernel's cached
+    # attributes still show .flagged on it
     local m u
     while read -r m; do
       [[ -n "$m" ]] || continue
@@ -141,6 +141,7 @@ kill_daemons() {
         touch "$u/.fake-opaque"
       fi
       find "$m" -mindepth 1 -delete
+      [[ -n "$u" && -e "$u/.flagged" ]] && : > "$m/.flagged"
       echo "$m" >> "$PSD_FAKE_MNT.dead"
     done < "$PSD_FAKE_MNT"
     : > "$PSD_FAKE_MNT"

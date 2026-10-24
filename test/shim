@@ -13,10 +13,13 @@
 #                       Each fake mount runs a stand-in daemon that, like the
 #                       real fuse daemon, inherits psd's open fds. Mounts
 #                       whose daemon died are in PSD_FAKE_MNT.dead: findmnt
-#                       lists them, mountpoint does not (ENOTCONN). Writes
-#                       reach the upper dir only when the daemon dies (see
-#                       kill_daemons), which marks it .fake-opaque: mounting
-#                       it again shows it alone, deletions included.
+#                       and mountpoint list them like live ones, and any
+#                       other command given a path on them fails with
+#                       ENOTCONN, while the cached .flagged still looks
+#                       present to a plain test. Writes reach the upper dir
+#                       only when the daemon dies (see kill_daemons), which
+#                       marks it .fake-opaque: mounting it again shows it
+#                       alone, deletions included.
 
 name=${0##*/}
 shimdir=$(cd -- "$(dirname -- "$0")" && pwd -P)
@@ -45,7 +48,7 @@ if [[ "$name" == pkill ]]; then
   }
 fi
 
-if [[ "$name" != mountpoint && -n "$PSD_SHIM_COUNT" ]]; then
+if [[ "$name" != mountpoint && "$name" != ls && -n "$PSD_SHIM_COUNT" ]]; then
   n=$(( $(cat "$PSD_SHIM_COUNT" 2>/dev/null || echo 0) + 1 ))
   echo "$n" > "$PSD_SHIM_COUNT"
   if [[ "${PSD_FAULT%%:*}" == "$n" ]]; then
@@ -55,6 +58,26 @@ if [[ "$name" != mountpoint && -n "$PSD_SHIM_COUNT" ]]; then
       fail) exit 1 ;;
     esac
   fi
+fi
+
+if [[ -z "$PSD_REAL_FUSE" && -s "$PSD_FAKE_MNT.dead" ]]; then
+  case "$name" in
+    fusermount3|findmnt|mountpoint) ;;
+    *)
+      for a in "$@"; do
+        [[ "$a" == --*=* ]] && a=${a#*=}
+        [[ "$a" == /* ]] || continue
+        rp=$(realpath -m -- "$a" 2>/dev/null) || continue
+        while read -r d; do
+          if [[ -n "$d" && ( "$rp" == "$d" || "$rp" == "$d"/* ) ]]; then
+            echo "$name: '$a': Transport endpoint is not connected" >&2
+            [[ "$name" == rsync ]] && exit 23
+            exit 1
+          fi
+        done < "$PSD_FAKE_MNT.dead"
+      done
+      ;;
+  esac
 fi
 
 if [[ -z "$PSD_REAL_FUSE" ]]; then
@@ -90,6 +113,8 @@ if [[ -z "$PSD_REAL_FUSE" ]]; then
       if grep -qxF "$rp" "$PSD_FAKE_MNT.dead" 2>/dev/null; then
         grep -vxF "$rp" "$PSD_FAKE_MNT.dead" > "$PSD_FAKE_MNT.new"
         mv -f "$PSD_FAKE_MNT.new" "$PSD_FAKE_MNT.dead"
+        # detached, the empty mountpoint dir shows again
+        find "$rp" -mindepth 1 -delete
         exit 0
       fi
       grep -qxF "$rp" "$PSD_FAKE_MNT" || { echo "fusermount3: $mnt not mounted" >&2; exit 1; }
@@ -115,7 +140,10 @@ if [[ -z "$PSD_REAL_FUSE" ]]; then
       exit 0
       ;;
     mountpoint)
-      rp=$(realpath "${*: -1}" 2>/dev/null) && grep -qxF "$rp" "$PSD_FAKE_MNT" && exit 0
+      # util-linux reads the mount table, so a dead mount is still listed
+      rp=$(realpath "${*: -1}" 2>/dev/null) &&
+        cat "$PSD_FAKE_MNT" "$PSD_FAKE_MNT.dead" 2>/dev/null | grep -qxF "$rp" && exit 0
+      exit 1
       ;;
     findmnt)
       # the -M <path> lookup and the listing psd uses

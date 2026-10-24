@@ -250,7 +250,7 @@ ungraceful_state_check() {
   while read -r m; do
     [[ -z "$m" || -n "${known[$m]}" ]] && continue
     unknown=1
-    if ! mountpoint -q "$m"; then
+    if ! mount_alive "$m"; then
       fusermount3 -u "$m" 2>/dev/null || fusermount3 -uz "$m"
     fi
     warn "$m belongs to a profile psd does not know any more; its writes since the last copy to disk are in $m-rw until reboot. List the profile again and run: psd recover"
@@ -286,12 +286,12 @@ recover_profile() {
     legacy=1
   fi
   # all is well
-  [[ -e "$DIR/.flagged" ]] && return 0
+  [[ -e "$DIR/.flagged" ]] && mount_alive "$TMP" && return 0
   now=$(date +%Y%m%d_%H%M%S)
 
-  # a mount whose fuse daemon died hides its mountpoint; detach it before
-  # anything else, so a failure leaves DIR as it was
-  if ! mountpoint -q "$TMP" && findmnt -rn -M "$TMP" >/dev/null 2>&1; then
+  # a mount whose fuse daemon died; detach it before anything else, so a
+  # failure leaves DIR as it was
+  if mounted "$TMP" && ! mount_alive "$TMP"; then
     if ! fusermount3 -u "$TMP" 2>/dev/null && ! fusermount3 -uz "$TMP"; then
       error "Failed to detach the dead mount $TMP"
       return 1
@@ -300,7 +300,7 @@ recover_profile() {
 
   if [[ -h "$DIR" && "$(readlink "$DIR")" == "$TMP" ]]; then
     # psd's own link; while the mount is live it holds the newest data
-    if mountpoint -q "$TMP"; then
+    if mounted "$TMP"; then
       error "$TMP is still mounted but $DIR is not flagged; close the browser, then run: fusermount3 -u $TMP; psd recover"
       return 1
     fi
@@ -336,7 +336,7 @@ recover_profile() {
 
   # in the same boot, writes made after the last copy to disk are still in
   # UPPER over BACKUP
-  if [[ -d "$BACKUP" ]] && ! mountpoint -q "$TMP" && unsaved_writes && ! replay_upper; then
+  if [[ -d "$BACKUP" ]] && ! mounted "$TMP" && unsaved_writes && ! replay_upper; then
     # keep the state for another try; a link keeps the browser from
     # creating a fresh profile meanwhile
     [[ -e "$DIR" || -h "$DIR" ]] || ln -sT "$TMP" "$DIR"
@@ -430,7 +430,7 @@ replay_upper() {
   fi
   if [[ $rc -ne 0 ]]; then
     # an empty TMP would let a link to it look like a fresh profile
-    mountpoint -q "$TMP" || rmdir "$TMP" 2>/dev/null
+    mounted "$TMP" || rmdir "$TMP" 2>/dev/null
     return 1
   fi
   discard "$UPPER" "$WORK"
@@ -546,7 +546,7 @@ mount_overlay() {
   fi
   # the fuse daemon outlives psd, so it must not inherit the lock
   fuse-overlayfs -o "$opts" "$TMP" {lockfd}>&-
-  if ! mountpoint -q "$TMP"; then
+  if ! mount_alive "$TMP"; then
     error "Failed to mount $TMP"
     return 1
   fi
@@ -728,6 +728,19 @@ flush() {
     error "Failed to flush $1 to disk"
     return 1
   fi
+}
+
+# mounted <dir>: whether something is mounted on <dir>, live or with a dead
+# fuse daemon
+mounted() {
+  findmnt -rn -M "$1" >/dev/null 2>&1
+}
+
+# mount_alive <dir>: whether <dir> is a mount whose fuse daemon still answers.
+# mountpoint(1) reports a dead fuse mount as mounted, and cached attributes
+# make files on it look present, so ask the daemon by listing the dir.
+mount_alive() {
+  mounted "$1" && ls -A -- "$1" >/dev/null 2>&1
 }
 
 # psd_mounts: the mountpoints in VOLATILE, live or with a dead daemon
@@ -935,7 +948,7 @@ sync_profile() {
     # browser not installed
     return 0
   fi
-  if mountpoint -q "$TMP" || findmnt -rn -M "$TMP" >/dev/null 2>&1; then
+  if mounted "$TMP"; then
     error "$TMP is still mounted from an earlier session, not syncing $DIR"
     return 1
   fi
@@ -990,10 +1003,10 @@ rollback_sync() {
     load_env_for "${SYNCED_BROWSER[i]}"
     profile_paths "${SYNCED_DIR[i]}"
     [[ -h "$DIR" ]] && unlink "$DIR"
-    if mountpoint -q "$TMP"; then
+    if mounted "$TMP"; then
       fusermount3 -u "$TMP" || fusermount3 -uz "$TMP"
     fi
-    if mountpoint -q "$TMP"; then
+    if mounted "$TMP"; then
       error "Failed to unmount $TMP; $BACKUP is left for crash recovery"
       rc=1
       continue
@@ -1024,7 +1037,7 @@ resync_profile() {
       warn "$DIR is not synced by this session; it is synced at the next start"
     return 0
   fi
-  if [[ ! -e "$DIR/.flagged" ]]; then
+  if [[ ! -e "$DIR/.flagged" ]] || ! mount_alive "$TMP"; then
     error "The fuse mount of $DIR died; its writes since the last copy are in $UPPER until reboot. To save them, close the browser and run: systemctl --user restart psd"
     return 1
   fi
@@ -1184,9 +1197,9 @@ do_unsync() {
     # check if user has browser profile
     if [[ -h "$DIR" && "$(readlink "$DIR")" != "$TMP" ]]; then
       warn "$DIR is not a link of this session, leaving it alone"
-    elif [[ -h "$DIR" ]] && ! mountpoint -q "$TMP"; then
+    elif [[ -h "$DIR" ]] && ! mount_alive "$TMP"; then
       # the fuse daemon died; recover what it left
-      error "$TMP is not mounted, recovering $DIR"
+      error "$TMP is not mounted or its fuse daemon died, recovering $DIR"
       recover_profile || failed=1
     elif [[ -h "$DIR" ]]; then
       # the link and mount stay until the data is on disk, so a failure
@@ -1197,44 +1210,42 @@ do_unsync() {
         warn "$DIR is still in use by: ${held//$'\n'/, }; what they write after the final copy is lost"
       # unmount overlayfs FIRST while BACKUP still exists at original location
       # moving BACKUP before unmounting breaks the overlayfs mount (lowerdir path disappears)
-      if mountpoint -q "$TMP"; then
-        # sync latest changes from overlayfs to BACK_OVFS, then to BACKUP before unmounting
-        # always update BACK_OVFS from live overlayfs first to capture latest changes
-        # a complete copy on disk first, so BACKUP is never the only copy
-        # while it is rewritten in place
-        if ! new_generation "$TMP"; then
-          error "Failed to sync $TMP to $BACK_OVFS during unsync, leaving $DIR in tmpfs"
-          failed=1
-          continue
-        fi
-        if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$BACK_OVFS/" "$BACKUP/"; then
-          error "Failed to sync $BACK_OVFS to $BACKUP during unsync, leaving $BACKUP for crash recovery"
-          failed=1
-          continue
-        fi
-        # BACKUP was rewritten in place and becomes DIR below, where nothing
-        # marks it as partial, so it must be on disk first
-        if ! flush "$BACKUP"; then
-          failed=1
-          continue
-        fi
-        unlink "$DIR"
-        # unmount (before moving BACKUP); everything is on disk by now, so
-        # if something still holds the mount it is detached lazily and only
-        # writes made after the copy above are lost
-        if ! fusermount3 -u "$TMP"; then
-          warn "$TMP is busy, detaching it lazily"
-          fusermount3 -uz "$TMP"
-        fi
-        # never rm -rf through a live mount; leave this profile to crash
-        # recovery and carry on with the others
-        if mountpoint -q "$TMP"; then
-          error "Failed to unmount $TMP, leaving it and $BACKUP in place"
-          failed=1
-          continue
-        fi
-        discard "$UPPER" "$WORK" "$TMP"
+      # sync latest changes from overlayfs to BACK_OVFS, then to BACKUP before unmounting
+      # always update BACK_OVFS from live overlayfs first to capture latest changes
+      # a complete copy on disk first, so BACKUP is never the only copy
+      # while it is rewritten in place
+      if ! new_generation "$TMP"; then
+        error "Failed to sync $TMP to $BACK_OVFS during unsync, leaving $DIR in tmpfs"
+        failed=1
+        continue
       fi
+      if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$BACK_OVFS/" "$BACKUP/"; then
+        error "Failed to sync $BACK_OVFS to $BACKUP during unsync, leaving $BACKUP for crash recovery"
+        failed=1
+        continue
+      fi
+      # BACKUP was rewritten in place and becomes DIR below, where nothing
+      # marks it as partial, so it must be on disk first
+      if ! flush "$BACKUP"; then
+        failed=1
+        continue
+      fi
+      unlink "$DIR"
+      # unmount (before moving BACKUP); everything is on disk by now, so
+      # if something still holds the mount it is detached lazily and only
+      # writes made after the copy above are lost
+      if ! fusermount3 -u "$TMP"; then
+        warn "$TMP is busy, detaching it lazily"
+        fusermount3 -uz "$TMP"
+      fi
+      # never rm -rf through a live mount; leave this profile to crash
+      # recovery and carry on with the others
+      if mounted "$TMP"; then
+        error "Failed to unmount $TMP, leaving it and $BACKUP in place"
+        failed=1
+        continue
+      fi
+      discard "$UPPER" "$WORK" "$TMP"
 
       [[ -h "$DIR" ]] && unlink "$DIR"
       # restore BACKUP (which now has the changes merged in)
@@ -1243,7 +1254,7 @@ do_unsync() {
         failed=1
         continue
       fi
-      [[ -d "$TMP" ]] && ! mountpoint -q "$TMP" && rm -rf "$TMP"
+      [[ -d "$TMP" ]] && ! mounted "$TMP" && rm -rf "$TMP"
       # the copy is now only the base of the next session's first copy; an
       # older psd must not find it marked next to a later session of its own
       if [[ -d "$BACK_OVFS" ]] && ! { remove_tree "$BACK_OVFS.base" &&
@@ -1400,7 +1411,8 @@ live_check() {
   session_profiles config
   for i in "${!PROF_D[@]}"; do
     use_profile "$i"
-    if [[ -f "$PID_FILE" ]] && [[ -e "$DIR/.flagged" ]] || mountpoint -q "$TMP"; then
+    # a mount whose daemon died is not live; recovery detaches it
+    if mount_alive "$TMP"; then
       die "psd is running and $DIR is live; stop it with: systemctl --user stop psd, or if it was started by hand: psd unsync"
     fi
   done

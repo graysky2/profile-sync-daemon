@@ -205,6 +205,27 @@ test_recover_after_killed_session_with_link() {
   assert_ok psd unsync
 }
 
+test_stop_after_fuse_daemon_died() {
+  # the dead mount is still in the mount table; psd.service's stop and
+  # recover must replay its writes, not take it for a live session
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  profile_write "$P" v2
+  assert_ok psd resync
+  profile_write "$P" v3
+  kill_daemons
+  assert_fails psd resync
+  grep -q 'fuse mount of .* died' "$T_LOG" || fail "resync did not report the dead mount"
+  assert_ok psd unsync
+  assert_ok psd recover
+  assert_realdir "$P"
+  assert_version "$P" v3
+  assert_ok start_session
+  assert_ok psd unsync
+  assert_version "$P" v3
+}
+
 test_browser_recreating_profile_during_start() {
   # a browser started at login recreates the profile dir right after psd
   # moved it away; the start must fail and undo, not link inside it
