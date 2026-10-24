@@ -72,6 +72,38 @@ test_small_runtime_dir_warned() {
   assert_version "$P" v1
 }
 
+# fake_suspend_helper: an inhibit helper with a child, like the real one
+# with its systemd-inhibit
+fake_suspend_helper() {
+  printf '#!/bin/bash\nsleep 300 &\nwait\n' > "$T_BIN/psd-suspend-sync"
+  chmod 755 "$T_BIN/psd-suspend-sync"
+}
+
+test_suspend_helper_stopped_as_a_group() {
+  local P pgid; P=$(P_A)
+  profile_new "$P" v1
+  write_conf 'BROWSERS=(psdtest-a)' 'USE_SUSPSYNC="yes"'
+  fake_suspend_helper
+  assert_ok start_session
+  sleep 0.3
+  pgid=$(cat "$XDG_RUNTIME_DIR/psd-suspend-sync.pid" 2>/dev/null)
+  if [[ -z "$pgid" ]] || ! pgrep -g "$pgid" >/dev/null; then
+    fail "helper not running"
+    return
+  fi
+  assert_ok psd recycle-inhibit-lock
+  sleep 0.3
+  pgrep -g "$pgid" >/dev/null && fail "old helper group left running"
+  pgid=$(cat "$XDG_RUNTIME_DIR/psd-suspend-sync.pid" 2>/dev/null)
+  if [[ -z "$pgid" ]] || ! pgrep -g "$pgid" >/dev/null; then
+    fail "no new helper"
+  fi
+  assert_ok psd unsync
+  sleep 0.3
+  pgrep -g "$pgid" >/dev/null && fail "helper group left running after unsync"
+  assert_absent "$XDG_RUNTIME_DIR/psd-suspend-sync.pid"
+}
+
 test_roomy_runtime_dir_not_warned() {
   local P; P=$(P_A)
   profile_new "$P" v1

@@ -75,6 +75,7 @@ fi
 
 VOLATILE="$XDG_RUNTIME_DIR/psd"
 PID_FILE="$XDG_RUNTIME_DIR/psd.pid"
+SUSP_PID_FILE="$XDG_RUNTIME_DIR/psd-suspend-sync.pid"
 # the profiles a session synced, written before it touches any of them and
 # removed when they are all back on disk; recovery reads it with the config
 SESSION_FILE="$PSDCONFDIR/.psd-session"
@@ -1214,6 +1215,11 @@ do_unsync() {
   rm -f "$PID_FILE" "$PSDCONFDIR/.psd.conf" "$SESSION_FILE"
 }
 
+# field <label> <value> [color]: one aligned line of the preview
+field() {
+  printf ' %b%-16s %b%b\n' "${3:-$BLD}" "$1" "$2" "$NRM"
+}
+
 parse() {
   psd_state=$(systemctl --user is-active psd)
   resync_state=$(systemctl --user is-active psd-resync.timer)
@@ -1226,12 +1232,9 @@ parse() {
   [[ "$psd_state" = "active" ]] && psd_color="${GRN}" || psd_color="${RED}"
   [[ "$resync_state" = "active" ]] && resync_color="${GRN}" || resync_color="${RED}"
   [[ "$psd_suspend_sync_state" != 0 ]] && psss_color="${GRN}" || psss_color="${RED}"
-  echo -en " ${BLD}systemd service:"
-  echo -e "$(tput cr)$(tput cuf 17) ${psd_color}$psd_state${NRM}${BLD}${NRM}"
-  echo -en " ${BLD}resync-timer:"
-  echo -e "$(tput cr)$(tput cuf 17) ${resync_color}$resync_state${NRM}${BLD}${NRM}"
-  echo -en " ${BLD}sync on sleep:"
-  echo -e "$(tput cr)$(tput cuf 17) ${psss_color}$psss_state${NRM}${BLD}${NRM}"
+  field "systemd service:" "${psd_color}$psd_state${NRM}${BLD}${NRM}"
+  field "resync-timer:" "${resync_color}$resync_state${NRM}${BLD}${NRM}"
+  field "sync on sleep:" "${psss_color}$psss_state${NRM}${BLD}${NRM}"
   echo
   echo -e "${BLD}Psd will manage the following per ${BLU}${PSDCONF}${NRM}${BLD}:${NRM}"
   echo
@@ -1242,9 +1245,9 @@ parse() {
       profile_paths "$item"
       # preview only reports; recovery is left to the next start
       if [[ ! -f $PID_FILE ]] && [[ -d "$BACKUP" || ( -h "$DIR" && ! -d "$DIR" ) ]]; then
-        echo -e " ${BLD}browser/psname:$(tput cr)$(tput cuf 17) $browser/$PSNAME${NRM}"
-        echo -e " ${BLD}sync target:$(tput cr)$(tput cuf 17) ${BLU}$DIR${NRM}"
-        echo -e " ${RED}needs recovery:$(tput cr)$(tput cuf 17) ${NRM}${BLD}left by a crash; starting psd will recover it${NRM}"
+        field "browser/psname:" "$browser/$PSNAME${NRM}"
+        field "sync target:" "${BLU}$DIR${NRM}"
+        field "needs recovery:" "${NRM}${BLD}left by a crash; starting psd will recover it${NRM}" "$RED"
         echo
         continue
       fi
@@ -1263,40 +1266,31 @@ parse() {
         fi
         # profile dir size
         psize=$(du -Dh --max-depth=0 "$DIR" 2>/dev/null | awk '{ print $1 }')
-        echo -en " ${BLD}browser/psname:"
-        echo -e "$(tput cr)$(tput cuf 17) $browser/$PSNAME${NRM}"
-        echo -en " ${BLD}owner/group id:"
-        echo -e "$(tput cr)$(tput cuf 17) $user/$group${NRM}"
-        echo -en " ${BLD}sync target:"
-        echo -e "$(tput cr)$(tput cuf 17) ${BLU}$DIR${NRM}"
+        field "browser/psname:" "$browser/$PSNAME${NRM}"
+        field "owner/group id:" "$user/$group${NRM}"
+        field "sync target:" "${BLU}$DIR${NRM}"
         if [[ $warn -eq 1 ]]; then
-          echo -e "$(tput cr)$(tput cuf 17) ${RED} Permissions are $TRUEP on this profile.${NRM}"
-          echo -e "$(tput cr)$(tput cuf 17) ${RED} Recommend a setting of 700 for increased privacy!${NRM}"
+          field "" "${RED} Permissions are $TRUEP on this profile.${NRM}"
+          field "" "${RED} Recommend a setting of 700 for increased privacy!${NRM}"
           warn=
         fi
-        echo -en " ${BLD}tmpfs dir:"
-        echo -e "$(tput cr)$(tput cuf 17) ${GRN}$TMP${NRM}"
-        echo -en " ${BLD}profile size:"
-        echo -e "$(tput cr)$(tput cuf 17) $psize${NRM}"
+        field "tmpfs dir:" "${GRN}$TMP${NRM}"
+        field "profile size:" "$psize${NRM}"
         if [[ -f $PID_FILE ]]; then
           rwsize=$(du -Dh --max-depth=0 "$UPPER" 2>/dev/null | awk '{ print $1 }')
-          echo -en " ${BLD}overlayfs size:"
-          echo -e "$(tput cr)$(tput cuf 17) $rwsize${NRM}"
+          field "overlayfs size:" "$rwsize${NRM}"
         fi
         if [[ $BACKUP_LIMIT -ne 5 ]]; then
           # only print if not the hardcoded default
-          echo -en " ${BLD}backup limit:"
-          echo -e "$(tput cr)$(tput cuf 17) $BACKUP_LIMIT${NRM}"
+          field "backup limit:" "$BACKUP_LIMIT${NRM}"
         fi
-        echo -en " ${BLD}recovery dirs:"
         if [[ "${#CRASHArr[@]}" -eq 0 ]]; then
-          echo -e "$(tput cr)$(tput cuf 17) none${NRM}"
+          field "recovery dirs:" "none${NRM}"
         else
-          echo -e "$(tput cr)$(tput cuf 17) ${RED}${#CRASHArr[@]}${NRM}${BLD} <- delete with the c option${NRM}"
+          field "recovery dirs:" "${RED}${#CRASHArr[@]}${NRM}${BLD} <- delete with the c option${NRM}"
           for backup in "${CRASHArr[@]}"; do
             psize=$(du -Dh --max-depth=0 "$backup" 2>/dev/null | awk '{ print $1 }')
-            echo -en " ${BLD} dir path/size:"
-            echo -e "$(tput cr)$(tput cuf 17) ${BLU}$backup ${NRM}${BLD}($psize)${NRM}"
+            field " dir path/size:" "${BLU}$backup ${NRM}${BLD}($psize)${NRM}"
           done
         fi
         echo
@@ -1309,8 +1303,10 @@ take_inhibit_lock() {
   # ensure we only take one lock at a time
   release_inhibit_lock
 
-  # background this to avoid hanging on startup
-  @BINDIR@/psd-suspend-sync {lockfd}>&- &
+  # background this to avoid hanging on startup; in its own process group,
+  # so the helper and the inhibitor it runs are stopped together
+  setsid @BINDIR@/psd-suspend-sync {lockfd}>&- &
+  echo "$!" > "$SUSP_PID_FILE"
 }
 
 # take_lock wait|try: wait for other psd runs to finish, or with try exit
@@ -1347,7 +1343,23 @@ recover() {
 }
 
 release_inhibit_lock() {
-  [[ "$(pgrep -cf "psd-suspend-sync")" != 0 ]] && pkill -f psd-suspend-sync
+  local pgid pid pattern
+  if [[ -f "$SUSP_PID_FILE" ]]; then
+    pgid=$(< "$SUSP_PID_FILE")
+    rm -f "$SUSP_PID_FILE"
+    # only if the group is still the helper's
+    [[ "$pgid" =~ ^[0-9]+$ ]] && pgrep -g "$pgid" -f psd-suspend-sync >/dev/null || return 0
+    for pid in $(pgrep -g "$pgid"); do
+      # recycle-inhibit-lock is run by the helper, inside its group
+      [[ "$pid" == "$$" ]] || kill "$pid" 2>/dev/null
+    done
+  else
+    # a helper started by an older psd; only its exact command line, never
+    # an editor or shell that merely mentions it
+    pattern='(/usr)?/bin/bash [^ ]*/psd-suspend-sync'
+    pgrep -u "$user" -x -f "$pattern" >/dev/null && pkill -u "$user" -x -f "$pattern"
+  fi
+  return 0
 }
 
 case "$1" in
