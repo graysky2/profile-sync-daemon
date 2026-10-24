@@ -558,3 +558,57 @@ test_inherited_snapshot_recovered_by_older_rule() {
   assert_ok psd startup
   assert_version "$P" v2
 }
+
+# torn_rsync: a disk that fills up: new copies fail, and a copy into BACKUP
+# in place stops half way
+torn_rsync() {
+  mkdir -p "$T/shim2"
+  ln -sf "$T_SRC/test/shim" "$T/shim2/rsync"
+  cat > "$T_BIN/rsync" <<EOS
+#!/bin/bash
+case "\$*" in
+  *back-ovfs.new*) exit 11 ;;
+  *-backup/) cp -f "\${@: -2:1}/prefs.js" "\${@: -1}/prefs.js"; exit 11 ;;
+esac
+PATH=\${PATH#"$T_SHIMS:"}
+exec "$T/shim2/rsync" "\$@"
+EOS
+  chmod 755 "$T_BIN/rsync"
+  ln -sf "$T_BIN/rsync" "$T_SHIMS/rsync"
+}
+
+test_disk_full_stop_in_first_hour_keeps_backup_intact() {
+  # no copy on disk yet but BACKUP; it must never be written in place
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  profile_write "$P" v2
+  torn_rsync
+  psd unsync
+  kill_daemons
+  psd recover
+  reboot_sim
+  unstub_cmd rsync
+  psd startup
+  assert_version "$P" v1
+}
+
+test_restart_after_failed_stop_without_recover() {
+  # a unit without ExecStopPost (not reloaded after an upgrade); the next
+  # start must recover instead of trusting the stale PID
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  profile_write "$P" v2
+  assert_ok psd resync
+  profile_write "$P" v3
+  stub_cmd rsync '*-back-ovfs.new/'
+  assert_fails psd unsync
+  unstub_cmd rsync
+  kill_daemons
+  assert_ok start_session
+  assert_symlink "$P"
+  assert_ok psd unsync
+  assert_realdir "$P"
+  assert_version "$P" v3
+}

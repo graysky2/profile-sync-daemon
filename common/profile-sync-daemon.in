@@ -277,7 +277,7 @@ set_legacy() {
 # step leaves a state the next run finishes, so a recovery that is
 # interrupted never demotes the newest copy.
 recover_profile() {
-  local now keep save legacy=$LEGACY
+  local now keep save aside legacy=$LEGACY
   # nothing changes BACKUP itself during a session, so a BACKUP that is not
   # the one this session recorded comes from a later session of an older psd
   # that kept this session's config snapshot
@@ -301,10 +301,16 @@ recover_profile() {
   if [[ -h "$DIR" && "$(readlink "$DIR")" == "$TMP" ]]; then
     # psd's own link; while the mount is live it holds the newest data
     if mountpoint -q "$TMP"; then
-      error "$TMP is still mounted but $DIR is not flagged; unsync it with: psd unsync"
+      error "$TMP is still mounted but $DIR is not flagged; close the browser, then run: fusermount3 -u $TMP; psd recover"
       return 1
     fi
     echo "Ungraceful state detected for $DIR so fixing"
+    # writes made after the last copy are in UPPER; while the link stays,
+    # a failure leaves the profile pointing at them rather than missing
+    if [[ -d "$BACKUP" ]] && unsaved_writes && ! replay_upper; then
+      error "The writes in $UPPER could not be copied to disk (is it full?); they are kept until reboot. Free some space and run: psd recover"
+      return 1
+    fi
     unlink "$DIR" || return 1
   elif [[ -h "$DIR" ]]; then
     # symlinked browser profiles are not supported
@@ -330,9 +336,12 @@ recover_profile() {
 
   # in the same boot, writes made after the last copy to disk are still in
   # UPPER over BACKUP
-  if [[ -d "$BACKUP" ]] && ! mountpoint -q "$TMP" && unsaved_writes; then
-    replay_upper ||
-      warn "The writes in $UPPER could not be copied to disk and are lost at reboot; recovering the last copy on disk"
+  if [[ -d "$BACKUP" ]] && ! mountpoint -q "$TMP" && unsaved_writes && ! replay_upper; then
+    # keep the state for another try; a link keeps the browser from
+    # creating a fresh profile meanwhile
+    [[ -e "$DIR" || -h "$DIR" ]] || ln -sT "$TMP" "$DIR"
+    error "The writes in $UPPER could not be copied to disk (is it full?); they are kept until reboot. Free some space and run: psd recover"
+    return 1
   fi
 
   [[ -d "$BACKUP" ]] || return 0
@@ -346,10 +355,15 @@ recover_profile() {
   # psd started, while BACK_OVFS holds the last resync. BACK_OVFS is only
   # newer if a resync into it completed, which is marked by .psd-complete,
   # otherwise it may be stale or partial
+  # psd never puts a marker in BACKUP; one there was carried along by an
+  # older psd, which copies it with the profile, so markers mean nothing here
+  if [[ -e "$BACKUP/.psd-complete" ]]; then
+    legacy=1
+  fi
   keep=$BACKUP save=
   if [[ -d "$BACK_OVFS" ]]; then
     save=$BACK_OVFS
-    if [[ -e "$BACK_OVFS/.psd-complete" ]]; then
+    if [[ -e "$BACK_OVFS/.psd-complete" && ! -e "$BACKUP/.psd-complete" ]]; then
       keep=$BACK_OVFS save=$BACKUP
     elif [[ $legacy -eq 1 ]] &&
       [[ -n "$(find "$BACK_OVFS" -mindepth 1 -maxdepth 1 -print -quit)" ]] &&
@@ -378,8 +392,15 @@ recover_profile() {
   # kept aside unless it is empty
   if [[ "$keep" == "$BACK_OVFS" ]]; then
     mv --no-target-directory "$BACK_OVFS" "$DIR" || return 1
+    if [[ $legacy -eq 0 ]]; then
+      # a copy this session marked is newer than BACKUP by construction, so
+      # BACKUP goes with the snapshots and is rotated like them
+      aside="$BACKUP-crashrecovery-$now-start"
+    else
+      aside="$BACKUP-crashrecovery-$now-unused"
+    fi
     if ! rmdir "$BACKUP" 2>/dev/null; then
-      mv --no-target-directory "$BACKUP" "$BACKUP-crashrecovery-$now-unused" || return 1
+      mv --no-target-directory "$BACKUP" "$aside" || return 1
     fi
     rm -f "$DIR/.psd-complete"
   else
@@ -387,6 +408,7 @@ recover_profile() {
       mv --no-target-directory "$save" "$BACKUP-crashrecovery-$now-unused" || return 1
     fi
     mv --no-target-directory "$BACKUP" "$DIR" || return 1
+    rm -f "$DIR/.psd-complete"
   fi
   flush "$DIR"
 }
@@ -399,12 +421,18 @@ replay_upper() {
   local rc=0
   msg "Copying the writes left in $UPPER to disk"
   remove_tree "$WORK"
-  install -dm"$(stat -c %a "$BACKUP")" "$TMP" &&
-    install -dm700 "$WORK" &&
-    mount_overlay || return 1
-  new_generation "$TMP" || rc=1
-  fusermount3 -u "$TMP" 2>/dev/null || fusermount3 -uz "$TMP"
-  [[ $rc -eq 0 ]] || return 1
+  if install -dm"$(stat -c %a "$BACKUP")" "$TMP" &&
+    install -dm700 "$WORK" && mount_overlay; then
+    new_generation "$TMP" || rc=1
+    fusermount3 -u "$TMP" 2>/dev/null || fusermount3 -uz "$TMP"
+  else
+    rc=1
+  fi
+  if [[ $rc -ne 0 ]]; then
+    # an empty TMP would let a link to it look like a fresh profile
+    mountpoint -q "$TMP" || rmdir "$TMP" 2>/dev/null
+    return 1
+  fi
   discard "$UPPER" "$WORK"
   rmdir "$TMP" 2>/dev/null
   return 0
@@ -415,11 +443,19 @@ replay_upper() {
 # are hard links into the current copy. A leftover BACK_OVFS.new is never a
 # recovery candidate.
 new_generation() {
-  local new=$BACK_OVFS.new err
+  local new=$BACK_OVFS.new err changes
   local -a base=()
   if ! can_exchange; then
     copy_generation "$1"
     return
+  fi
+  # an unchanged profile needs no new copy; only a dry run that worked and
+  # found nothing to do proves that. Dir times carry no profile data (and
+  # the marker changes the top one).
+  if [[ -e "$BACK_OVFS/.psd-complete" ]] &&
+    changes=$(rsync -aX --modify-window=-1 --omit-dir-times --delete --dry-run --itemize-changes --exclude .flagged --exclude .psd-complete "$1/" "$BACK_OVFS/" 2>/dev/null) &&
+    [[ -z "$changes" ]]; then
+    return 0
   fi
   # never copy into what is left of an earlier attempt
   remove_tree "$new" || return 1
@@ -431,8 +467,12 @@ new_generation() {
     base=(--link-dest="$BACK_OVFS.base")
   fi
   install -dm"$(stat -c %a "$BACKUP")" "$new" || return 1
-  if ! rsync -aX --modify-window=-1 "${base[@]}" --exclude .flagged --exclude .psd-complete "$1/" "$new/"; then
-    error "Failed to copy $1 to $new (is the disk full?); $BACK_OVFS is kept"
+  if ! copy_tree -aX --modify-window=-1 "${base[@]}" --exclude .flagged --exclude .psd-complete "$1/" "$new/"; then
+    if [[ -d "$BACK_OVFS" ]]; then
+      error "Failed to copy $1 to $new (is the disk full?); $BACK_OVFS is kept"
+    else
+      error "Failed to copy $1 to $new (is the disk full?)"
+    fi
     # its space may be needed by the next profile
     remove_tree "$new"
     return 1
@@ -448,7 +488,10 @@ new_generation() {
     if [[ "$err" == *"Invalid argument"* || "$err" == *"not supported"* ||
       "$err" == *"not implemented"* || "$err" == *"not permitted"* ]]; then
       # a filesystem or sandbox without RENAME_EXCHANGE
-      warn "$BACK_OVFS cannot be swapped, copying in place"
+      if [[ ! -e "$XDG_RUNTIME_DIR/psd-no-exchange" ]]; then
+        warn "$BACK_OVFS cannot be swapped on this filesystem, copying in place"
+        touch "$XDG_RUNTIME_DIR/psd-no-exchange"
+      fi
       copy_generation "$1"
       return
     fi
@@ -509,6 +552,14 @@ mount_overlay() {
   fi
 }
 
+# copy_tree <rsync args...>: rsync, where files that vanished during the copy
+# (exit 24, e.g. a browser's journal files) are not an error: they are gone
+copy_tree() {
+  local rc=0
+  rsync "$@" || rc=$?
+  [[ $rc -eq 0 || $rc -eq 24 ]]
+}
+
 # copy_generation <src>: copy <src> to BACK_OVFS in place and mark it
 # complete, for filesystems that cannot swap. The marker's removal is on disk
 # before rsync rewrites files in place, and the data is on disk before the
@@ -519,7 +570,7 @@ copy_generation() {
   fi
   rm -f "$BACK_OVFS/.psd-complete"
   flush "$BACK_OVFS" || return 1
-  if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$1/" "$BACK_OVFS/"; then
+  if ! copy_tree -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$1/" "$BACK_OVFS/"; then
     error "Failed to copy $1 to $BACK_OVFS"
     return 1
   fi
@@ -663,7 +714,7 @@ crash_dirs() {
   CRASHArr=()
   while IFS= read -d '' -r path; do
     if [[ "${2:-}" = snapshots ]] &&
-      [[ ! "${path##*/}" =~ -backup-crashrecovery-[0-9]{8}_[0-9]{6}$ ]]; then
+      [[ ! "${path##*/}" =~ -backup-crashrecovery-[0-9]{8}_[0-9]{6}(-start)?$ ]]; then
       continue
     fi
     CRASHArr+=("$path")
@@ -721,19 +772,26 @@ running_check() {
   done
 }
 
-# space_check <dir>...: warn if the runtime dir is too small for the writes
-# of the profiles.
-space_check() {
-  local avail need
+# runtime_space <dir>...: the free space in the runtime dir, where the
+# browser's writes go, and the largest profile file; rewriting it (e.g. a
+# database vacuum) briefly holds two copies there; for preview
+runtime_space() {
+  local avail largest
   avail=$(df --output=avail -k "$XDG_RUNTIME_DIR" 2>/dev/null | tail -n1)
-  # only files the browser writes are copied to tmpfs, whole; the largest
-  # one being rewritten (e.g. a database vacuum) needs twice its size
-  need=$(find "$@" -type f -printf '%s\n' 2>/dev/null | sort -n | tail -n1)
-  [[ "$avail" =~ ^[0-9]+$ && "$need" =~ ^[0-9]+$ ]] || return 0
-  need=$(( need * 2 / 1024 ))
-  if (( need > avail )); then
-    warn "Only $(( avail / 1024 )) MiB are free in $XDG_RUNTIME_DIR, less than a rewrite of the largest profile file may need ($(( need / 1024 )) MiB); the browser may then fail to save. Raise RuntimeDirectorySize in logind.conf."
-  fi
+  largest=$(find "$@" -type f -printf '%s\n' 2>/dev/null | sort -n | tail -n1)
+  [[ "$avail" =~ ^[0-9]+$ && "$largest" =~ ^[0-9]+$ ]] || return 0
+  printf '%s MiB free, largest file %s MiB (a rewrite may briefly need %s MiB)\n' \
+    "$(( avail / 1024 ))" "$(( largest / 1048576 ))" "$(( largest * 2 / 1048576 ))"
+}
+
+# runtime_space_low: warn when the runtime dir is nearly full, since the
+# browser cannot save once it is
+runtime_space_low() {
+  local used
+  used=$(df --output=pcent "$XDG_RUNTIME_DIR" 2>/dev/null | tail -n1 | tr -dc 0-9)
+  [[ -n "$used" ]] && (( used >= 90 )) &&
+    warn "$XDG_RUNTIME_DIR is ${used}% full; the browser cannot save once it is full. Raise RuntimeDirectorySize in logind.conf."
+  return 0
 }
 
 # proc_name <name>: <name> as the kernel shows it to pgrep, at most 15 chars
@@ -889,7 +947,7 @@ sync_profile() {
     stale="$XDG_RUNTIME_DIR/psd/.stale-${UPPER##*/}-$(date +%Y%m%d_%H%M%S)"
     mv --no-target-directory "$UPPER" "$stale" || return 1
     remove_tree "$WORK"
-    warn "Writes left by an earlier session are kept in $stale, not used"
+    warn "Writes left by an earlier session are kept in $stale until reboot, not used"
   fi
 
   # retain permissions on sync target
@@ -905,6 +963,8 @@ sync_profile() {
       mv --no-target-directory "$BACK_OVFS" "$BACK_OVFS.base" &&
       flush "$BACK_OVFS.base" || return 1
   fi
+  # a marker an older psd copied into the profile
+  rm -f "$DIR/.psd-complete"
   mv --no-target-directory "$DIR" "$BACKUP" || return 1
   SYNCED_BROWSER+=("$browser")
   SYNCED_DIR+=("$1")
@@ -965,7 +1025,7 @@ resync_profile() {
     return 0
   fi
   if [[ ! -e "$DIR/.flagged" ]]; then
-    error "$TMP is not mounted, cannot resync $DIR"
+    error "The fuse mount of $DIR died; its writes since the last copy are in $UPPER until reboot. To save them, close the browser and run: systemctl --user restart psd"
     return 1
   fi
 
@@ -1011,7 +1071,6 @@ do_sync() {
       lines+=$(printf '%s\t%s\t%s\t%s\t%s' "$browser" "$DIR" "$TMP" "$UPPER" "$WORK")$'\n'
     done
     printf '%s' "$lines" | write_file "$SESSION_FILE" || return 2
-    space_check "${items[@]}"
   fi
 
   # make a snapshot of psd.conf and redefine its location to this snapshot
@@ -1077,6 +1136,7 @@ do_sync() {
       resync_profile || failed=1
       [[ $COPIED -eq 1 ]] && copied[$TMP]=1
     done
+    runtime_space_low
     [[ $failed -eq 0 ]] || return 2
     # a session started by an older psd has now marked every copy it keeps,
     # unless it has a mount this run did not copy
@@ -1140,26 +1200,17 @@ do_unsync() {
       if mountpoint -q "$TMP"; then
         # sync latest changes from overlayfs to BACK_OVFS, then to BACKUP before unmounting
         # always update BACK_OVFS from live overlayfs first to capture latest changes
-        if [[ -d "$BACK_OVFS" ]]; then
-          # Update BACK_OVFS with latest changes from live overlayfs
-          if ! new_generation "$TMP"; then
-            error "Failed to sync $TMP to $BACK_OVFS during unsync, leaving $DIR in tmpfs"
-            failed=1
-            continue
-          fi
-          # sync BACK_OVFS to BACKUP
-          if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$BACK_OVFS/" "$BACKUP/"; then
-            error "Failed to sync $BACK_OVFS to $BACKUP during unsync, leaving $BACKUP for crash recovery"
-            failed=1
-            continue
-          fi
-        else
-          # BACK_OVFS doesn't exist, sync directly from TMP to BACKUP
-          if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$TMP/" "$BACKUP/"; then
-            error "Failed to sync $TMP to $BACKUP during unsync, leaving $DIR in tmpfs"
-            failed=1
-            continue
-          fi
+        # a complete copy on disk first, so BACKUP is never the only copy
+        # while it is rewritten in place
+        if ! new_generation "$TMP"; then
+          error "Failed to sync $TMP to $BACK_OVFS during unsync, leaving $DIR in tmpfs"
+          failed=1
+          continue
+        fi
+        if ! rsync -aX --modify-window=-1 --delete-after --inplace --no-whole-file --exclude .flagged --exclude .psd-complete "$BACK_OVFS/" "$BACKUP/"; then
+          error "Failed to sync $BACK_OVFS to $BACKUP during unsync, leaving $BACKUP for crash recovery"
+          failed=1
+          continue
         fi
         # BACKUP was rewritten in place and becomes DIR below, where nothing
         # marks it as partial, so it must be on disk first
@@ -1193,6 +1244,12 @@ do_unsync() {
         continue
       fi
       [[ -d "$TMP" ]] && ! mountpoint -q "$TMP" && rm -rf "$TMP"
+      # the copy is now only the base of the next session's first copy; an
+      # older psd must not find it marked next to a later session of its own
+      if [[ -d "$BACK_OVFS" ]] && ! { remove_tree "$BACK_OVFS.base" &&
+        mv --no-target-directory "$BACK_OVFS" "$BACK_OVFS.base"; }; then
+        warn "Failed to set $BACK_OVFS aside"
+      fi
       msg "$browser unsync successful"
     elif [[ -d "$BACKUP" ]]; then
       # an earlier unsync stopped after the copy; finish it like recovery
@@ -1265,7 +1322,7 @@ parse() {
           [[ $TRUEP -ne 700 ]] && warn=1
         fi
         # profile dir size
-        psize=$(du -Dh --max-depth=0 "$DIR" 2>/dev/null | awk '{ print $1 }')
+        psize=$(du -Dsm "$DIR" 2>/dev/null | awk '{ print $1 " MiB" }')
         field "browser/psname:" "$browser/$PSNAME${NRM}"
         field "owner/group id:" "$user/$group${NRM}"
         field "sync target:" "${BLU}$DIR${NRM}"
@@ -1277,8 +1334,10 @@ parse() {
         field "tmpfs dir:" "${GRN}$TMP${NRM}"
         field "profile size:" "$psize${NRM}"
         if [[ -f $PID_FILE ]]; then
-          rwsize=$(du -Dh --max-depth=0 "$UPPER" 2>/dev/null | awk '{ print $1 }')
+          rwsize=$(du -Dsm "$UPPER" 2>/dev/null | awk '{ print $1 " MiB" }')
           field "overlayfs size:" "$rwsize${NRM}"
+        else
+          field "tmpfs space:" "$(runtime_space "$DIR")${NRM}"
         fi
         if [[ $BACKUP_LIMIT -ne 5 ]]; then
           # only print if not the hardcoded default
@@ -1289,7 +1348,7 @@ parse() {
         else
           field "recovery dirs:" "${RED}${#CRASHArr[@]}${NRM}${BLD} <- delete with the c option${NRM}"
           for backup in "${CRASHArr[@]}"; do
-            psize=$(du -Dh --max-depth=0 "$backup" 2>/dev/null | awk '{ print $1 }')
+            psize=$(du -Dsm "$backup" 2>/dev/null | awk '{ print $1 " MiB" }')
             field " dir path/size:" "${BLU}$backup ${NRM}${BLD}($psize)${NRM}"
           done
         fi
@@ -1330,16 +1389,21 @@ take_lock() {
 # the start failed or psd was killed, after systemd has killed the fuse
 # daemons. A clean unsync left nothing to do.
 recover() {
+  live_check
+  rm -f "$PID_FILE"
+  ungraceful_state_check
+}
+
+# live_check: refuse to touch a session that is still running
+live_check() {
   local i
   session_profiles config
   for i in "${!PROF_D[@]}"; do
     use_profile "$i"
     if [[ -f "$PID_FILE" ]] && [[ -e "$DIR/.flagged" ]] || mountpoint -q "$TMP"; then
-      die "psd is running and $DIR is live; stop it with: systemctl --user stop psd"
+      die "psd is running and $DIR is live; stop it with: systemctl --user stop psd, or if it was started by hand: psd unsync"
     fi
   done
-  rm -f "$PID_FILE"
-  ungraceful_state_check
 }
 
 release_inhibit_lock() {
@@ -1381,15 +1445,23 @@ case "$1" in
   startup)
     # target for psd.service's ExecStart= for consistent error handling
     take_lock wait
-    if [[ ! -f $PID_FILE ]]; then
-      dep_check
-      config_check
-      dup_check
-      running_check
-      ungraceful_state_check || die "Recovery failed, see above"
-      [[ $SUSPSYNC -eq 1 ]] && take_inhibit_lock
-      msg "psd startup check successful"
+    if [[ -f $PID_FILE ]]; then
+      # ExecStart only runs while psd.service is inactive, so this session
+      # was not stopped cleanly, e.g. by a unit without ExecStopPost
+      live_check
+      warn "Found a session that was not stopped cleanly, recovering it"
+      recover || exit 1
+      # start over with the live config rather than that session's snapshot
+      exec {lockfd}>&-
+      exec "$0" startup
     fi
+    dep_check
+    config_check
+    dup_check
+    running_check
+    ungraceful_state_check || die "Recovery failed, see above"
+    [[ $SUSPSYNC -eq 1 ]] && take_inhibit_lock
+    msg "psd startup check successful"
     ;;
   suspend-sync)
     # wait: a resync in progress has no complete copy until it finishes
@@ -1447,6 +1519,7 @@ case "$1" in
     echo -e " ${BLD}$0 ${NRM}${GRN}[option]${NRM}"
     echo -e " ${BLD} ${NRM}${GRN}preview${NRM}${BLD}	Parse config file (${NRM}${BLU}${PSDCONF}${NRM}${BLD}) to see which profiles will be managed.${NRM}"
     echo -e " ${BLD} ${NRM}${GRN}clean${NRM}${BLD}		Clean (delete without prompting) ALL crashrecovery dirs for all profiles.${NRM}"
+    echo -e " ${BLD} ${NRM}${GRN}recover${NRM}${BLD}	Recover profiles left by a crash or a failed stop; psd.service runs it after every stop.${NRM}"
     echo
     echo -e " ${BLD}It is ${RED}HIGHLY DISCOURAGED${NRM}${BLD} to directly call $0 to sync, resync, or to unsync.${NRM}"
     echo

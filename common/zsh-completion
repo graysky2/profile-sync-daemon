@@ -4,7 +4,8 @@ _psd() {
   local -a options
 
   options=('p:Preview what psd will do/is doing and printout useful info'
-           'c:Clean (delete without prompting) ALL crashrecovery dirs for all profiles')
+           'c:Clean (delete without prompting) ALL crashrecovery dirs for all profiles'
+           'recover:Recover profiles left by a crash or a failed stop')
 
   _describe 'options' options
 }

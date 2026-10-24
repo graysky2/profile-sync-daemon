@@ -166,7 +166,55 @@ test_release_session_dead_mount_unsync() {
   assert_ok psd_with "$BASE" resync
   profile_write "$P" v3
   kill_daemons
+  # the dead mount's writes cannot be copied; the session is kept for
+  # another try, and after a reboot the older rule picks the newer copy
   stub_cmd fuse-overlayfs '*'
-  psd unsync
+  assert_fails psd unsync
+  assert_symlink "$P"
+  reboot_sim
+  unstub_cmd fuse-overlayfs
+  assert_ok psd startup
   assert_version "$P" v2
+}
+
+test_marker_left_by_clean_stop_not_trusted_after_downgrade() {
+  build_base release || return
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  profile_write "$P" v2
+  assert_ok psd resync
+  assert_ok psd unsync
+  profile_write "$P" v3
+  sleep 1.1
+  assert_ok psd_with "$BASE" startup
+  assert_ok psd_with "$BASE" resync
+  profile_write "$P" v4
+  reboot_sim
+  assert_ok psd startup
+  assert_version "$P" v3
+}
+
+test_marker_carried_by_release_not_trusted() {
+  build_base release || return
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  profile_write "$P" v2
+  assert_ok psd resync
+  reboot_sim
+  assert_ok psd_with "$BASE" startup
+  assert_ok psd_with "$BASE" startup
+  assert_ok psd_with "$BASE" resync
+  profile_write "$P" v3
+  sleep 1.1
+  assert_ok psd_with "$BASE" resync
+  assert_ok psd_with "$BASE" unsync
+  profile_write "$P" v4
+  sleep 1.1
+  assert_ok psd_with "$BASE" startup
+  assert_ok psd_with "$BASE" resync
+  reboot_sim
+  assert_ok psd startup
+  assert_version "$P" v4
 }

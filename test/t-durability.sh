@@ -20,6 +20,7 @@ test_resync_flushes_around_marker() {
   profile_new "$P" v1
   assert_ok start_session
   assert_ok psd resync
+  profile_write "$P" v2
   export PSD_TRACE=$T/trace
   assert_ok psd resync
   # the new copy is complete on disk before it replaces the current one,
@@ -31,7 +32,7 @@ test_resync_flushes_around_marker() {
     '^sync -f .*-back-ovfs\.new$' \
     '^mv --exchange --no-target-directory .*-back-ovfs\.new .*-back-ovfs$' \
     '^sync -f .*-back-ovfs$'
-  grep -E '^(rm|rsync|touch) .*-back-ovfs/' "$PSD_TRACE" &&
+  grep -v -- --dry-run "$PSD_TRACE" | grep -E '^(rm|rsync|touch) .*-back-ovfs/' &&
     fail "the current copy was changed in place"
   assert_absent "$P-back-ovfs.new"
 }
@@ -41,13 +42,13 @@ test_unsync_flushes_before_restore() {
   profile_new "$P" v1
   assert_ok start_session
   assert_ok psd resync
+  profile_write "$P" v2
   export PSD_TRACE=$T/trace
   assert_ok psd unsync
-  # after the resync unsync starts with, the unsync's own copy; the link
-  # goes only once the data is on disk
+  # the resync unsync starts with makes the copy (its own copy finds
+  # nothing changed since); the link goes only once the data is on disk
   assert_trace_order \
     '^rsync .*/psdtest-a/ .*-back-ovfs\.new/$' \
-    '^rsync .*/psd/[^ ]*/ .*-back-ovfs\.new/$' \
     '^sync -f .*-back-ovfs\.new$' \
     '^touch .*-back-ovfs\.new/\.psd-complete$' \
     '^sync -f .*-back-ovfs\.new$' \
@@ -60,12 +61,15 @@ test_unsync_flushes_before_restore() {
 }
 
 test_initial_sync_moves_stale_copy_first() {
+  # a copy left by an older psd's clean stop must be out of the way, and
+  # untouched, before the profile becomes BACKUP
   local P; P=$(P_A)
   profile_new "$P" v1
   assert_ok start_session
   assert_ok psd resync
   assert_ok psd unsync
-  [[ -e "$P-back-ovfs/.psd-complete" ]] || fail "setup: no marker left by unsync"
+  assert_absent "$P-back-ovfs"
+  mv "$P-back-ovfs.base" "$P-back-ovfs"
   export PSD_TRACE=$T/trace
   assert_ok start_session
   assert_trace_order \
@@ -225,4 +229,43 @@ test_first_copy_links_last_session() {
   assert_absent "$P-back-ovfs.base"
   assert_ok psd unsync
   assert_version "$P" v1
+}
+
+test_unchanged_profile_not_copied() {
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  assert_ok psd resync
+  export PSD_TRACE=$T/trace
+  assert_ok psd resync
+  grep -q -- '-back-ovfs\.new' "$PSD_TRACE" && fail "copied an unchanged profile"
+  profile_write "$P" v2
+  assert_ok psd resync
+  assert_version "$P-back-ovfs" v2
+  assert_ok psd unsync
+  assert_version "$P" v2
+}
+
+test_vanished_files_are_not_a_failure() {
+  # rsync exits 24 when files vanish during the copy, e.g. journals
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  mkdir -p "$T/shim2"
+  ln -sf "$T_SRC/test/shim" "$T/shim2/rsync"
+  cat > "$T_BIN/rsync" <<EOS
+#!/bin/bash
+PATH=\${PATH#"$T_SHIMS:"}
+"$T/shim2/rsync" "\$@" || exit
+case "\$*" in *--dry-run*) exit 0 ;; esac
+exit 24
+EOS
+  chmod 755 "$T_BIN/rsync"
+  ln -sf "$T_BIN/rsync" "$T_SHIMS/rsync"
+  profile_write "$P" v2
+  assert_ok psd resync
+  assert_version "$P-back-ovfs" v2
+  unstub_cmd rsync
+  assert_ok psd unsync
+  assert_version "$P" v2
 }

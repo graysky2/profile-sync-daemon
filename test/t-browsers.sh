@@ -60,14 +60,20 @@ test_holders_are_named() {
   wait "$pid" 2>/dev/null
 }
 
-test_small_runtime_dir_warned() {
-  local P; P=$(P_A)
-  profile_new "$P" v1
-  printf '#!/bin/sh\necho Avail; echo 1\n' > "$T_BIN/df"
+# fake_df <percent used>
+fake_df() {
+  printf '#!/bin/sh\necho Use%%; echo %s%%\n' "$1" > "$T_BIN/df"
   chmod 755 "$T_BIN/df"
   ln -sf "$T_BIN/df" "$T_SHIMS/df"
+}
+
+test_full_runtime_dir_warned() {
+  local P; P=$(P_A)
+  profile_new "$P" v1
+  fake_df 95
   assert_ok start_session
-  grep -q 'MiB are free in' "$T_LOG" || fail "no warning about the runtime dir size"
+  assert_ok psd resync
+  grep -q '95% full' "$T_LOG" || fail "no warning about the full runtime dir"
   assert_ok psd unsync
   assert_version "$P" v1
 }
@@ -107,11 +113,10 @@ test_suspend_helper_stopped_as_a_group() {
 test_roomy_runtime_dir_not_warned() {
   local P; P=$(P_A)
   profile_new "$P" v1
-  printf '#!/bin/sh\necho Avail; echo 999999999\n' > "$T_BIN/df"
-  chmod 755 "$T_BIN/df"
-  ln -sf "$T_BIN/df" "$T_SHIMS/df"
+  fake_df 20
   assert_ok start_session
-  grep -q 'MiB are free in' "$T_LOG" && fail "warned although there is room"
+  assert_ok psd resync
+  grep -q '% full' "$T_LOG" && fail "warned although there is room"
   assert_ok psd unsync
 }
 
@@ -185,4 +190,37 @@ test_holders_scan_does_not_report_itself() {
   grep -E 'still in use by' "$T_LOG" | grep -qE '\(find\)|[0-9]+ \(\)' &&
     fail "the scan reported itself"
   assert_version "$P" v1
+}
+
+test_startup_after_stale_pid_uses_live_config() {
+  # the session was started without suspend sync; the config now has it
+  local P pgid; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  profile_write "$P" v2
+  stub_cmd rsync '*-back-ovfs.new/'
+  assert_fails psd unsync
+  unstub_cmd rsync
+  kill_daemons
+  write_conf 'BROWSERS=(psdtest-a)' 'USE_SUSPSYNC="yes"'
+  fake_suspend_helper
+  assert_ok start_session
+  sleep 0.3
+  pgid=$(cat "$XDG_RUNTIME_DIR/psd-suspend-sync.pid" 2>/dev/null)
+  if [[ -z "$pgid" ]] || ! pgrep -g "$pgid" >/dev/null; then
+    fail "the restart used the old session's config"
+  fi
+  assert_ok psd unsync
+  assert_version "$P" v2
+}
+
+test_manual_startup_of_live_session_refused_quietly() {
+  local P before; P=$(P_A)
+  profile_new "$P" v1
+  assert_ok start_session
+  before=$(tree_state "$XDG_CONFIG_HOME")
+  assert_fails psd startup
+  grep -q 'not stopped cleanly' "$T_LOG" && fail "claimed to recover a live session"
+  assert_tree_unchanged "$before" "$XDG_CONFIG_HOME"
+  assert_ok psd unsync
 }
